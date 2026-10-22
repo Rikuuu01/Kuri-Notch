@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -16,6 +17,9 @@ namespace NotchWin.Services
         private GlobalSystemMediaTransportControlsSession? _currentSession;
         private readonly object _lock = new object();
         private bool _isDisposed;
+
+        private CancellationTokenSource? _hoverFilterCts;
+        private bool _userRequestedSkip;
 
         public event EventHandler<MediaTrackInfo>? MediaTrackChanged;
         public event EventHandler<bool>? PlaybackStateChanged;
@@ -34,7 +38,6 @@ namespace NotchWin.Services
                     _sessionManager.CurrentSessionChanged += SessionManager_CurrentSessionChanged;
                     _sessionManager.SessionsChanged += SessionManager_SessionsChanged;
 
-                    // Load initial session
                     await SelectActiveSessionAsync();
                 }
                 else
@@ -128,7 +131,6 @@ namespace NotchWin.Services
             {
                 if (_currentSession == candidate)
                 {
-                    // Same session, no need to re-subscribe
                     return;
                 }
 
@@ -165,7 +167,6 @@ namespace NotchWin.Services
             }
             catch
             {
-                // Ignore COM exceptions during teardown
             }
         }
 
@@ -194,9 +195,8 @@ namespace NotchWin.Services
 
             if (session == null)
             {
-                CurrentTrack = MediaTrackInfo.Empty;
-                MediaTrackChanged?.Invoke(this, CurrentTrack);
-                PlaybackStateChanged?.Invoke(this, false);
+                CancelHoverFilter();
+                ApplyTrackInfo(MediaTrackInfo.Empty);
                 return;
             }
 
@@ -204,14 +204,13 @@ namespace NotchWin.Services
             {
                 var playbackInfo = session.GetPlaybackInfo();
 
-                // If the session playback is closed or stopped, reset track to Empty
+                // If playback is closed or stopped, clear media
                 if (playbackInfo == null ||
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed ||
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped)
                 {
-                    CurrentTrack = MediaTrackInfo.Empty;
-                    MediaTrackChanged?.Invoke(this, CurrentTrack);
-                    PlaybackStateChanged?.Invoke(this, false);
+                    CancelHoverFilter();
+                    ApplyTrackInfo(MediaTrackInfo.Empty);
                     return;
                 }
 
@@ -229,9 +228,8 @@ namespace NotchWin.Services
 
                 if (props == null || (string.IsNullOrWhiteSpace(props.Title) && string.IsNullOrWhiteSpace(props.Artist)))
                 {
-                    CurrentTrack = MediaTrackInfo.Empty;
-                    MediaTrackChanged?.Invoke(this, CurrentTrack);
-                    PlaybackStateChanged?.Invoke(this, false);
+                    CancelHoverFilter();
+                    ApplyTrackInfo(MediaTrackInfo.Empty);
                     return;
                 }
 
@@ -252,7 +250,7 @@ namespace NotchWin.Services
                         bitmap.CacheOption = BitmapCacheOption.OnLoad;
                         bitmap.StreamSource = memStream;
                         bitmap.EndInit();
-                        bitmap.Freeze(); // Freeze so it can be passed across threads and UI safely
+                        bitmap.Freeze();
                         thumbnail = bitmap;
                     }
                     catch (Exception ex)
@@ -277,16 +275,77 @@ namespace NotchWin.Services
                     SourceAppId = session.SourceAppUserModelId ?? string.Empty
                 };
 
-                CurrentTrack = track;
-                Log.Debug("Media Track Updated: {Title} by {Artist} (IsPlaying={IsPlaying})", track.Title, track.Artist, track.IsPlaying);
+                // === BROWSER HOVER PREVIEW FILTER ===
+                // When an existing video is already playing and a sudden new title arrives from a web browser
+                // (YouTube preview video), hold the update for 1.8 seconds.
+                // If the user was just hovering, YouTube will revert within 1.8s and the notch stays on the real video.
+                // If the user actually clicked the video to watch it, the title persists and applies normally.
+                if (!_userRequestedSkip &&
+                    !string.IsNullOrEmpty(CurrentTrack.Title) &&
+                    track.Title != CurrentTrack.Title &&
+                    IsBrowserApp(track.SourceAppId))
+                {
+                    Log.Information("Potential YouTube hover preview detected ('{NewTitle}' vs current '{CurTitle}'). Holding filter for 1.8s...",
+                        track.Title, CurrentTrack.Title);
 
-                MediaTrackChanged?.Invoke(this, track);
-                PlaybackStateChanged?.Invoke(this, isPlaying);
+                    _hoverFilterCts?.Cancel();
+                    _hoverFilterCts?.Dispose();
+                    _hoverFilterCts = new CancellationTokenSource();
+                    var token = _hoverFilterCts.Token;
+
+                    var candidate = track;
+                    _ = Task.Delay(1800, token).ContinueWith(t =>
+                    {
+                        if (!t.IsCanceled)
+                        {
+                            Log.Information("Hover filter passed: User navigated to new video '{NewTitle}'", candidate.Title);
+                            ApplyTrackInfo(candidate);
+                        }
+                    }, TaskScheduler.Default);
+
+                    return;
+                }
+
+                _userRequestedSkip = false;
+                CancelHoverFilter();
+                ApplyTrackInfo(track);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error refreshing track info from SMTC");
             }
+        }
+
+        private void ApplyTrackInfo(MediaTrackInfo track)
+        {
+            CurrentTrack = track;
+            Log.Information("Media Track Applied: '{Title}' by '{Artist}' (IsPlaying={IsPlaying}, Duration={Duration})",
+                track.Title, track.Artist, track.IsPlaying, track.Duration);
+
+            MediaTrackChanged?.Invoke(this, track);
+            PlaybackStateChanged?.Invoke(this, track.IsPlaying);
+        }
+
+        private void CancelHoverFilter()
+        {
+            if (_hoverFilterCts != null)
+            {
+                _hoverFilterCts.Cancel();
+                _hoverFilterCts.Dispose();
+                _hoverFilterCts = null;
+            }
+        }
+
+        private static bool IsBrowserApp(string appId)
+        {
+            if (string.IsNullOrEmpty(appId)) return false;
+            var lower = appId.ToLowerInvariant();
+            return lower.Contains("edge") ||
+                   lower.Contains("chrome") ||
+                   lower.Contains("firefox") ||
+                   lower.Contains("brave") ||
+                   lower.Contains("opera") ||
+                   lower.Contains("vivaldi");
         }
 
         public async Task TogglePlayPauseAsync()
@@ -308,6 +367,9 @@ namespace NotchWin.Services
 
         public async Task SkipNextAsync()
         {
+            _userRequestedSkip = true;
+            CancelHoverFilter();
+
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
             if (session != null)
@@ -325,6 +387,9 @@ namespace NotchWin.Services
 
         public async Task SkipPreviousAsync()
         {
+            _userRequestedSkip = true;
+            CancelHoverFilter();
+
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
             if (session != null)
@@ -361,6 +426,8 @@ namespace NotchWin.Services
         {
             if (_isDisposed) return;
             _isDisposed = true;
+
+            CancelHoverFilter();
 
             lock (_lock)
             {
