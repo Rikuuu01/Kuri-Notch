@@ -81,6 +81,7 @@ namespace NotchWin.Views
             };
 
             ViewModel.StateAnimationRequested += (_, _) => AnimateToCurrentState();
+            ViewModel.Media.ActiveLyricChanged += Media_ActiveLyricChanged;
 
             ViewModel.Media.PropertyChanged += (s, e) =>
             {
@@ -437,6 +438,32 @@ namespace NotchWin.Views
                 _ = ViewModel.Media.SeekToSecondsAsync(MediaSeekSlider.Value);
             }
         }
+
+        #endregion
+
+        #region Lyrics Handling
+
+        private void Media_ActiveLyricChanged(object? sender, int index)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (LyricsScrollViewer != null && index >= 0)
+                {
+                    double lineHeight = 26.0;
+                    double targetOffset = Math.Max(0, (index * lineHeight) - 55.0);
+                    LyricsScrollViewer.ScrollToVerticalOffset(targetOffset);
+                }
+            });
+        }
+
+        private void LyricLine_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is LyricsLineViewModel line)
+            {
+                _ = ViewModel.Media.SeekToLyricAsync(line);
+            }
+        }
+
 
         #endregion
     }

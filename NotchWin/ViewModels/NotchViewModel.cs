@@ -16,6 +16,7 @@ namespace NotchWin.ViewModels
         public const double CollapsedHeight = 32.0;
         public const double ExpandedWidth = 380.0;
         public const double ExpandedHeight = 150.0;
+        public const double ExpandedWithLyricsHeight = 330.0;
 
         // Radius for bottom-left and bottom-right corners (top is flush against bezel)
         public const double CollapsedCornerRadius = 16.0;
@@ -56,6 +57,18 @@ namespace NotchWin.ViewModels
         {
             _mediaService = mediaService ?? new MediaService();
             Media = new MediaViewModel(_mediaService);
+            Media.LyricsToggled += (s, e) =>
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (CurrentState == NotchState.Expanded)
+                    {
+                        UpdateGeometryForState(NotchState.Expanded);
+                        StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+                    }
+                });
+            };
+
             _mediaService.MediaTrackChanged += (s, track) =>
             {
                 Application.Current?.Dispatcher.Invoke(() =>
@@ -196,7 +209,7 @@ namespace NotchWin.ViewModels
             if (state == NotchState.Expanded)
             {
                 TargetWidth = ExpandedWidth;
-                TargetHeight = ExpandedHeight;
+                TargetHeight = Media?.IsLyricsExpanded == true ? ExpandedWithLyricsHeight : ExpandedHeight;
                 TargetCornerRadius = ExpandedCornerRadius;
             }
             else
