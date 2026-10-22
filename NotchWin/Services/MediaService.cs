@@ -18,7 +18,7 @@ namespace NotchWin.Services
         private readonly object _lock = new object();
         private bool _isDisposed;
 
-        private CancellationTokenSource? _hoverFilterCts;
+        private MediaTrackInfo? _lockedPlayingTrack;
         private bool _userRequestedSkip;
 
         public event EventHandler<MediaTrackInfo>? MediaTrackChanged;
@@ -83,8 +83,7 @@ namespace NotchWin.Services
 
             try
             {
-                // 1. Guard against hover previews: If our current session is already actively playing,
-                // do NOT switch to another session from the same browser/app!
+                // Guard: If our current session is already actively playing, don't switch to another session from the same browser
                 lock (_lock)
                 {
                     if (_currentSession != null)
@@ -96,18 +95,16 @@ namespace NotchWin.Services
                             if (newCurrent != null && newCurrent != _currentSession &&
                                 newCurrent.SourceAppUserModelId == _currentSession.SourceAppUserModelId)
                             {
-                                Log.Debug("Keeping currently playing session for {AppId}; ignoring same-app hover preview.", _currentSession.SourceAppUserModelId);
+                                Log.Debug("Keeping currently playing session for {AppId}; ignoring same-app hover session switch.", _currentSession.SourceAppUserModelId);
                                 return;
                             }
                         }
                     }
                 }
 
-                // 2. Query recommended session from OS
                 candidate = _sessionManager.GetCurrentSession();
                 var info = candidate?.GetPlaybackInfo();
 
-                // If candidate is closed or stopped, look through all sessions for one that is currently active/playing
                 if (info == null ||
                     info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed ||
                     info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped)
@@ -195,7 +192,7 @@ namespace NotchWin.Services
 
             if (session == null)
             {
-                CancelHoverFilter();
+                _lockedPlayingTrack = null;
                 ApplyTrackInfo(MediaTrackInfo.Empty);
                 return;
             }
@@ -209,7 +206,7 @@ namespace NotchWin.Services
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed ||
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped)
                 {
-                    CancelHoverFilter();
+                    _lockedPlayingTrack = null;
                     ApplyTrackInfo(MediaTrackInfo.Empty);
                     return;
                 }
@@ -228,12 +225,39 @@ namespace NotchWin.Services
 
                 if (props == null || (string.IsNullOrWhiteSpace(props.Title) && string.IsNullOrWhiteSpace(props.Artist)))
                 {
-                    CancelHoverFilter();
+                    _lockedPlayingTrack = null;
                     ApplyTrackInfo(MediaTrackInfo.Empty);
                     return;
                 }
 
-                // Load thumbnail if available
+                var timeline = session.GetTimelineProperties();
+                var pos = timeline?.Position ?? TimeSpan.Zero;
+                var dur = (timeline?.EndTime ?? TimeSpan.Zero) - (timeline?.StartTime ?? TimeSpan.Zero);
+
+                var newTrack = new MediaTrackInfo
+                {
+                    Title = props.Title,
+                    Artist = props.Artist,
+                    Thumbnail = null, // Will load below if accepted
+                    IsPlaying = isPlaying,
+                    Position = pos >= TimeSpan.Zero ? pos : TimeSpan.Zero,
+                    Duration = dur > TimeSpan.Zero ? dur : TimeSpan.Zero,
+                    HasMedia = !string.IsNullOrWhiteSpace(props.Title),
+                    SourceAppId = session.SourceAppUserModelId ?? string.Empty
+                };
+
+                // === YOUTUBE HOVER PREVIEW DETECTION ===
+                // If a YouTube video is currently actively playing with a confirmed duration,
+                // and a title change arrives that shares the EXACT same duration and is already mid-track,
+                // it is mathematically guaranteed to be an inline thumbnail hover preview.
+                if (IsLikelyYouTubeHoverPreview(newTrack))
+                {
+                    return;
+                }
+
+                _userRequestedSkip = false;
+
+                // Load thumbnail for verified track
                 ImageSource? thumbnail = null;
                 if (props.Thumbnail != null)
                 {
@@ -258,62 +282,56 @@ namespace NotchWin.Services
                         Log.Debug(ex, "Failed to decode media thumbnail stream");
                     }
                 }
+                newTrack.Thumbnail = thumbnail;
 
-                var timeline = session.GetTimelineProperties();
-                var pos = timeline?.Position ?? TimeSpan.Zero;
-                var dur = (timeline?.EndTime ?? TimeSpan.Zero) - (timeline?.StartTime ?? TimeSpan.Zero);
-
-                var track = new MediaTrackInfo
+                // Update locked playing track reference
+                if (newTrack.HasMedia && newTrack.Duration > TimeSpan.FromSeconds(5))
                 {
-                    Title = props.Title,
-                    Artist = props.Artist,
-                    Thumbnail = thumbnail,
-                    IsPlaying = isPlaying,
-                    Position = pos >= TimeSpan.Zero ? pos : TimeSpan.Zero,
-                    Duration = dur > TimeSpan.Zero ? dur : TimeSpan.Zero,
-                    HasMedia = !string.IsNullOrWhiteSpace(props.Title),
-                    SourceAppId = session.SourceAppUserModelId ?? string.Empty
-                };
-
-                // === BROWSER HOVER PREVIEW FILTER ===
-                // When an existing video is already playing and a sudden new title arrives from a web browser
-                // (YouTube preview video), hold the update for 1.8 seconds.
-                // If the user was just hovering, YouTube will revert within 1.8s and the notch stays on the real video.
-                // If the user actually clicked the video to watch it, the title persists and applies normally.
-                if (!_userRequestedSkip &&
-                    !string.IsNullOrEmpty(CurrentTrack.Title) &&
-                    track.Title != CurrentTrack.Title &&
-                    IsBrowserApp(track.SourceAppId))
+                    _lockedPlayingTrack = newTrack;
+                }
+                else if (!newTrack.HasMedia)
                 {
-                    Log.Information("Potential YouTube hover preview detected ('{NewTitle}' vs current '{CurTitle}'). Holding filter for 1.8s...",
-                        track.Title, CurrentTrack.Title);
-
-                    _hoverFilterCts?.Cancel();
-                    _hoverFilterCts?.Dispose();
-                    _hoverFilterCts = new CancellationTokenSource();
-                    var token = _hoverFilterCts.Token;
-
-                    var candidate = track;
-                    _ = Task.Delay(1800, token).ContinueWith(t =>
-                    {
-                        if (!t.IsCanceled)
-                        {
-                            Log.Information("Hover filter passed: User navigated to new video '{NewTitle}'", candidate.Title);
-                            ApplyTrackInfo(candidate);
-                        }
-                    }, TaskScheduler.Default);
-
-                    return;
+                    _lockedPlayingTrack = null;
                 }
 
-                _userRequestedSkip = false;
-                CancelHoverFilter();
-                ApplyTrackInfo(track);
+                ApplyTrackInfo(newTrack);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error refreshing track info from SMTC");
             }
+        }
+
+        private bool IsLikelyYouTubeHoverPreview(MediaTrackInfo candidate)
+        {
+            if (_userRequestedSkip) return false;
+            if (_lockedPlayingTrack == null) return false;
+            if (string.IsNullOrEmpty(_lockedPlayingTrack.Title)) return false;
+            if (string.Equals(candidate.Title, _lockedPlayingTrack.Title, StringComparison.OrdinalIgnoreCase)) return false;
+            if (!IsBrowserApp(candidate.SourceAppId)) return false;
+
+            // Both must have valid durations (> 5s) to compare mathematically
+            if (_lockedPlayingTrack.Duration <= TimeSpan.FromSeconds(5) || candidate.Duration <= TimeSpan.FromSeconds(5))
+            {
+                return false;
+            }
+
+            // Mathematical fingerprint:
+            // In Chromium browsers (Edge, Chrome, Brave, etc.), YouTube inline thumbnail hover previews
+            // update the SMTC metadata (title/artist/artwork) on the active tab/session,
+            // BUT the timeline duration remains strictly bound to the primary video's duration.
+            // If an incoming browser track has a DIFFERENT title but the EXACT same duration (< 1.5s delta),
+            // it is an inline thumbnail hover preview and must be rejected.
+            bool sameDuration = Math.Abs((candidate.Duration - _lockedPlayingTrack.Duration).TotalSeconds) < 1.5;
+
+            if (sameDuration)
+            {
+                Log.Information("IGNORED YouTube hover preview '{PreviewTitle}' (active track '{CurrentTitle}' duration {Duration})",
+                    candidate.Title, _lockedPlayingTrack.Title, candidate.Duration);
+                return true;
+            }
+
+            return false;
         }
 
         private void ApplyTrackInfo(MediaTrackInfo track)
@@ -324,16 +342,6 @@ namespace NotchWin.Services
 
             MediaTrackChanged?.Invoke(this, track);
             PlaybackStateChanged?.Invoke(this, track.IsPlaying);
-        }
-
-        private void CancelHoverFilter()
-        {
-            if (_hoverFilterCts != null)
-            {
-                _hoverFilterCts.Cancel();
-                _hoverFilterCts.Dispose();
-                _hoverFilterCts = null;
-            }
         }
 
         private static bool IsBrowserApp(string appId)
@@ -368,7 +376,7 @@ namespace NotchWin.Services
         public async Task SkipNextAsync()
         {
             _userRequestedSkip = true;
-            CancelHoverFilter();
+            _lockedPlayingTrack = null;
 
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
@@ -388,7 +396,7 @@ namespace NotchWin.Services
         public async Task SkipPreviousAsync()
         {
             _userRequestedSkip = true;
-            CancelHoverFilter();
+            _lockedPlayingTrack = null;
 
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
@@ -427,7 +435,7 @@ namespace NotchWin.Services
             if (_isDisposed) return;
             _isDisposed = true;
 
-            CancelHoverFilter();
+            _lockedPlayingTrack = null;
 
             lock (_lock)
             {
