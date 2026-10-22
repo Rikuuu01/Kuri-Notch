@@ -22,6 +22,6 @@ Dokumen ini mencatat keputusan teknis, arsitektur, dan desain yang diambil selam
 - **Pilihan**: Menggunakan `CubicEase` (EaseOut untuk expand, EaseIn/EaseOut untuk collapse) pada `Width`, `Height`, dan `CornerRadius`.
 - **Alasan**: Memberikan sensasi gerak fluida dan organik yang mirip dengan Dynamic Island, dengan transisi konten fade-in yang tertunda agar konten tidak terpotong saat transisi ukuran berlangsung.
 
-#### Keputusan 5: Penyesuaian Bentuk Notch Menempel Tepi Atas Layar (Top Bezel Hugging)
-- **Pilihan**: Menghilangkan margin atas (`Margin="0,0,0,0"`), menghilangkan border atas (`BorderThickness="1,0,1,1"`), dan menerapkan sudut melengkung hanya pada kedua sudut bawah (`CornerRadius="0,0,16,16"` saat collapsed dan `"0,0,22,22"` saat expanded).
-- **Alasan**: Sesuai preferensi pengguna agar tampilan notch benar-benar menyatu dan keluar langsung dari bezel fisik atas monitor seperti notch bawaan laptop modern, dengan lengkungan bawah yang rapi dan elegan tanpa celah kosong di tepi atas.
+#### Keputusan 5: Penyesuaian Bentuk Notch Menempel Layar dengan Lengkungan Keluar (Outward Top Ears / Fillet)
+- **Pilihan**: Menggunakan rendering geometri vektor dinamis (`StreamGeometry`) yang membentuk lengkungan cekung keluar (*outward concave arc / fillet*) dengan radius 12px di kedua sudut atas tempat notch bertemu bezel monitor, sisi tegak lurus, dan sudut melengkung cembung di bagian bawah (radius 16px collapsed, 22px expanded). Border atas ditiadakan sehingga warna hitam pekat menyatu 100% dengan bezel fisik.
+- **Alasan**: Menghasilkan siluet transisi organik khas notch modern (ala MacBook Pro / iPhone Dynamic Island). Sudut lengkung keluar di bagian atas membuat notch terlihat keluar secara natural dan rapi dari bezel monitor, bukan sekadar persegi panjang kaku. Hit-testing `WM_NCHITTEST` menggunakan `Geometry.FillContains` untuk presisi klik tembus di luar area lengkungan.

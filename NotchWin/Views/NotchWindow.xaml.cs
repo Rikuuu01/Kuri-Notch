@@ -15,25 +15,58 @@ namespace NotchWin.Views
     {
         public NotchViewModel ViewModel { get; }
 
-        public static readonly DependencyProperty PillCornerRadiusProperty =
+        public const double EarRadius = 12.0;
+
+        #region Dependency Properties for Smooth Animation
+
+        public static readonly DependencyProperty NotchWidthProperty =
             DependencyProperty.Register(
-                nameof(PillCornerRadius),
+                nameof(NotchWidth),
                 typeof(double),
                 typeof(NotchWindow),
-                new PropertyMetadata(NotchViewModel.CollapsedCornerRadius, (d, e) =>
-                {
-                    if (d is NotchWindow w && w.PillBorder != null)
-                    {
-                        double r = (double)e.NewValue;
-                        w.PillBorder.CornerRadius = new CornerRadius(0, 0, r, r);
-                    }
-                }));
+                new PropertyMetadata(NotchViewModel.CollapsedWidth, OnGeometryChanged));
 
-        public double PillCornerRadius
+        public static readonly DependencyProperty NotchHeightProperty =
+            DependencyProperty.Register(
+                nameof(NotchHeight),
+                typeof(double),
+                typeof(NotchWindow),
+                new PropertyMetadata(NotchViewModel.CollapsedHeight, OnGeometryChanged));
+
+        public static readonly DependencyProperty NotchBottomRadiusProperty =
+            DependencyProperty.Register(
+                nameof(NotchBottomRadius),
+                typeof(double),
+                typeof(NotchWindow),
+                new PropertyMetadata(NotchViewModel.CollapsedCornerRadius, OnGeometryChanged));
+
+        public double NotchWidth
         {
-            get => (double)GetValue(PillCornerRadiusProperty);
-            set => SetValue(PillCornerRadiusProperty, value);
+            get => (double)GetValue(NotchWidthProperty);
+            set => SetValue(NotchWidthProperty, value);
         }
+
+        public double NotchHeight
+        {
+            get => (double)GetValue(NotchHeightProperty);
+            set => SetValue(NotchHeightProperty, value);
+        }
+
+        public double NotchBottomRadius
+        {
+            get => (double)GetValue(NotchBottomRadiusProperty);
+            set => SetValue(NotchBottomRadiusProperty, value);
+        }
+
+        private static void OnGeometryChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is NotchWindow window)
+            {
+                window.UpdateNotchGeometry();
+            }
+        }
+
+        #endregion
 
         public NotchWindow()
         {
@@ -48,6 +81,8 @@ namespace NotchWin.Views
             };
 
             ViewModel.StateAnimationRequested += (_, _) => AnimateToCurrentState();
+
+            UpdateNotchGeometry();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -71,6 +106,135 @@ namespace NotchWin.Views
             Top = 0;
         }
 
+        private void UpdateNotchGeometry()
+        {
+            if (NotchBackgroundPath == null || NotchStrokePath == null || PillContainer == null || ContentHost == null)
+                return;
+
+            double w = NotchWidth;
+            double h = NotchHeight;
+            double earR = EarRadius;
+            double botR = NotchBottomRadius;
+
+            if (w <= 0 || h <= 0) return;
+
+            // Update Geometries
+            NotchBackgroundPath.Data = BuildFillGeometry(w, h, earR, botR);
+            NotchStrokePath.Data = BuildStrokeGeometry(w, h, earR, botR);
+
+            // Container size accommodates the main notch body plus the outward ears on both sides
+            double totalWidth = w + 2.0 * earR;
+            PillContainer.Width = totalWidth;
+            PillContainer.Height = h;
+
+            // Content sits inside the main body
+            ContentHost.Width = w;
+            ContentHost.Height = h;
+
+            // Clip content to body shape with rounded bottom corners
+            ContentHost.Clip = new RectangleGeometry(new Rect(0, 0, w, h), botR, botR);
+        }
+
+        private static Geometry BuildFillGeometry(double bodyWidth, double height, double earRadius, double bottomRadius)
+        {
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+
+                // 1. Left outward ear: concave arc curving from top bezel down to side wall
+                ctx.ArcTo(
+                    new Point(earRadius, earRadius),
+                    new Size(earRadius, earRadius),
+                    0, false, SweepDirection.Clockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 2. Left side wall
+                ctx.LineTo(new Point(earRadius, height - bottomRadius), isStroked: true, isSmoothJoin: true);
+
+                // 3. Bottom-left corner
+                ctx.ArcTo(
+                    new Point(earRadius + bottomRadius, height),
+                    new Size(bottomRadius, bottomRadius),
+                    0, false, SweepDirection.Counterclockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 4. Bottom horizontal edge
+                ctx.LineTo(new Point(earRadius + bodyWidth - bottomRadius, height), isStroked: true, isSmoothJoin: true);
+
+                // 5. Bottom-right corner
+                ctx.ArcTo(
+                    new Point(earRadius + bodyWidth, height - bottomRadius),
+                    new Size(bottomRadius, bottomRadius),
+                    0, false, SweepDirection.Counterclockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 6. Right side wall
+                ctx.LineTo(new Point(earRadius + bodyWidth, earRadius), isStroked: true, isSmoothJoin: true);
+
+                // 7. Right outward ear: concave arc curving up to top bezel
+                ctx.ArcTo(
+                    new Point(bodyWidth + 2.0 * earRadius, 0),
+                    new Size(earRadius, earRadius),
+                    0, false, SweepDirection.Clockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 8. Top edge along screen bezel (flush)
+                ctx.LineTo(new Point(0, 0), isStroked: false, isSmoothJoin: true);
+            }
+            geometry.Freeze();
+            return geometry;
+        }
+
+        private static Geometry BuildStrokeGeometry(double bodyWidth, double height, double earRadius, double bottomRadius)
+        {
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                // Stroke is open along the top bezel so the black color fuses into the physical monitor bezel
+                ctx.BeginFigure(new Point(0, 0), isFilled: false, isClosed: false);
+
+                // 1. Left outward ear
+                ctx.ArcTo(
+                    new Point(earRadius, earRadius),
+                    new Size(earRadius, earRadius),
+                    0, false, SweepDirection.Clockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 2. Left side wall
+                ctx.LineTo(new Point(earRadius, height - bottomRadius), isStroked: true, isSmoothJoin: true);
+
+                // 3. Bottom-left corner
+                ctx.ArcTo(
+                    new Point(earRadius + bottomRadius, height),
+                    new Size(bottomRadius, bottomRadius),
+                    0, false, SweepDirection.Counterclockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 4. Bottom edge
+                ctx.LineTo(new Point(earRadius + bodyWidth - bottomRadius, height), isStroked: true, isSmoothJoin: true);
+
+                // 5. Bottom-right corner
+                ctx.ArcTo(
+                    new Point(earRadius + bodyWidth, height - bottomRadius),
+                    new Size(bottomRadius, bottomRadius),
+                    0, false, SweepDirection.Counterclockwise, isStroked: true, isSmoothJoin: true
+                );
+
+                // 6. Right side wall
+                ctx.LineTo(new Point(earRadius + bodyWidth, earRadius), isStroked: true, isSmoothJoin: true);
+
+                // 7. Right outward ear
+                ctx.ArcTo(
+                    new Point(bodyWidth + 2.0 * earRadius, 0),
+                    new Size(earRadius, earRadius),
+                    0, false, SweepDirection.Clockwise, isStroked: true, isSmoothJoin: true
+                );
+            }
+            geometry.Freeze();
+            return geometry;
+        }
+
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == NativeMethods.WM_MOUSEACTIVATE)
@@ -81,7 +245,7 @@ namespace NotchWin.Views
 
             if (msg == NativeMethods.WM_NCHITTEST)
             {
-                if (PillBorder != null && IsLoaded)
+                if (PillContainer != null && IsLoaded && NotchBackgroundPath?.Data != null)
                 {
                     try
                     {
@@ -90,10 +254,10 @@ namespace NotchWin.Views
                         Point screenPt = new Point(x, y);
                         Point windowPt = PointFromScreen(screenPt);
 
-                        GeneralTransform transform = PillBorder.TransformToVisual(this);
-                        Rect pillRect = transform.TransformBounds(new Rect(0, 0, PillBorder.ActualWidth, PillBorder.ActualHeight));
+                        double containerLeft = (Width - PillContainer.ActualWidth) / 2.0;
+                        Point localPt = new Point(windowPt.X - containerLeft, windowPt.Y);
 
-                        if (pillRect.Contains(windowPt))
+                        if (NotchBackgroundPath.Data.FillContains(localPt))
                         {
                             handled = true;
                             return new IntPtr(NativeMethods.HTCLIENT);
@@ -126,15 +290,19 @@ namespace NotchWin.Views
             var duration = TimeSpan.FromMilliseconds(isExpanding ? 320 : 250);
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
+            // 1. Animate Width
             var widthAnim = new DoubleAnimation(targetW, duration) { EasingFunction = ease };
-            PillBorder.BeginAnimation(WidthProperty, widthAnim);
+            BeginAnimation(NotchWidthProperty, widthAnim);
 
+            // 2. Animate Height
             var heightAnim = new DoubleAnimation(targetH, duration) { EasingFunction = ease };
-            PillBorder.BeginAnimation(HeightProperty, heightAnim);
+            BeginAnimation(NotchHeightProperty, heightAnim);
 
+            // 3. Animate Bottom Corner Radius
             var cornerAnim = new DoubleAnimation(targetR, duration) { EasingFunction = ease };
-            this.BeginAnimation(PillCornerRadiusProperty, cornerAnim);
+            BeginAnimation(NotchBottomRadiusProperty, cornerAnim);
 
+            // 4. Smooth content crossfade
             if (isExpanding)
             {
                 var fadeOutCollapsed = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(100));

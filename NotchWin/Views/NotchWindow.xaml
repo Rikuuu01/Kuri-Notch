@@ -30,31 +30,38 @@
     </Window.Resources>
 
     <Grid Background="{x:Null}">
-        <!-- The Pill / Dynamic Island Container -->
-        <Border x:Name="PillBorder"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Margin="0,0,0,0"
-                Width="190"
-                Height="32"
-                CornerRadius="0,0,16,16"
-                Background="#0C0C0E"
-                BorderBrush="#2A2A30"
-                BorderThickness="1,0,1,1"
-                SnapsToDevicePixels="True"
-                ClipToBounds="True"
-                Cursor="Hand"
-                ContextMenu="{StaticResource PillContextMenu}"
-                MouseEnter="PillBorder_MouseEnter"
-                MouseLeave="PillBorder_MouseLeave"
-                MouseLeftButtonDown="PillBorder_MouseLeftButtonDown">
+        <!-- The Pill Container with dynamic geometry for outward top ears -->
+        <Grid x:Name="PillContainer"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              ContextMenu="{StaticResource PillContextMenu}"
+              Cursor="Hand"
+              MouseEnter="PillBorder_MouseEnter"
+              MouseLeave="PillBorder_MouseLeave"
+              MouseLeftButtonDown="PillBorder_MouseLeftButtonDown">
 
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Opacity="0.6" Color="#000000"/>
-            </Border.Effect>
+            <!-- 1. Background Filled Path with DropShadow -->
+            <Path x:Name="NotchBackgroundPath"
+                  Fill="#0C0C0E"
+                  SnapsToDevicePixels="True">
+                <Path.Effect>
+                    <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Opacity="0.55" Color="#000000"/>
+                </Path.Effect>
+            </Path>
 
-            <Grid>
-                <!-- 1. COLLAPSED CONTENT -->
+            <!-- 2. Subtle Outer Border Stroke (only left, bottom, right; top bezel has no border) -->
+            <Path x:Name="NotchStrokePath"
+                  Stroke="#2A2A30"
+                  StrokeThickness="1"
+                  SnapsToDevicePixels="True"/>
+
+            <!-- 3. Notch Content Host: Centered within the main body -->
+            <Grid x:Name="ContentHost"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Top"
+                  ClipToBounds="True">
+
+                <!-- COLLAPSED CONTENT -->
                 <Grid x:Name="CollapsedContentGrid" Opacity="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -84,16 +91,16 @@
                                HorizontalAlignment="Center" 
                                VerticalAlignment="Center"/>
 
-                    <!-- Right: Minimal Pill Pill Dot / Icon -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <!-- Right: Minimal Pill Dot Indicators -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
                         <Border Width="4" Height="4" CornerRadius="2" Background="#71717A" Margin="0,0,3,0"/>
                         <Border Width="4" Height="4" CornerRadius="2" Background="#71717A" Margin="0,0,3,0"/>
                         <Border Width="4" Height="4" CornerRadius="2" Background="#10B981"/>
                     </StackPanel>
                 </Grid>
 
-                <!-- 2. EXPANDED CONTENT -->
-                <Grid x:Name="ExpandedContentGrid" Opacity="0" Visibility="Collapsed" Margin="14,12,14,12">
+                <!-- EXPANDED CONTENT -->
+                <Grid x:Name="ExpandedContentGrid" Opacity="0" Visibility="Collapsed" Margin="16,12,16,12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -120,7 +127,7 @@
                         </Border>
                     </Grid>
 
-                    <!-- Middle: Preview Card (Prepared for Media / System Widgets) -->
+                    <!-- Middle: Preview Card -->
                     <Border Grid.Row="1" Background="#18181B" CornerRadius="12" BorderBrush="#27272A" BorderThickness="1" Padding="10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -128,17 +135,14 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <!-- Placeholder Artwork / Icon -->
                             <Border Grid.Column="0" Width="48" Height="48" CornerRadius="8" Background="#27272A" Margin="0,0,12,0">
                                 <TextBlock Text="🎵" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
 
-                            <!-- Track Info Mockup -->
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Media Widget Siap di Fase 2" Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="Hover &amp; Animasi Berhasil!" Foreground="#A1A1AA" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock Text="Lengkungan Bezel Apple Sempurna" Foreground="#A1A1AA" FontSize="11" Margin="0,2,0,0"/>
                                 
-                                <!-- Mini Progress Bar Preview -->
                                 <Border Height="3" Background="#3F3F46" CornerRadius="1.5" Margin="0,6,0,0">
                                     <Border HorizontalAlignment="Left" Width="70" Background="#3B82F6" CornerRadius="1.5"/>
                                 </Border>
@@ -152,6 +156,6 @@
                     </Grid>
                 </Grid>
             </Grid>
-        </Border>
+        </Grid>
     </Grid>
 </Window>
