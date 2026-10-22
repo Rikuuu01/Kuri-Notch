@@ -34,13 +34,13 @@
         <Border x:Name="PillBorder"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Margin="0,8,0,0"
+                Margin="0,0,0,0"
                 Width="190"
-                Height="34"
-                CornerRadius="17"
+                Height="32"
+                CornerRadius="0,0,16,16"
                 Background="#0C0C0E"
                 BorderBrush="#2A2A30"
-                BorderThickness="1"
+                BorderThickness="1,0,1,1"
                 SnapsToDevicePixels="True"
                 ClipToBounds="True"
                 Cursor="Hand"
@@ -50,7 +50,7 @@
                 MouseLeftButtonDown="PillBorder_MouseLeftButtonDown">
 
             <Border.Effect>
-                <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.5" Color="#000000"/>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="4" Direction="270" Opacity="0.6" Color="#000000"/>
             </Border.Effect>
 
             <Grid>

@@ -24,7 +24,8 @@ namespace NotchWin.Views
                 {
                     if (d is NotchWindow w && w.PillBorder != null)
                     {
-                        w.PillBorder.CornerRadius = new CornerRadius((double)e.NewValue);
+                        double r = (double)e.NewValue;
+                        w.PillBorder.CornerRadius = new CornerRadius(0, 0, r, r);
                     }
                 }));
 

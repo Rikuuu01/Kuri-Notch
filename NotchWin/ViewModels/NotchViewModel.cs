@@ -12,12 +12,13 @@ namespace NotchWin.ViewModels
     {
         // Default geometry constants (will later be configurable via AppSettings)
         public const double CollapsedWidth = 190.0;
-        public const double CollapsedHeight = 34.0;
+        public const double CollapsedHeight = 32.0;
         public const double ExpandedWidth = 380.0;
         public const double ExpandedHeight = 150.0;
 
-        public const double CollapsedCornerRadius = 17.0; // Half of height for pill shape
-        public const double ExpandedCornerRadius = 24.0;
+        // Radius for bottom-left and bottom-right corners (top is flush against bezel)
+        public const double CollapsedCornerRadius = 16.0;
+        public const double ExpandedCornerRadius = 22.0;
 
         private CancellationTokenSource? _collapseCts;
         private readonly TimeSpan _collapseDelay = TimeSpan.FromMilliseconds(450);

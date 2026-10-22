@@ -21,3 +21,7 @@ Dokumen ini mencatat keputusan teknis, arsitektur, dan desain yang diambil selam
 #### Keputusan 4: Animasi Easing dan Corner Radius
 - **Pilihan**: Menggunakan `CubicEase` (EaseOut untuk expand, EaseIn/EaseOut untuk collapse) pada `Width`, `Height`, dan `CornerRadius`.
 - **Alasan**: Memberikan sensasi gerak fluida dan organik yang mirip dengan Dynamic Island, dengan transisi konten fade-in yang tertunda agar konten tidak terpotong saat transisi ukuran berlangsung.
+
+#### Keputusan 5: Penyesuaian Bentuk Notch Menempel Tepi Atas Layar (Top Bezel Hugging)
+- **Pilihan**: Menghilangkan margin atas (`Margin="0,0,0,0"`), menghilangkan border atas (`BorderThickness="1,0,1,1"`), dan menerapkan sudut melengkung hanya pada kedua sudut bawah (`CornerRadius="0,0,16,16"` saat collapsed dan `"0,0,22,22"` saat expanded).
+- **Alasan**: Sesuai preferensi pengguna agar tampilan notch benar-benar menyatu dan keluar langsung dari bezel fisik atas monitor seperti notch bawaan laptop modern, dengan lengkungan bawah yang rapi dan elegan tanpa celah kosong di tepi atas.
