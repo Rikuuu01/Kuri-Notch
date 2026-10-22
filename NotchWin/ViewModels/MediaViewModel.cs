@@ -32,16 +32,35 @@ namespace NotchWin.ViewModels
         private bool _hasMedia;
 
         [ObservableProperty]
+        private bool _isSeeking;
+
+        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(FormattedTime))]
         [NotifyPropertyChangedFor(nameof(ProgressPercentage))]
+        [NotifyPropertyChangedFor(nameof(PositionSeconds))]
         private TimeSpan _position = TimeSpan.Zero;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(FormattedTime))]
         [NotifyPropertyChangedFor(nameof(ProgressPercentage))]
+        [NotifyPropertyChangedFor(nameof(DurationTotalSeconds))]
         private TimeSpan _duration = TimeSpan.Zero;
 
         public string PlayPauseIcon => IsPlaying ? "⏸" : "▶";
+
+        public double PositionSeconds
+        {
+            get => Position.TotalSeconds;
+            set
+            {
+                if (Math.Abs(Position.TotalSeconds - value) > 0.5)
+                {
+                    Position = TimeSpan.FromSeconds(value);
+                }
+            }
+        }
+
+        public double DurationTotalSeconds => Duration.TotalSeconds > 0 ? Duration.TotalSeconds : 100.0;
 
         public double ProgressPercentage
         {
@@ -87,10 +106,14 @@ namespace NotchWin.ViewModels
                 Artist = track.Artist;
                 Thumbnail = track.Thumbnail;
                 IsPlaying = track.IsPlaying;
-                Position = track.Position;
-                Duration = track.Duration;
-                HasMedia = track.HasMedia;
 
+                if (!IsSeeking)
+                {
+                    Position = track.Position;
+                    Duration = track.Duration;
+                }
+
+                HasMedia = track.HasMedia;
                 UpdateTimerState();
             });
         }
@@ -106,7 +129,7 @@ namespace NotchWin.ViewModels
 
         private void OnTimelineTimerTick(object? sender, EventArgs e)
         {
-            if (IsPlaying && HasMedia && Duration > TimeSpan.Zero)
+            if (!IsSeeking && IsPlaying && HasMedia && Duration > TimeSpan.Zero)
             {
                 if (Position < Duration)
                 {
@@ -149,6 +172,14 @@ namespace NotchWin.ViewModels
         public async Task SkipPreviousAsync()
         {
             await _mediaService.SkipPreviousAsync();
+        }
+
+        [RelayCommand]
+        public async Task SeekToSecondsAsync(double seconds)
+        {
+            var target = TimeSpan.FromSeconds(seconds);
+            Position = target;
+            await _mediaService.SeekToAsync(target);
         }
     }
 }

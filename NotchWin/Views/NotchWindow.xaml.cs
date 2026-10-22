@@ -82,6 +82,14 @@ namespace NotchWin.Views
 
             ViewModel.StateAnimationRequested += (_, _) => AnimateToCurrentState();
 
+            ViewModel.Media.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(MediaViewModel.IsPlaying))
+                {
+                    Dispatcher.Invoke(() => UpdateVisualizerAnimation(ViewModel.Media.IsPlaying));
+                }
+            };
+
             UpdateNotchGeometry();
         }
 
@@ -366,5 +374,70 @@ namespace NotchWin.Views
                 Close();
             }
         }
+
+        #region 5-Band Equalizer Visualizer Animation
+
+        private void UpdateVisualizerAnimation(bool isPlaying)
+        {
+            if (EqBar1 == null || EqBar2 == null || EqBar3 == null || EqBar4 == null || EqBar5 == null)
+                return;
+
+            if (isPlaying)
+            {
+                AnimateBar(EqBar1, 3, 11, 350);
+                AnimateBar(EqBar2, 4, 15, 420);
+                AnimateBar(EqBar3, 3, 12, 280);
+                AnimateBar(EqBar4, 4, 16, 480);
+                AnimateBar(EqBar5, 3, 9, 330);
+            }
+            else
+            {
+                StopVisualizerBar(EqBar1);
+                StopVisualizerBar(EqBar2);
+                StopVisualizerBar(EqBar3);
+                StopVisualizerBar(EqBar4);
+                StopVisualizerBar(EqBar5);
+            }
+        }
+
+        private void AnimateBar(FrameworkElement bar, double from, double to, int durationMs)
+        {
+            var anim = new DoubleAnimation
+            {
+                From = from,
+                To = to,
+                Duration = TimeSpan.FromMilliseconds(durationMs),
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+            bar.BeginAnimation(HeightProperty, anim);
+        }
+
+        private void StopVisualizerBar(FrameworkElement bar)
+        {
+            var stopAnim = new DoubleAnimation(3.0, TimeSpan.FromMilliseconds(200));
+            bar.BeginAnimation(HeightProperty, stopAnim);
+        }
+
+        #endregion
+
+        #region Interactive Seekbar Slider Handling
+
+        private void MediaSeekSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            ViewModel.Media.IsSeeking = true;
+        }
+
+        private void MediaSeekSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            ViewModel.Media.IsSeeking = false;
+            if (MediaSeekSlider != null)
+            {
+                _ = ViewModel.Media.SeekToSecondsAsync(MediaSeekSlider.Value);
+            }
+        }
+
+        #endregion
     }
 }

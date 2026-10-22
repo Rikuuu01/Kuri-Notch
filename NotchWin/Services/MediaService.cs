@@ -80,18 +80,22 @@ namespace NotchWin.Services
 
             try
             {
-                // Prefer the current session identified by Windows
                 candidate = _sessionManager.GetCurrentSession();
+                var info = candidate?.GetPlaybackInfo();
 
-                // If no current session, pick a session that is actively playing
-                if (candidate == null)
+                // If candidate is closed or stopped, look through all sessions for one that is currently active/playing
+                if (info == null ||
+                    info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed ||
+                    info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped)
                 {
                     var sessions = _sessionManager.GetSessions();
                     candidate = sessions.FirstOrDefault(s =>
                     {
-                        var info = s.GetPlaybackInfo();
-                        return info?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-                    }) ?? sessions.FirstOrDefault();
+                        var pi = s.GetPlaybackInfo();
+                        return pi != null &&
+                               pi.PlaybackStatus != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed &&
+                               pi.PlaybackStatus != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped;
+                    });
                 }
             }
             catch (Exception ex)
@@ -172,7 +176,19 @@ namespace NotchWin.Services
             try
             {
                 var playbackInfo = session.GetPlaybackInfo();
-                bool isPlaying = playbackInfo?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+
+                // If the session playback is closed or stopped, reset track to Empty
+                if (playbackInfo == null ||
+                    playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed ||
+                    playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped)
+                {
+                    CurrentTrack = MediaTrackInfo.Empty;
+                    MediaTrackChanged?.Invoke(this, CurrentTrack);
+                    PlaybackStateChanged?.Invoke(this, false);
+                    return;
+                }
+
+                bool isPlaying = playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
 
                 GlobalSystemMediaTransportControlsSessionMediaProperties? props = null;
                 try
@@ -293,6 +309,23 @@ namespace NotchWin.Services
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "Failed to skip previous via SMTC");
+                }
+            }
+        }
+
+        public async Task SeekToAsync(TimeSpan position)
+        {
+            GlobalSystemMediaTransportControlsSession? session;
+            lock (_lock) { session = _currentSession; }
+            if (session != null)
+            {
+                try
+                {
+                    await session.TryChangePlaybackPositionAsync(position.Ticks);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to seek playback position via SMTC");
                 }
             }
         }

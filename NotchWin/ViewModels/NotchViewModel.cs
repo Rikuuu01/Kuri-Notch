@@ -47,6 +47,7 @@ namespace NotchWin.ViewModels
 
         private readonly IMediaService _mediaService;
         public MediaViewModel Media { get; }
+        private bool _lastHadMedia;
 
         public event EventHandler? RequestCloseEvent;
         public event EventHandler? StateAnimationRequested;
@@ -59,7 +60,11 @@ namespace NotchWin.ViewModels
             {
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    if (CurrentState == NotchState.Collapsed)
+                    bool hadMedia = _lastHadMedia;
+                    _lastHadMedia = track.HasMedia;
+
+                    // Only animate collapsed width if active media presence actually changed
+                    if (CurrentState == NotchState.Collapsed && hadMedia != track.HasMedia)
                     {
                         UpdateGeometryForState(NotchState.Collapsed);
                         StateAnimationRequested?.Invoke(this, EventArgs.Empty);

@@ -75,18 +75,62 @@
             </Setter>
         </Style>
 
-        <!-- Custom Thin Progress Bar Style -->
-        <Style x:Key="NotchProgressBarStyle" TargetType="ProgressBar">
+        <!-- Interactive Sleek Seekbar Slider Style -->
+        <Style x:Key="NotchSeekbarSliderStyle" TargetType="Slider">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="False"/>
             <Setter Property="Background" Value="#27272A"/>
             <Setter Property="Foreground" Value="#3B82F6"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Height" Value="3"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="ProgressBar">
-                        <Grid>
-                            <Border Background="{TemplateBinding Background}" CornerRadius="1.5"/>
-                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" CornerRadius="1.5"/>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center">
+                            <!-- Background Track -->
+                            <Border Height="4" Background="{TemplateBinding Background}" CornerRadius="2"/>
+                            <!-- Track Fill & Draggable Thumb -->
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" Background="#3B82F6" CornerRadius="2"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="4" Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="thumbBorder" Width="8" Height="8" CornerRadius="4" Background="#FFFFFF">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect BlurRadius="4" ShadowDepth="1" Color="#000000" Opacity="0.5"/>
+                                                    </Border.Effect>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="thumbBorder" Property="Width" Value="12"/>
+                                                        <Setter TargetName="thumbBorder" Property="Height" Value="12"/>
+                                                        <Setter TargetName="thumbBorder" Property="CornerRadius" Value="6"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
@@ -190,16 +234,20 @@
                                    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
                                    FontSize="11" 
                                    FontWeight="SemiBold" 
-                                   TextTrimming="CharacterEllipsis"
-                                   Margin="8,0,8,0"
+                                   TextTrimming="CharacterEllipsis" 
+                                   Margin="8,0,8,0" 
                                    VerticalAlignment="Center"/>
 
-                        <!-- Right: Mini Visualizer / Wave bars -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Border Width="3" Height="8" CornerRadius="1.5" Background="#10B981" Margin="0,0,2,0"/>
-                            <Border Width="3" Height="13" CornerRadius="1.5" Background="#10B981" Margin="0,0,2,0"/>
-                            <Border Width="3" Height="6" CornerRadius="1.5" Background="#10B981"/>
-                        </StackPanel>
+                        <!-- Right: Live 5-Band Animated Visualizer -->
+                        <Grid Grid.Column="2" Height="16" VerticalAlignment="Center" Margin="0,0,2,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                                <Border x:Name="EqBar1" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
+                                <Border x:Name="EqBar2" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
+                                <Border x:Name="EqBar3" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
+                                <Border x:Name="EqBar4" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
+                                <Border x:Name="EqBar5" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Grid>
 
@@ -231,7 +279,7 @@
                         </Border>
                     </Grid>
 
-                    <!-- Row 1: Player Card (Artwork + Track Details + Progress) -->
+                    <!-- Row 1: Player Card (Artwork + Track Details + Interactive Seekbar) -->
                     <Border Grid.Row="1" Background="#16161A" CornerRadius="10" BorderBrush="#26262B" BorderThickness="1" Padding="10,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -248,7 +296,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Title, Artist, & Timeline -->
+                            <!-- Title, Artist, & Interactive Seekbar -->
                             <Grid Grid.Column="1" VerticalAlignment="Center">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -270,19 +318,24 @@
                                            Foreground="#A1A1AA" 
                                            FontSize="11" 
                                            TextTrimming="CharacterEllipsis" 
-                                           Margin="0,2,0,6"/>
+                                           Margin="0,2,0,4"/>
 
-                                <!-- Progress Bar & Time -->
+                                <!-- Interactive Seekbar Slider -->
                                 <Grid Grid.Row="2">
-                                    <ProgressBar Style="{StaticResource NotchProgressBarStyle}" 
-                                                 Value="{Binding Media.ProgressPercentage, Mode=OneWay}" 
-                                                 VerticalAlignment="Center"/>
+                                    <Slider x:Name="MediaSeekSlider"
+                                            Style="{StaticResource NotchSeekbarSliderStyle}"
+                                            Minimum="0"
+                                            Maximum="{Binding Media.DurationTotalSeconds}"
+                                            Value="{Binding Media.PositionSeconds, Mode=TwoWay}"
+                                            PreviewMouseDown="MediaSeekSlider_PreviewMouseDown"
+                                            PreviewMouseUp="MediaSeekSlider_PreviewMouseUp"
+                                            VerticalAlignment="Center"/>
                                 </Grid>
                             </Grid>
                         </Grid>
                     </Border>
 
-                    <!-- Row 2: Control Buttons Row (Previous, Play/Pause, Next) -->
+                    <!-- Row 2: Control Buttons Row (Previous, Play/Pause, Next + Formatted Duration) -->
                     <Grid Grid.Row="2" Margin="0,8,0,0">
                         <!-- Playback Controls -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">

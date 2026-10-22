@@ -15,5 +15,6 @@ namespace NotchWin.Services
         Task TogglePlayPauseAsync();
         Task SkipNextAsync();
         Task SkipPreviousAsync();
+        Task SeekToAsync(TimeSpan position);
     }
 }
