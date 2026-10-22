@@ -5,6 +5,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NotchWin.Models;
+using NotchWin.Services;
 
 namespace NotchWin.ViewModels
 {
@@ -44,11 +45,29 @@ namespace NotchWin.ViewModels
         [ObservableProperty]
         private string _statusText = "NotchWin";
 
+        private readonly IMediaService _mediaService;
+        public MediaViewModel Media { get; }
+
         public event EventHandler? RequestCloseEvent;
         public event EventHandler? StateAnimationRequested;
 
-        public NotchViewModel()
+        public NotchViewModel(IMediaService? mediaService = null)
         {
+            _mediaService = mediaService ?? new MediaService();
+            Media = new MediaViewModel(_mediaService);
+            _mediaService.MediaTrackChanged += (s, track) =>
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (CurrentState == NotchState.Collapsed)
+                    {
+                        UpdateGeometryForState(NotchState.Collapsed);
+                        StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+                    }
+                });
+            };
+
+            _ = _mediaService.InitializeAsync();
             UpdateGeometryForState(NotchState.Collapsed);
         }
 
@@ -177,7 +196,8 @@ namespace NotchWin.ViewModels
             }
             else
             {
-                TargetWidth = CollapsedWidth;
+                // Slightly wider (215px) when media is active to comfortably display album art, title, and visualizer
+                TargetWidth = Media?.HasMedia == true ? 215.0 : CollapsedWidth;
                 TargetHeight = CollapsedHeight;
                 TargetCornerRadius = CollapsedCornerRadius;
             }

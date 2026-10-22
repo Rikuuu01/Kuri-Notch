@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:NotchWin.ViewModels"
+        xmlns:converters="clr-namespace:NotchWin.Converters"
         mc:Ignorable="d"
         Title="NotchWin"
         Width="440"
@@ -18,6 +19,80 @@
         WindowStartupLocation="Manual"
         KeyDown="Window_KeyDown"
         Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+
+        <!-- Sleek Dark Control Button Style -->
+        <Style x:Key="MediaControlButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#222226"/>
+            <Setter Property="Foreground" Value="#E4E4E7"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="16" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#33333A"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#44444E"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Accent Primary Play/Pause Button Style -->
+        <Style x:Key="MediaPlayPauseButtonStyle" TargetType="Button" BasedOn="{StaticResource MediaControlButtonStyle}">
+            <Setter Property="Background" Value="#3B82F6"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="18" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#60A5FA"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom Thin Progress Bar Style -->
+        <Style x:Key="NotchProgressBarStyle" TargetType="ProgressBar">
+            <Setter Property="Background" Value="#27272A"/>
+            <Setter Property="Foreground" Value="#3B82F6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="1.5"/>
+                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" CornerRadius="1.5"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid Background="{x:Null}">
         <!-- The Pill Container with dynamic geometry for outward top ears -->
@@ -50,98 +125,195 @@
                   VerticalAlignment="Top"
                   ClipToBounds="True">
 
-                <!-- COLLAPSED CONTENT -->
+                <!-- 1. COLLAPSED CONTENT (Height ~32) -->
                 <Grid x:Name="CollapsedContentGrid" Opacity="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
 
-                    <!-- Left: Glowing Active Dot Indicator -->
-                    <Border Grid.Column="0" 
-                            Width="8" Height="8" 
-                            CornerRadius="4" 
-                            Background="#10B981" 
-                            Margin="14,0,0,0" 
-                            VerticalAlignment="Center">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="#10B981" Opacity="0.8"/>
-                        </Border.Effect>
-                    </Border>
+                    <!-- A) DEFAULT VIEW (when NO active media) -->
+                    <Grid Visibility="{Binding Media.HasMedia, Converter={StaticResource InverseBoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Center: Notch Title / Status -->
-                    <TextBlock Grid.Column="1" 
-                               Text="NotchWin" 
-                               Foreground="#FAFAFA" 
-                               FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
-                               FontSize="12" 
-                               FontWeight="SemiBold" 
-                               HorizontalAlignment="Center" 
-                               VerticalAlignment="Center"/>
+                        <!-- Left: Glowing Active Dot Indicator -->
+                        <Border Grid.Column="0" 
+                                Width="8" Height="8" 
+                                CornerRadius="4" 
+                                Background="#10B981" 
+                                Margin="14,0,0,0" 
+                                VerticalAlignment="Center">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="#10B981" Opacity="0.8"/>
+                            </Border.Effect>
+                        </Border>
 
-                    <!-- Right: Minimal Pill Dot Indicators -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
-                        <Border Width="4" Height="4" CornerRadius="2" Background="#71717A" Margin="0,0,3,0"/>
-                        <Border Width="4" Height="4" CornerRadius="2" Background="#71717A" Margin="0,0,3,0"/>
-                        <Border Width="4" Height="4" CornerRadius="2" Background="#10B981"/>
-                    </StackPanel>
+                        <!-- Center: Notch Title / Status -->
+                        <TextBlock Grid.Column="1" 
+                                   Text="NotchWin" 
+                                   Foreground="#FAFAFA" 
+                                   FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
+                                   FontSize="12" 
+                                   FontWeight="SemiBold" 
+                                   HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"/>
+
+                        <!-- Right: Minimal Pill Dot Indicators -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
+                            <Border Width="4" Height="4" CornerRadius="2" Background="#71717A" Margin="0,0,3,0"/>
+                            <Border Width="4" Height="4" CornerRadius="2" Background="#71717A" Margin="0,0,3,0"/>
+                            <Border Width="4" Height="4" CornerRadius="2" Background="#10B981"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- B) ACTIVE MEDIA COLLAPSED VIEW (when playing music/video) -->
+                    <Grid Visibility="{Binding Media.HasMedia, Converter={StaticResource BoolToVis}}" Margin="10,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Mini Cover Artwork / Music icon -->
+                        <Border Grid.Column="0" Width="18" Height="18" CornerRadius="4" ClipToBounds="True" Background="#1E1E22" VerticalAlignment="Center">
+                            <Grid>
+                                <Image Source="{Binding Media.Thumbnail}" Stretch="UniformToFill"/>
+                                <TextBlock Text="🎵" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding Media.Thumbnail, Converter={StaticResource InverseBoolToVis}}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Center: Song Title -->
+                        <TextBlock Grid.Column="1" 
+                                   Text="{Binding Media.Title}" 
+                                   Foreground="#F4F4F5" 
+                                   FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
+                                   FontSize="11" 
+                                   FontWeight="SemiBold" 
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="8,0,8,0"
+                                   VerticalAlignment="Center"/>
+
+                        <!-- Right: Mini Visualizer / Wave bars -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="3" Height="8" CornerRadius="1.5" Background="#10B981" Margin="0,0,2,0"/>
+                            <Border Width="3" Height="13" CornerRadius="1.5" Background="#10B981" Margin="0,0,2,0"/>
+                            <Border Width="3" Height="6" CornerRadius="1.5" Background="#10B981"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
 
-                <!-- EXPANDED CONTENT -->
-                <Grid x:Name="ExpandedContentGrid" Opacity="0" Visibility="Collapsed" Margin="16,12,16,12">
+                <!-- 2. EXPANDED CONTENT (Height ~150) -->
+                <Grid x:Name="ExpandedContentGrid" Opacity="0" Visibility="Collapsed" Margin="16,10,16,10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Header Row -->
+                    <!-- Row 0: Header with App ID / Live Badge -->
                     <Grid Grid.Row="0" Margin="0,0,0,8">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Border Width="8" Height="8" CornerRadius="4" Background="#3B82F6" Margin="0,0,8,0">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#10B981" Margin="0,0,8,0">
                                 <Border.Effect>
-                                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="#3B82F6" Opacity="0.9"/>
+                                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="#10B981" Opacity="0.9"/>
                                 </Border.Effect>
                             </Border>
-                            <TextBlock Text="Dynamic Notch" 
-                                       Foreground="#F4F4F5" 
+                            <TextBlock Text="🎵 Sekarang Memutar" 
+                                       Foreground="#E4E4E7" 
                                        FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
-                                       FontSize="12" 
-                                       FontWeight="Bold"/>
+                                       FontSize="11" 
+                                       FontWeight="SemiBold"/>
                         </StackPanel>
 
-                        <Border HorizontalAlignment="Right" Background="#27272A" CornerRadius="10" Padding="8,2">
-                            <TextBlock Text="MVP Fase 1" Foreground="#A1A1AA" FontSize="10" FontWeight="Medium"/>
+                        <Border HorizontalAlignment="Right" Background="#222226" CornerRadius="10" Padding="8,2">
+                            <TextBlock Text="{Binding Media.PlayPauseIcon}" Foreground="#A1A1AA" FontSize="9" FontWeight="Medium"/>
                         </Border>
                     </Grid>
 
-                    <!-- Middle: Preview Card -->
-                    <Border Grid.Row="1" Background="#18181B" CornerRadius="12" BorderBrush="#27272A" BorderThickness="1" Padding="10">
+                    <!-- Row 1: Player Card (Artwork + Track Details + Progress) -->
+                    <Border Grid.Row="1" Background="#16161A" CornerRadius="10" BorderBrush="#26262B" BorderThickness="1" Padding="10,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="8" Background="#27272A" Margin="0,0,12,0">
-                                <TextBlock Text="🎵" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <!-- Large Album Artwork (56x56) -->
+                            <Border Grid.Column="0" Width="56" Height="56" CornerRadius="8" Background="#222226" ClipToBounds="True" Margin="0,0,12,0" VerticalAlignment="Center">
+                                <Grid>
+                                    <Image Source="{Binding Media.Thumbnail}" Stretch="UniformToFill"/>
+                                    <TextBlock Text="🎵" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Visibility="{Binding Media.Thumbnail, Converter={StaticResource InverseBoolToVis}}"/>
+                                </Grid>
                             </Border>
 
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="Media Widget Siap di Fase 2" Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="Lengkungan Bezel Apple Sempurna" Foreground="#A1A1AA" FontSize="11" Margin="0,2,0,0"/>
-                                
-                                <Border Height="3" Background="#3F3F46" CornerRadius="1.5" Margin="0,6,0,0">
-                                    <Border HorizontalAlignment="Left" Width="70" Background="#3B82F6" CornerRadius="1.5"/>
-                                </Border>
-                            </StackPanel>
+                            <!-- Title, Artist, & Timeline -->
+                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Title -->
+                                <TextBlock Grid.Row="0" 
+                                           Text="{Binding Media.Title, FallbackValue='Tidak ada media yang diputar'}" 
+                                           Foreground="#FFFFFF" 
+                                           FontSize="13" 
+                                           FontWeight="Bold" 
+                                           TextTrimming="CharacterEllipsis"/>
+
+                                <!-- Artist -->
+                                <TextBlock Grid.Row="1" 
+                                           Text="{Binding Media.Artist, FallbackValue='Mulai putar lagu di Spotify atau YouTube'}" 
+                                           Foreground="#A1A1AA" 
+                                           FontSize="11" 
+                                           TextTrimming="CharacterEllipsis" 
+                                           Margin="0,2,0,6"/>
+
+                                <!-- Progress Bar & Time -->
+                                <Grid Grid.Row="2">
+                                    <ProgressBar Style="{StaticResource NotchProgressBarStyle}" 
+                                                 Value="{Binding Media.ProgressPercentage, Mode=OneWay}" 
+                                                 VerticalAlignment="Center"/>
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </Border>
 
-                    <!-- Footer: Shortcuts info -->
+                    <!-- Row 2: Control Buttons Row (Previous, Play/Pause, Next) -->
                     <Grid Grid.Row="2" Margin="0,8,0,0">
-                        <TextBlock Text="Klik untuk Kunci Terbuka / Tutup • Tekan Esc untuk Keluar" Foreground="#71717A" FontSize="10" HorizontalAlignment="Center"/>
+                        <!-- Playback Controls -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <!-- Previous -->
+                            <Button Style="{StaticResource MediaControlButtonStyle}" 
+                                    Content="⏮" 
+                                    Width="36" Height="30" 
+                                    Command="{Binding Media.SkipPreviousCommand}"
+                                    ToolTip="Lagu Sebelumnya"/>
+
+                            <!-- Play / Pause -->
+                            <Button Style="{StaticResource MediaPlayPauseButtonStyle}" 
+                                    Content="{Binding Media.PlayPauseIcon}" 
+                                    Width="44" Height="32" 
+                                    Margin="12,0"
+                                    Command="{Binding Media.TogglePlayPauseCommand}"
+                                    ToolTip="Play / Pause"/>
+
+                            <!-- Next -->
+                            <Button Style="{StaticResource MediaControlButtonStyle}" 
+                                    Content="⏭" 
+                                    Width="36" Height="30" 
+                                    Command="{Binding Media.SkipNextCommand}"
+                                    ToolTip="Lagu Berikutnya"/>
+                        </StackPanel>
+
+                        <!-- Duration string on the right -->
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Text="{Binding Media.FormattedTime}" 
+                                   Foreground="#71717A" 
+                                   FontSize="10"/>
                     </Grid>
                 </Grid>
             </Grid>

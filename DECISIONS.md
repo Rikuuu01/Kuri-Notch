@@ -25,3 +25,15 @@ Dokumen ini mencatat keputusan teknis, arsitektur, dan desain yang diambil selam
 #### Keputusan 5: Penyesuaian Bentuk Notch Menempel Layar dengan Lengkungan Keluar (Outward Top Ears / Fillet)
 - **Pilihan**: Menggunakan rendering geometri vektor dinamis (`StreamGeometry`) yang membentuk lengkungan cekung keluar (*outward concave arc / fillet*) dengan radius 12px di kedua sudut atas tempat notch bertemu bezel monitor, sisi tegak lurus, dan sudut melengkung cembung di bagian bawah (radius 16px collapsed, 22px expanded). Border atas ditiadakan sehingga warna hitam pekat menyatu 100% dengan bezel fisik.
 - **Alasan**: Menghasilkan siluet transisi organik khas notch modern (ala MacBook Pro / iPhone Dynamic Island). Sudut lengkung keluar di bagian atas membuat notch terlihat keluar secara natural dan rapi dari bezel monitor, bukan sekadar persegi panjang kaku. Hit-testing `WM_NCHITTEST` menggunakan `Geometry.FillContains` untuk presisi klik tembus di luar area lengkungan.
+
+---
+
+### [2026-10-22] Fase 2: Widget Media (Spotify, YouTube, Browser SMTC)
+
+#### Keputusan 6: Integrasi System Media Transport Controls (SMTC) Bawaan Windows
+- **Pilihan**: Menggunakan `GlobalSystemMediaTransportControlsSessionManager` dari Windows Runtime tanpa library pihak ketiga atau ekstensi browser.
+- **Alasan**: Mendukung semua pemutar media modern di Windows 10/11 (Spotify, YouTube di Edge/Chrome/Firefox, Apple Music, VLC) secara out-of-the-box tanpa konfigurasi tambahan oleh pengguna.
+
+#### Keputusan 7: Efisiensi Event-Driven dan Pembaruan Progres
+- **Pilihan**: Tidak menggunakan polling untuk mendeteksi perubahan lagu. Berlangganan event native SMTC (`MediaPropertiesChanged`, `PlaybackInfoChanged`, `CurrentSessionChanged`). Timer progres 1 detik hanya aktif saat status media `Playing` dan dihentikan sepenuhnya saat `Paused`/`Stopped`.
+- **Alasan**: Menjaga CPU idle mendekati 0% dan mencegah kebocoran memori saat pergantian lagu berkali-kali. Thumbnail bitmap di-freeze (`Freeze()`) agar aman di-render lintas thread.

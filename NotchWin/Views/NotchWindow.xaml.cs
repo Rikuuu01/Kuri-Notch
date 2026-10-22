@@ -283,9 +283,9 @@ namespace NotchWin.Views
             bool isExpanding = ViewModel.CurrentState == NotchState.Expanded;
             Log.Debug("AnimateToCurrentState: IsExpanding={IsExpanding}", isExpanding);
 
-            double targetW = isExpanding ? NotchViewModel.ExpandedWidth : NotchViewModel.CollapsedWidth;
-            double targetH = isExpanding ? NotchViewModel.ExpandedHeight : NotchViewModel.CollapsedHeight;
-            double targetR = isExpanding ? NotchViewModel.ExpandedCornerRadius : NotchViewModel.CollapsedCornerRadius;
+            double targetW = ViewModel.TargetWidth;
+            double targetH = ViewModel.TargetHeight;
+            double targetR = ViewModel.TargetCornerRadius;
 
             var duration = TimeSpan.FromMilliseconds(isExpanding ? 320 : 250);
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
