@@ -340,7 +340,29 @@ namespace NotchWin.Views
                     Duration = TimeSpan.FromMilliseconds(150),
                     EasingFunction = ease
                 };
-                CollapsedContentGrid.BeginAnimation(OpacityProperty, fadeInCollapsed);
+            CollapsedContentGrid.BeginAnimation(OpacityProperty, fadeInCollapsed);
+            }
+
+            // 5. Smooth Lyrics Panel Unfold / Fold
+            bool isLyricsOpen = ViewModel.Media.IsLyricsExpanded && isExpanding;
+            double targetLyricsH = isLyricsOpen ? 108.0 : 0.0;
+            double targetLyricsO = isLyricsOpen ? 1.0 : 0.0;
+            var targetLyricsMargin = isLyricsOpen ? new Thickness(0, 8, 0, 0) : new Thickness(0, 0, 0, 0);
+
+            if (LyricsPanelBorder != null)
+            {
+                if (isLyricsOpen)
+                {
+                    UpdateLyricsTranslate(ViewModel.Media.ActiveLyricIndex, animate: false);
+                }
+
+                var lyricsHAnim = new DoubleAnimation(targetLyricsH, duration) { EasingFunction = ease };
+                var lyricsOAnim = new DoubleAnimation(targetLyricsO, duration) { EasingFunction = ease };
+                var lyricsMAnim = new ThicknessAnimation(targetLyricsMargin, duration) { EasingFunction = ease };
+
+                LyricsPanelBorder.BeginAnimation(HeightProperty, lyricsHAnim);
+                LyricsPanelBorder.BeginAnimation(OpacityProperty, lyricsOAnim);
+                LyricsPanelBorder.BeginAnimation(MarginProperty, lyricsMAnim);
             }
         }
 
@@ -387,24 +409,38 @@ namespace NotchWin.Views
         #endregion
         #region Lyrics Handling
 
-        private void Media_ActiveLyricChanged(object? sender, int index)
+        private void UpdateLyricsTranslate(int index, bool animate = true)
         {
             Dispatcher.Invoke(() =>
             {
-                if (LyricsTranslateTransform != null && index >= 0)
+                if (LyricsTranslateTransform != null && ViewModel.Media.LyricsLines.Count > 0)
                 {
+                    int targetIdx = Math.Clamp(index, 0, ViewModel.Media.LyricsLines.Count - 1);
                     double slotHeight = 36.0;
-                    double targetY = (1 - index) * slotHeight;
+                    double targetY = (1 - targetIdx) * slotHeight;
 
-                    var anim = new DoubleAnimation
+                    if (animate)
                     {
-                        To = targetY,
-                        Duration = TimeSpan.FromMilliseconds(320),
-                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                    };
-                    LyricsTranslateTransform.BeginAnimation(TranslateTransform.YProperty, anim);
+                        var anim = new DoubleAnimation
+                        {
+                            To = targetY,
+                            Duration = TimeSpan.FromMilliseconds(320),
+                            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                        };
+                        LyricsTranslateTransform.BeginAnimation(TranslateTransform.YProperty, anim);
+                    }
+                    else
+                    {
+                        LyricsTranslateTransform.BeginAnimation(TranslateTransform.YProperty, null);
+                        LyricsTranslateTransform.Y = targetY;
+                    }
                 }
             });
+        }
+
+        private void Media_ActiveLyricChanged(object? sender, int index)
+        {
+            UpdateLyricsTranslate(index, animate: true);
         }
 
         private void LyricLine_MouseDown(object sender, MouseButtonEventArgs e)

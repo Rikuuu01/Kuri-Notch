@@ -174,7 +174,11 @@ namespace NotchWin.Services
                 var rawLines = dto.PlainLyrics.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
                 foreach (var l in rawLines)
                 {
-                    plainLines.Add(new LyricsLine(TimeSpan.Zero, l.Trim()));
+                    var trimmed = l.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                    {
+                        plainLines.Add(new LyricsLine(TimeSpan.Zero, trimmed));
+                    }
                 }
 
                 return new LyricsResult
@@ -215,6 +219,7 @@ namespace NotchWin.Services
 
                     var time = TimeSpan.FromMilliseconds(min * 60000 + sec * 1000 + ms);
                     string text = match.Groups[4].Value.Trim();
+                    if (string.IsNullOrWhiteSpace(text)) continue;
 
                     result.Add(new LyricsLine(time, text));
                 }

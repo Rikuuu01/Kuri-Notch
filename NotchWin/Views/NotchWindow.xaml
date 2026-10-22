@@ -447,17 +447,18 @@
                                    FontSize="10"/>
                     </Grid>
 
-                    <!-- Row 3: Animated 3-Line Karaoke Lyrics Panel (Height 108) -->
-                    <Border Grid.Row="3" 
-                            Margin="0,8,0,0" 
-                            Height="108" 
+                    <!-- Row 3: Animated 3-Line Karaoke Lyrics Panel (Height 108 with Smooth Unfold) -->
+                    <Border x:Name="LyricsPanelBorder"
+                            Grid.Row="3" 
+                            Margin="0,0,0,0" 
+                            Height="0" 
+                            Opacity="0"
                             Background="#111114" 
                             CornerRadius="12" 
                             BorderBrush="#242428" 
                             BorderThickness="1"
                             ClipToBounds="True"
-                            PreviewMouseWheel="LyricsBorder_PreviewMouseWheel"
-                            Visibility="{Binding Media.IsLyricsExpanded, Converter={StaticResource BoolToVis}}">
+                            PreviewMouseWheel="LyricsBorder_PreviewMouseWheel">
                         <!-- Top & Bottom smooth fade gradient mask -->
                         <Border.OpacityMask>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
