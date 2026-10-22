@@ -304,8 +304,17 @@
                                        FontWeight="SemiBold"/>
                         </StackPanel>
 
-                        <Border HorizontalAlignment="Right" Background="#222226" CornerRadius="10" Padding="8,2">
-                            <TextBlock Text="{Binding Media.PlayPauseIcon}" Foreground="#A1A1AA" FontSize="9" FontWeight="Medium"/>
+                        <Border HorizontalAlignment="Right" Background="#222226" CornerRadius="10" Padding="8,3">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding Media.IsPlaying, Converter={StaticResource BoolToVis}}">
+                                    <Path Data="M 1,1 H 3 V 8 H 1 Z M 5,1 H 7 V 8 H 5 Z" Fill="#10B981" Stretch="Uniform" Width="6" Height="7" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock Text="MEMUTAR" Foreground="#10B981" FontSize="9" FontWeight="Bold" FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding Media.IsPlaying, Converter={StaticResource InverseBoolToVis}}">
+                                    <Path Data="M 1,1 L 6,4.5 L 1,8 Z" Fill="#A1A1AA" Stretch="Uniform" Width="6" Height="7" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock Text="JEDA" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"/>
+                                </StackPanel>
+                            </Grid>
                         </Border>
                     </Grid>
 
@@ -382,25 +391,53 @@
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <!-- Previous -->
                             <Button Style="{StaticResource MediaControlButtonStyle}" 
-                                    Content="⏮" 
                                     Width="36" Height="30" 
                                     Command="{Binding Media.SkipPreviousCommand}"
-                                    ToolTip="Lagu Sebelumnya"/>
+                                    ToolTip="Lagu Sebelumnya">
+                                <Path Data="M 1,2 V 12 H 3.5 V 2 Z M 13,2 L 4.5,7 L 13,12 Z" 
+                                      Fill="#E4E4E7" 
+                                      Stretch="Uniform" 
+                                      Width="12" Height="12" 
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Button>
 
                             <!-- Play / Pause -->
                             <Button Style="{StaticResource MediaPlayPauseButtonStyle}" 
-                                    Content="{Binding Media.PlayPauseIcon}" 
                                     Width="44" Height="32" 
                                     Margin="12,0"
                                     Command="{Binding Media.TogglePlayPauseCommand}"
-                                    ToolTip="Play / Pause"/>
+                                    ToolTip="Play / Pause">
+                                <Grid>
+                                    <!-- Play icon (triangle) when paused -->
+                                    <Path Data="M 2,1 L 13,7 L 2,13 Z" 
+                                          Fill="#FFFFFF" 
+                                          Stretch="Uniform" 
+                                          Width="12" Height="13" 
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Margin="2,0,0,0"
+                                          Visibility="{Binding Media.IsPlaying, Converter={StaticResource InverseBoolToVis}}"/>
+
+                                    <!-- Pause icon (two bars) when playing -->
+                                    <Path Data="M 1,1 H 4.5 V 13 H 1 Z M 7.5,1 H 11 V 13 H 7.5 Z" 
+                                          Fill="#FFFFFF" 
+                                          Stretch="Uniform" 
+                                          Width="11" Height="13" 
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Visibility="{Binding Media.IsPlaying, Converter={StaticResource BoolToVis}}"/>
+                                </Grid>
+                            </Button>
 
                             <!-- Next -->
                             <Button Style="{StaticResource MediaControlButtonStyle}" 
-                                    Content="⏭" 
                                     Width="36" Height="30" 
                                     Command="{Binding Media.SkipNextCommand}"
-                                    ToolTip="Lagu Berikutnya"/>
+                                    ToolTip="Lagu Berikutnya">
+                                <Path Data="M 1,2 L 9.5,7 L 1,12 Z M 10.5,2 V 12 H 13 V 2 Z" 
+                                      Fill="#E4E4E7" 
+                                      Stretch="Uniform" 
+                                      Width="12" Height="12" 
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Button>
                         </StackPanel>
 
                         <!-- Duration string on the right -->
