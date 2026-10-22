@@ -345,7 +345,7 @@ namespace NotchWin.Views
 
             // 5. Smooth Lyrics Panel Unfold / Fold
             bool isLyricsOpen = ViewModel.Media.IsLyricsExpanded && isExpanding;
-            double targetLyricsH = isLyricsOpen ? 108.0 : 0.0;
+            double targetLyricsH = isLyricsOpen ? 44.0 : 0.0;
             double targetLyricsO = isLyricsOpen ? 1.0 : 0.0;
             var targetLyricsMargin = isLyricsOpen ? new Thickness(0, 8, 0, 0) : new Thickness(0, 0, 0, 0);
 
@@ -416,8 +416,8 @@ namespace NotchWin.Views
                 if (LyricsTranslateTransform != null && ViewModel.Media.LyricsLines.Count > 0)
                 {
                     int targetIdx = Math.Clamp(index, 0, ViewModel.Media.LyricsLines.Count - 1);
-                    double slotHeight = 36.0;
-                    double targetY = (1 - targetIdx) * slotHeight;
+                    double slotHeight = 44.0;
+                    double targetY = -targetIdx * slotHeight;
 
                     if (animate)
                     {

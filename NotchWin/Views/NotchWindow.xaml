@@ -447,14 +447,14 @@
                                    FontSize="10"/>
                     </Grid>
 
-                    <!-- Row 3: Animated 3-Line Karaoke Lyrics Panel (Height 108 with Smooth Unfold) -->
-                    <Border x:Name="LyricsPanelBorder"
+                    <!-- Row 3: Animated 1-Line Karaoke Lyrics Panel (Height 44 with Smooth Unfold) -->
+                    <Border x:Name="LyricsPanelBorder" 
                             Grid.Row="3" 
                             Margin="0,0,0,0" 
                             Height="0" 
                             Opacity="0"
                             Background="#111114" 
-                            CornerRadius="12" 
+                            CornerRadius="10" 
                             BorderBrush="#242428" 
                             BorderThickness="1"
                             ClipToBounds="True"
@@ -463,13 +463,13 @@
                         <Border.OpacityMask>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                 <GradientStop Color="#00000000" Offset="0.0"/>
-                                <GradientStop Color="#FFFFFFFF" Offset="0.28"/>
-                                <GradientStop Color="#FFFFFFFF" Offset="0.72"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="0.22"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="0.78"/>
                                 <GradientStop Color="#00000000" Offset="1.0"/>
                             </LinearGradientBrush>
                         </Border.OpacityMask>
 
-                        <Grid ClipToBounds="True">
+                        <Grid ClipToBounds="True" Height="44">
                             <!-- Status message (Loading or Not Found or Instrumental) -->
                             <TextBlock Text="{Binding Media.LyricsStatusMessage}"
                                        Foreground="#71717A"
@@ -479,29 +479,29 @@
                                        VerticalAlignment="Center"
                                        Visibility="{Binding Media.HasLyrics, Converter={StaticResource InverseBoolToVis}}"/>
 
-                            <!-- 3-Line Sliding Container with TranslateTransform -->
+                            <!-- 1-Line Sliding Container with TranslateTransform -->
                             <Grid VerticalAlignment="Top" Visibility="{Binding Media.HasLyrics, Converter={StaticResource BoolToVis}}">
                                 <Grid.RenderTransform>
-                                    <TranslateTransform x:Name="LyricsTranslateTransform" Y="36"/>
+                                    <TranslateTransform x:Name="LyricsTranslateTransform" Y="0"/>
                                 </Grid.RenderTransform>
 
                                 <ItemsControl x:Name="LyricsItemsControl" ItemsSource="{Binding Media.LyricsLines}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Height="36" 
+                                            <Border Height="44" 
                                                     Background="Transparent" 
                                                     Cursor="Hand" 
                                                     MouseDown="LyricLine_MouseDown" 
                                                     SnapsToDevicePixels="True"
-                                                    Padding="12,0">
+                                                    Padding="12,2">
                                                 <TextBlock Text="{Binding Text}"
-                                                           FontSize="{Binding FontSize}"
-                                                           FontWeight="{Binding FontWeight}"
-                                                           Foreground="{Binding ForegroundBrush}"
-                                                           Opacity="{Binding Opacity}"
+                                                           FontSize="13.5"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FFFFFF"
                                                            TextAlignment="Center"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"
+                                                           TextWrapping="Wrap"
                                                            TextTrimming="CharacterEllipsis"/>
                                             </Border>
                                         </DataTemplate>

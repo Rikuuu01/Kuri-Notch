@@ -45,18 +45,27 @@ namespace NotchWin.Services
             {
                 // Attempt 1: Search using clean track name and artist name
                 LrcLibDto? bestMatch = null;
-                if (!string.IsNullOrWhiteSpace(cleanArtist))
+                string primaryArtist = cleanArtist.Split(new[] { ',', '&', ';', '/' }, StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+
+                if (!string.IsNullOrWhiteSpace(primaryArtist))
                 {
-                    string url1 = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(cleanTitle)}&artist_name={Uri.EscapeDataString(cleanArtist)}";
+                    string url1 = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(cleanTitle)}&artist_name={Uri.EscapeDataString(primaryArtist)}";
                     bestMatch = await QueryLrcLibAsync(url1, duration, ct);
                 }
 
                 // Attempt 2: Fallback query search with combined query
                 if (bestMatch == null)
                 {
-                    string query = string.IsNullOrWhiteSpace(cleanArtist) ? cleanTitle : $"{cleanArtist} {cleanTitle}";
+                    string query = string.IsNullOrWhiteSpace(primaryArtist) ? cleanTitle : $"{primaryArtist} {cleanTitle}";
                     string url2 = $"https://lrclib.net/api/search?q={Uri.EscapeDataString(query)}";
                     bestMatch = await QueryLrcLibAsync(url2, duration, ct);
+                }
+
+                // Attempt 3: Search with clean song title alone
+                if (bestMatch == null && !string.IsNullOrWhiteSpace(cleanTitle))
+                {
+                    string url3 = $"https://lrclib.net/api/search?q={Uri.EscapeDataString(cleanTitle)}";
+                    bestMatch = await QueryLrcLibAsync(url3, duration, ct);
                 }
 
                 if (bestMatch == null)

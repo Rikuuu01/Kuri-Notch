@@ -309,7 +309,7 @@ namespace NotchWin.ViewModels
         {
             if (LyricsLines.Count == 0 || !IsSynced) return;
 
-            int newIndex = -1;
+            int newIndex = 0;
             for (int i = 0; i < LyricsLines.Count; i++)
             {
                 if (LyricsLines[i].Time <= currentPos)
@@ -324,18 +324,8 @@ namespace NotchWin.ViewModels
 
             if (newIndex != ActiveLyricIndex)
             {
-                if (ActiveLyricIndex >= 0 && ActiveLyricIndex < LyricsLines.Count)
-                {
-                    LyricsLines[ActiveLyricIndex].SetActive(false);
-                }
-
                 ActiveLyricIndex = newIndex;
-
-                if (newIndex >= 0 && newIndex < LyricsLines.Count)
-                {
-                    LyricsLines[newIndex].SetActive(true);
-                    ActiveLyricChanged?.Invoke(this, newIndex);
-                }
+                ActiveLyricChanged?.Invoke(this, newIndex);
             }
         }
 
