@@ -80,6 +80,27 @@ namespace NotchWin.Services
 
             try
             {
+                // 1. Guard against hover previews: If our current session is already actively playing,
+                // do NOT switch to another session from the same browser/app!
+                lock (_lock)
+                {
+                    if (_currentSession != null)
+                    {
+                        var curInfo = _currentSession.GetPlaybackInfo();
+                        if (curInfo?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                        {
+                            var newCurrent = _sessionManager.GetCurrentSession();
+                            if (newCurrent != null && newCurrent != _currentSession &&
+                                newCurrent.SourceAppUserModelId == _currentSession.SourceAppUserModelId)
+                            {
+                                Log.Debug("Keeping currently playing session for {AppId}; ignoring same-app hover preview.", _currentSession.SourceAppUserModelId);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // 2. Query recommended session from OS
                 candidate = _sessionManager.GetCurrentSession();
                 var info = candidate?.GetPlaybackInfo();
 
@@ -105,6 +126,12 @@ namespace NotchWin.Services
 
             lock (_lock)
             {
+                if (_currentSession == candidate)
+                {
+                    // Same session, no need to re-subscribe
+                    return;
+                }
+
                 if (_currentSession != null)
                 {
                     UnsubscribeFromSession(_currentSession);
