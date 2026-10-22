@@ -16,7 +16,7 @@ namespace NotchWin.ViewModels
         public const double CollapsedHeight = 32.0;
         public const double ExpandedWidth = 380.0;
         public const double ExpandedHeight = 178.0;
-        public const double ExpandedWithLyricsHeight = 360.0;
+        public const double ExpandedWithLyricsHeight = 300.0;
 
         // Radius for bottom-left and bottom-right corners (top is flush against bezel)
         public const double CollapsedCornerRadius = 16.0;

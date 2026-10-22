@@ -385,18 +385,24 @@ namespace NotchWin.Views
         }
 
         #endregion
-
         #region Lyrics Handling
 
         private void Media_ActiveLyricChanged(object? sender, int index)
         {
             Dispatcher.Invoke(() =>
             {
-                if (LyricsScrollViewer != null && index >= 0)
+                if (LyricsTranslateTransform != null && index >= 0)
                 {
-                    double lineHeight = 26.0;
-                    double targetOffset = Math.Max(0, (index * lineHeight) - 55.0);
-                    LyricsScrollViewer.ScrollToVerticalOffset(targetOffset);
+                    double slotHeight = 36.0;
+                    double targetY = (1 - index) * slotHeight;
+
+                    var anim = new DoubleAnimation
+                    {
+                        To = targetY,
+                        Duration = TimeSpan.FromMilliseconds(320),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                    };
+                    LyricsTranslateTransform.BeginAnimation(TranslateTransform.YProperty, anim);
                 }
             });
         }
@@ -409,6 +415,24 @@ namespace NotchWin.Views
             }
         }
 
+        private void LyricsBorder_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (ViewModel.Media.HasLyrics && ViewModel.Media.IsSynced && ViewModel.Media.LyricsLines.Count > 0)
+            {
+                e.Handled = true;
+                int current = Math.Max(0, ViewModel.Media.ActiveLyricIndex);
+                if (e.Delta < 0)
+                {
+                    int next = Math.Min(ViewModel.Media.LyricsLines.Count - 1, current + 1);
+                    _ = ViewModel.Media.SeekToLyricAsync(ViewModel.Media.LyricsLines[next]);
+                }
+                else if (e.Delta > 0)
+                {
+                    int prev = Math.Max(0, current - 1);
+                    _ = ViewModel.Media.SeekToLyricAsync(ViewModel.Media.LyricsLines[prev]);
+                }
+            }
+        }
 
         #endregion
     }

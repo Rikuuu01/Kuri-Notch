@@ -447,17 +447,28 @@
                                    FontSize="10"/>
                     </Grid>
 
-                    <!-- Row 3: Collapsible Lyrics Panel -->
+                    <!-- Row 3: Animated 3-Line Karaoke Lyrics Panel (Height 108) -->
                     <Border Grid.Row="3" 
                             Margin="0,8,0,0" 
-                            Height="160" 
+                            Height="108" 
                             Background="#111114" 
-                            CornerRadius="10" 
+                            CornerRadius="12" 
                             BorderBrush="#242428" 
                             BorderThickness="1"
                             ClipToBounds="True"
+                            PreviewMouseWheel="LyricsBorder_PreviewMouseWheel"
                             Visibility="{Binding Media.IsLyricsExpanded, Converter={StaticResource BoolToVis}}">
-                        <Grid>
+                        <!-- Top & Bottom smooth fade gradient mask -->
+                        <Border.OpacityMask>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Color="#00000000" Offset="0.0"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="0.28"/>
+                                <GradientStop Color="#FFFFFFFF" Offset="0.72"/>
+                                <GradientStop Color="#00000000" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </Border.OpacityMask>
+
+                        <Grid ClipToBounds="True">
                             <!-- Status message (Loading or Not Found or Instrumental) -->
                             <TextBlock Text="{Binding Media.LyricsStatusMessage}"
                                        Foreground="#71717A"
@@ -467,29 +478,35 @@
                                        VerticalAlignment="Center"
                                        Visibility="{Binding Media.HasLyrics, Converter={StaticResource InverseBoolToVis}}"/>
 
-                            <!-- Scrollable Lyrics List -->
-                            <ScrollViewer x:Name="LyricsScrollViewer"
-                                          VerticalScrollBarVisibility="Hidden"
-                                          HorizontalScrollBarVisibility="Disabled"
-                                          Focusable="False"
-                                          Padding="10,6"
-                                          Visibility="{Binding Media.HasLyrics, Converter={StaticResource BoolToVis}}">
+                            <!-- 3-Line Sliding Container with TranslateTransform -->
+                            <Grid VerticalAlignment="Top" Visibility="{Binding Media.HasLyrics, Converter={StaticResource BoolToVis}}">
+                                <Grid.RenderTransform>
+                                    <TranslateTransform x:Name="LyricsTranslateTransform" Y="36"/>
+                                </Grid.RenderTransform>
+
                                 <ItemsControl x:Name="LyricsItemsControl" ItemsSource="{Binding Media.LyricsLines}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Padding="4,4" SnapsToDevicePixels="True" Cursor="Hand" MouseDown="LyricLine_MouseDown">
+                                            <Border Height="36" 
+                                                    Background="Transparent" 
+                                                    Cursor="Hand" 
+                                                    MouseDown="LyricLine_MouseDown" 
+                                                    SnapsToDevicePixels="True"
+                                                    Padding="12,0">
                                                 <TextBlock Text="{Binding Text}"
                                                            FontSize="{Binding FontSize}"
                                                            FontWeight="{Binding FontWeight}"
                                                            Foreground="{Binding ForegroundBrush}"
                                                            Opacity="{Binding Opacity}"
                                                            TextAlignment="Center"
-                                                           TextWrapping="Wrap"/>
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </ScrollViewer>
+                            </Grid>
                         </Grid>
                     </Border>
                 </Grid>

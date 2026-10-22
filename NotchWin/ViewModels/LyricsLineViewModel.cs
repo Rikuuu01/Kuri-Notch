@@ -38,7 +38,7 @@ namespace NotchWin.ViewModels
             IsActive = active;
             if (active)
             {
-                FontSize = 13.5;
+                FontSize = 14.5;
                 FontWeight = FontWeights.Bold;
                 ForegroundBrush = Brushes.White;
                 Opacity = 1.0;
@@ -48,7 +48,7 @@ namespace NotchWin.ViewModels
                 FontSize = 12.0;
                 FontWeight = FontWeights.Normal;
                 ForegroundBrush = new SolidColorBrush(Color.FromRgb(161, 161, 170));
-                Opacity = 0.55;
+                Opacity = 0.50;
             }
         }
     }
