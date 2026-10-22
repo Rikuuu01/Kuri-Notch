@@ -270,16 +270,13 @@
                                    Margin="8,0,8,0" 
                                    VerticalAlignment="Center"/>
 
-                        <!-- Right: Live 5-Band Animated Visualizer -->
-                        <Grid Grid.Column="2" Height="16" VerticalAlignment="Center" Margin="0,0,2,0">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                                <Border x:Name="EqBar1" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
-                                <Border x:Name="EqBar2" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
-                                <Border x:Name="EqBar3" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
-                                <Border x:Name="EqBar4" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
-                                <Border x:Name="EqBar5" Width="2.5" Height="3" CornerRadius="1.5" Background="#10B981" Margin="1,0" VerticalAlignment="Bottom"/>
-                            </StackPanel>
-                        </Grid>
+                        <!-- Right: Music Icon Indicator (Static, 0% CPU) -->
+                        <TextBlock Grid.Column="2" 
+                                   Text="🎵" 
+                                   FontSize="11" 
+                                   Foreground="#10B981" 
+                                   VerticalAlignment="Center" 
+                                   Margin="0,0,2,0"/>
                     </Grid>
                 </Grid>
 

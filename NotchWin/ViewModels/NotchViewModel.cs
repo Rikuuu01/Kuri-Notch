@@ -214,8 +214,8 @@ namespace NotchWin.ViewModels
             }
             else
             {
-                // Slightly wider (215px) when media is active to comfortably display album art, title, and visualizer
-                TargetWidth = Media?.HasMedia == true ? 215.0 : CollapsedWidth;
+                // Slightly wider (210px) when media is active to comfortably display album art and title
+                TargetWidth = Media?.HasMedia == true ? 210.0 : CollapsedWidth;
                 TargetHeight = CollapsedHeight;
                 TargetCornerRadius = CollapsedCornerRadius;
             }
