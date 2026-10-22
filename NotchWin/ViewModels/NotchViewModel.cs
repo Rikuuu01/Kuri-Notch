@@ -86,8 +86,17 @@ namespace NotchWin.ViewModels
             }
             else
             {
-                // Toggle back to collapsed
-                Collapse();
+                // Currently expanded:
+                if (!IsLockedExpanded)
+                {
+                    // Was expanded by hover -> click locks/pins it open
+                    IsLockedExpanded = true;
+                }
+                else
+                {
+                    // Was already locked open -> click unlocks and collapses it
+                    Collapse();
+                }
             }
         }
 

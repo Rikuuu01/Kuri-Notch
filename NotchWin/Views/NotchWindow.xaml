@@ -19,22 +19,11 @@
         KeyDown="Window_KeyDown"
         Loaded="Window_Loaded">
 
-    <Window.Resources>
-        <ContextMenu x:Key="PillContextMenu" Background="#18181B" BorderBrush="#3F3F46" Foreground="#F4F4F5" HasDropShadow="True">
-            <MenuItem Header="✦ NotchWin v0.1" IsEnabled="False" Foreground="#A1A1AA" FontWeight="SemiBold"/>
-            <Separator Background="#27272A"/>
-            <MenuItem Header="Kunci / Buka Panel" Click="OnTogglePinClicked" Foreground="#F4F4F5"/>
-            <Separator Background="#27272A"/>
-            <MenuItem Header="Keluar (Esc)" Click="OnExitClicked" Foreground="#F87171" FontWeight="Medium"/>
-        </ContextMenu>
-    </Window.Resources>
-
     <Grid Background="{x:Null}">
         <!-- The Pill Container with dynamic geometry for outward top ears -->
         <Grid x:Name="PillContainer"
               HorizontalAlignment="Center"
               VerticalAlignment="Top"
-              ContextMenu="{StaticResource PillContextMenu}"
               Cursor="Hand"
               MouseEnter="PillBorder_MouseEnter"
               MouseLeave="PillBorder_MouseLeave"
@@ -152,7 +141,7 @@
 
                     <!-- Footer: Shortcuts info -->
                     <Grid Grid.Row="2" Margin="0,8,0,0">
-                        <TextBlock Text="Esc / Klik Kanan untuk Keluar" Foreground="#71717A" FontSize="10" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Klik untuk Kunci Terbuka / Tutup • Tekan Esc untuk Keluar" Foreground="#71717A" FontSize="10" HorizontalAlignment="Center"/>
                     </Grid>
                 </Grid>
             </Grid>

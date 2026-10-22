@@ -24,7 +24,5 @@ Atau jika ingin menjalankan langsung dari folder hasil build:
 1. **Perhatikan Layar Atas**: Di tengah atas layar monitor utama, akan terlihat pill hitam melayang bertuliskan *NotchWin* dengan indikator hijau.
 2. **Hover Kursor**: Arahkan kursor mouse ke pill tersebut. Pill akan membesar (*expand*) dengan animasi halus menjadi panel informasi.
 3. **Geser Kursor Keluar**: Arahkan kursor menjauh dari pill. Setelah jeda singkat (~450ms), pill akan mengecil kembali (*collapse*) secara otomatis.
-4. **Klik Pill**: Klik pada pill untuk menguncinya agar tetap terbuka. Klik sekali lagi untuk mengecilkannya.
-5. **Menutup Aplikasi**: 
-   - Klik kanan pada pill lalu pilih **Keluar (Esc)**, atau
-   - Tekan tombol **Esc** pada keyboard saat pill sedang aktif/terbuka.
+4. **Klik Pill**: Saat kursor diarahkan ke notch (terbuka), klik kiri sekali untuk **mengunci panel (pin)** agar tetap terbuka meskipun kursor dijauhkan. Klik sekali lagi untuk menutupnya kembali.
+5. **Menutup Aplikasi**: Tekan tombol **Esc** pada keyboard. (Menu klik kanan dihilangkan sesuai permintaan dan akan disediakan via System Tray di Fase 4).

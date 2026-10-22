@@ -366,16 +366,5 @@ namespace NotchWin.Views
                 Close();
             }
         }
-
-        private void OnTogglePinClicked(object sender, RoutedEventArgs e)
-        {
-            ViewModel.OnPillClicked();
-        }
-
-        private void OnExitClicked(object sender, RoutedEventArgs e)
-        {
-            Log.Information("Context menu exit clicked -> Closing NotchWin");
-            Close();
-        }
     }
 }
