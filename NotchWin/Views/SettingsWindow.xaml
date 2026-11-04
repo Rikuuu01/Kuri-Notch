@@ -1,0 +1,1332 @@
+<Window x:Class="NotchWin.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewmodels="clr-namespace:NotchWin.ViewModels"
+        xmlns:converters="clr-namespace:NotchWin.Converters"
+        mc:Ignorable="d"
+        Title="{Binding L10n[Settings.Title]}"
+        Height="590" Width="740"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        RenderOptions.ClearTypeHint="Enabled"
+        RenderOptions.BitmapScalingMode="HighQuality"
+        FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif">
+
+    <Window.Resources>
+        <!-- Converters -->
+        <converters:EqualityToVisibilityConverter x:Key="EqToVis"/>
+        <converters:EqualityToBooleanConverter x:Key="EqToBool"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+
+        <!-- Modern Ultra-Slim ScrollBar and ScrollViewer -->
+        <Style x:Key="ModernSlimScrollBarThumb" TargetType="{x:Type Thumb}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Thumb}">
+                        <Border x:Name="thumbBorder" Background="#38384A" CornerRadius="2.5" Opacity="0.6" Margin="0,1"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{DynamicResource AccentLightBrush}"/>
+                                <Setter TargetName="thumbBorder" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{DynamicResource AccentLightBrush}"/>
+                                <Setter TargetName="thumbBorder" Property="Opacity" Value="1.0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernSlimScrollBar" TargetType="{x:Type ScrollBar}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Width" Value="5"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid Background="Transparent" SnapsToDevicePixels="True">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.LineUpCommand}" Opacity="0" Height="0" Width="0" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource ModernSlimScrollBarThumb}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.LineDownCommand}" Opacity="0" Height="0" Width="0" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernSlimScrollViewer" TargetType="{x:Type ScrollViewer}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollContentPresenter Grid.Column="0" CanContentScroll="{TemplateBinding CanContentScroll}"/>
+                            <ScrollBar x:Name="PART_VerticalScrollBar" Grid.Column="1"
+                                       Style="{StaticResource ModernSlimScrollBar}"
+                                       Value="{TemplateBinding VerticalOffset}"
+                                       Maximum="{TemplateBinding ScrollableHeight}"
+                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                       Margin="2,0,0,0"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern Windows 11 Toggle Switch Style for CheckBox -->
+        <Style x:Key="FluentToggleSwitch" TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="#F4F4F5" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <DockPanel LastChildFill="True">
+                            <!-- Toggle Pill on the right side -->
+                            <Grid DockPanel.Dock="Right" Width="44" Height="24" VerticalAlignment="Center">
+                                <Border x:Name="Track"
+                                        CornerRadius="12"
+                                        Background="#27272A"
+                                        BorderBrush="#3F3F46"
+                                        BorderThickness="1" />
+                                <Ellipse x:Name="Thumb"
+                                         Width="14" Height="14"
+                                         HorizontalAlignment="Left"
+                                         Margin="5,0,0,0"
+                                         Fill="#A1A1AA" />
+                            </Grid>
+
+                            <!-- Label on the left side -->
+                            <ContentPresenter VerticalAlignment="Center" Margin="0,0,16,0" />
+                        </DockPanel>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentLightBrush}" />
+                                <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,5,0" />
+                                <Setter TargetName="Thumb" Property="Fill" Value="#FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#71717A" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Dark Fluent Slider Style with Dynamic Accent Color -->
+        <Style x:Key="ModernSlider" TargetType="{x:Type Slider}">
+            <Setter Property="Stylus.IsPressAndHoldEnabled" Value="False" />
+            <Setter Property="Background" Value="#27272A" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentLightBrush}" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="IsMoveToPointEnabled" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Slider}">
+                        <Grid VerticalAlignment="Center">
+                            <!-- Background Track -->
+                            <Border Height="4" Background="{TemplateBinding Background}" CornerRadius="2" />
+                            <!-- Active Fill Track -->
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                <Border Height="4" Background="{DynamicResource AccentLightBrush}" CornerRadius="2" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Grid Width="16" Height="16">
+                                                    <Ellipse Fill="#FFFFFF" />
+                                                    <Ellipse Width="8" Height="8" Fill="{DynamicResource AccentDarkBrush}" />
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                <Border Height="4" Background="Transparent" />
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern Dark ComboBox Style with Custom Dropdown Popup -->
+        <Style x:Key="ModernComboBox" TargetType="{x:Type ComboBox}">
+            <Setter Property="Foreground" Value="#F4F4F5" />
+            <Setter Property="Background" Value="#27272A" />
+            <Setter Property="BorderBrush" Value="#3F3F46" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="{x:Type ComboBoxItem}">
+                        <Setter Property="Background" Value="#202023" />
+                        <Setter Property="Foreground" Value="#E4E4E7" />
+                        <Setter Property="Padding" Value="10,7" />
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                                    <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="5" Margin="2,1">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                                            <Setter Property="Foreground" Value="#FFFFFF" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AccentDarkBrush}" />
+                                            <Setter Property="Foreground" Value="#FFFFFF" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Focusable="false"
+                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border x:Name="Border"
+                                                Background="#27272A"
+                                                BorderBrush="#3F3F46"
+                                                BorderThickness="1"
+                                                CornerRadius="7">
+                                            <Grid Margin="12,0,10,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Path x:Name="Arrow"
+                                                      Grid.Column="1"
+                                                      Data="M 0,0 L 4,4 L 8,0"
+                                                      Stroke="#A1A1AA"
+                                                      StrokeThickness="1.5"
+                                                      HorizontalAlignment="Right"
+                                                      VerticalAlignment="Center"
+                                                      Margin="4,0,0,0" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Border" Property="BorderBrush" Value="#71717A" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter Name="ContentSite"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="12,0,28,0"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left" />
+
+                            <Popup Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid Name="DropDown"
+                                      SnapsToDevicePixels="True"
+                                      MinWidth="{TemplateBinding ActualWidth}"
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="#202023"
+                                            BorderBrush="#3F3F46"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Margin="0,4,0,4"
+                                            Padding="3">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="#000000" BlurRadius="12" ShadowDepth="4" Opacity="0.5"/>
+                                        </Border.Effect>
+                                        <ScrollViewer SnapsToDevicePixels="True" Style="{StaticResource ModernSlimScrollViewer}">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Quick Preset City Chip Style -->
+        <Style x:Key="QuickCityChipStyle" TargetType="Button">
+            <Setter Property="Background" Value="#22222E"/>
+            <Setter Property="Foreground" Value="#D4D4D8"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="9,4"/>
+            <Setter Property="Margin" Value="0,0,5,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#2D2D3C"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Stepper Button Style -->
+        <Style x:Key="StepperButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#27272A"/>
+            <Setter Property="Foreground" Value="#F4F4F5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#3F3F46"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#52525B"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sidebar Category RadioButton Navigation Style -->
+        <Style x:Key="SidebarNavRadioStyle" TargetType="{x:Type RadioButton}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#A1A1AA"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Margin" Value="0,1.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type RadioButton}">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="8" Padding="10,0">
+                            <Grid VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" VerticalAlignment="Center"/>
+                                <Border x:Name="ActivePill" Grid.Column="1" Width="3" Height="0" Opacity="0" CornerRadius="1.5"
+                                        Background="{DynamicResource AccentLightBrush}"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#1C1C22"/>
+                                <Setter Property="Foreground" Value="#F4F4F5"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#22222C"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ActivePill" Storyboard.TargetProperty="Opacity"
+                                                             To="1.0" Duration="0:0:0.2"/>
+                                            <DoubleAnimation Storyboard.TargetName="ActivePill" Storyboard.TargetProperty="Height"
+                                                             From="6" To="16" Duration="0:0:0.22">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ActivePill" Storyboard.TargetProperty="Opacity"
+                                                             To="0.0" Duration="0:0:0.15"/>
+                                            <DoubleAnimation Storyboard.TargetName="ActivePill" Storyboard.TargetProperty="Height"
+                                                             To="0" Duration="0:0:0.15"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Outer Window Container with Drop Shadow & Rounded Border -->
+    <Border Background="#121214"
+            BorderBrush="#27272A"
+            BorderThickness="1"
+            CornerRadius="14">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <!-- Kolom 0: Sidebar Navigasi Kategori (215px) -->
+                <ColumnDefinition Width="215" />
+                <!-- Kolom 1: Vertical Divider -->
+                <ColumnDefinition Width="1" />
+                <!-- Kolom 2: Area Konten Pengaturan -->
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ================= SIDEBAR KIRI ================= -->
+            <Border Grid.Column="0" Background="#141418" CornerRadius="14,0,0,14" Padding="12,14,12,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <!-- Brand Title / Drag Bar -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Category Nav Items -->
+                        <RowDefinition Height="*"/>
+                        <!-- Sidebar Footer -->
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Title Brand Header -->
+                    <Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" Background="Transparent" Margin="2,2,0,16">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="28" Height="28" CornerRadius="8" Background="{DynamicResource AccentPrimaryBrush}" Margin="0,0,10,0">
+                                <TextBlock Text="K" FontWeight="Bold" Foreground="White" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Kuri" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <TextBlock Text="{Binding L10n[Settings.Title]}" FontSize="12" Foreground="#A1A1AA"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Category Items Navigation List -->
+                    <StackPanel Grid.Row="1">
+                        <!-- 0: Tampilan & Umum -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=0, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="🎨" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategoryAppearance]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!-- 1: Sistem & Perilaku -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=1, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="1">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="💻" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategorySystem]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!-- 2: Widget Notch -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=2, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="2">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="🧩" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategoryWidgets]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!-- 3: Cuaca -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=3, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="3">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="⛅" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategoryWeather]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!-- 4: Jadwal Sholat -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=4, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="4">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="🕌" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategoryPrayer]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!-- 5: Water Tracker -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=5, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="5">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="💧" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategoryWater]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+
+                    <!-- Sidebar Footer (Kembalikan Default) -->
+                    <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                        <Button Command="{Binding ResetToDefaultsCommand}"
+                                Background="Transparent" BorderThickness="0"
+                                Foreground="#A1A1AA" Cursor="Hand" Padding="4,6"
+                                HorizontalAlignment="Left">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="b" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="↺" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding L10n[Settings.ResetDefaults]}" FontSize="12" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="b" Property="Background" Value="#1E1E24"/>
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <TextBlock Text="v1.0 • Kuri" FontSize="11" Foreground="#8E8E9E" Margin="6,4,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Vertical Separator Divider -->
+            <Border Grid.Column="1" Background="#24242C"/>
+
+            <!-- ================= AREA KONTEN KANAN ================= -->
+            <Grid Grid.Column="2" Margin="20,14,18,14">
+                <Grid.RowDefinitions>
+                    <!-- Header Kategori Aktif + Tombol Close -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Area Scroll Konten Kategori -->
+                    <RowDefinition Height="*"/>
+                    <!-- Footer Simpan & Tutup -->
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Top Header Bar (Drag Move & Category Title) -->
+                <Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" Background="Transparent" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Header Titles Animated Host -->
+                    <Grid x:Name="CategoryHeaderHost" Grid.Column="0">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="HeaderTranslate" X="0" Y="0"/>
+                        </Grid.RenderTransform>
+
+                        <!-- Header Category 0 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=0}">
+                            <TextBlock Text="{Binding L10n[Settings.CategoryAppearance]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="{Binding L10n[Settings.Subtitle]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <!-- Header Category 1 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=1}">
+                            <TextBlock Text="{Binding L10n[Settings.CategorySystem]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Configure Windows autostart, fullscreen behavior, and privacy indicators" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <!-- Header Category 2 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=2}">
+                            <TextBlock Text="{Binding L10n[Settings.CategoryWidgets]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Customize active modules and widgets on the notch" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <!-- Header Category 3 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=3}">
+                            <TextBlock Text="{Binding L10n[Settings.CategoryWeather]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Weather forecast, real-time temperature, and city location settings" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <!-- Header Category 4 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=4}">
+                            <TextBlock Text="{Binding L10n[Settings.CategoryPrayer]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Automatic 5 prayer times schedule and adhan audio alerts" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <!-- Header Category 5 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=5}">
+                            <TextBlock Text="{Binding L10n[Settings.CategoryWater]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Regular water drink reminders and daily hydration tracking" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Close Button (✕) -->
+                    <Button Grid.Column="1" Click="CloseButton_Click" Width="30" Height="30" Background="Transparent"
+                            BorderThickness="0" Foreground="#A1A1AA" FontSize="15" Cursor="Hand" VerticalAlignment="Top">
+                        <Button.Template>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Border x:Name="bdr" Background="Transparent" CornerRadius="6">
+                                    <TextBlock Text="✕" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bdr" Property="Background" Value="#27272A"/>
+                                        <Setter Property="Foreground" Value="#EF4444"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+
+                <!-- Scrollable Content Viewport -->
+                <ScrollViewer x:Name="SettingsScrollViewer" Grid.Row="1" Style="{StaticResource ModernSlimScrollViewer}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid x:Name="CategoryContentHost" Margin="0,0,4,0">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="ContentTranslate" X="0" Y="0"/>
+                        </Grid.RenderTransform>
+
+                        <!-- ================= PANEL 0: TAMPILAN & UMUM ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=0}">
+                            <!-- Section: Bahasa / Language -->
+                            <TextBlock Text="{Binding L10n[Settings.LanguageSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding L10n[Settings.LanguageLabel]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <TextBlock Text="{Binding L10n[Settings.LanguageDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
+                                    <ComboBox ItemsSource="{Binding AvailableLanguages}"
+                                              SelectedItem="{Binding SelectedLanguageOption, Mode=TwoWay}"
+                                              DisplayMemberPath="DisplayName"
+                                              Style="{StaticResource ModernComboBox}" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Section: Posisi & Ukuran Notch -->
+                            <TextBlock Text="{Binding L10n[Settings.PosDisplaySection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <!-- Notch Size (Scale) Slider -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.NotchScaleTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.NotchScaleDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="#27272A" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding NotchScale, StringFormat={}{0:P0}}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentLightBrush}" />
+                                        </Border>
+                                    </Grid>
+                                    <Slider Style="{StaticResource ModernSlider}"
+                                            Minimum="0.75" Maximum="1.40"
+                                            TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                            Value="{Binding NotchScale, Mode=TwoWay}"
+                                            Margin="0,0,0,12" />
+
+                                    <Border Height="1" Background="#27272A" Margin="0,4,0,12" />
+
+                                    <!-- Font Scale Slider & Controls -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.FontScaleTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.FontScaleDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Command="{Binding DecreaseFontScaleCommand}" Style="{StaticResource StepperButtonStyle}" Content="A−" ToolTip="Kecilkan font (5%)" Margin="0,0,6,0" Padding="8,3"/>
+                                            <Border Background="#27272A" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding FontScale, StringFormat={}{0:P0}}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentLightBrush}" MinWidth="38" TextAlignment="Center" />
+                                            </Border>
+                                            <Button Command="{Binding IncreaseFontScaleCommand}" Style="{StaticResource StepperButtonStyle}" Content="A+" ToolTip="Besarkan font (5%)" Margin="6,0,0,0" Padding="8,3"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Quick Presets -->
+                                    <WrapPanel Margin="0,0,0,8">
+                                        <Button Command="{Binding SetFontScalePresetCommand}" CommandParameter="0.85" Content="{Binding L10n[Settings.FontScalePresetSmall]}" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding SetFontScalePresetCommand}" CommandParameter="1.00" Content="{Binding L10n[Settings.FontScalePresetNormal]}" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding SetFontScalePresetCommand}" CommandParameter="1.15" Content="{Binding L10n[Settings.FontScalePresetLarge]}" Style="{StaticResource QuickCityChipStyle}"/>
+                                    </WrapPanel>
+
+                                    <Slider Style="{StaticResource ModernSlider}"
+                                            Minimum="0.80" Maximum="1.30"
+                                            TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                            Value="{Binding FontScale, Mode=TwoWay}"
+                                            Margin="0,0,0,12" />
+
+                                    <!-- Live Preview Box -->
+                                    <Border Background="#141419" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Left preview: Weather -->
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <TextBlock Text="☁ 28°C" FontSize="{Binding PreviewFontSizeNormal}" Foreground="#A1A1AA" VerticalAlignment="Center"/>
+                                                <TextBlock Text="│" FontSize="11" Foreground="#3F3F46" Margin="8,0,8,0" VerticalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Center preview: Music (Track title & artist) -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="Mesra-mesraannya kecil-kecilan..." FontSize="{Binding PreviewFontSizeTitle}" FontWeight="SemiBold" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="Sal Priadi" FontSize="{Binding PreviewFontSizeArtist}" Foreground="#A1A1AA" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- Right preview: Time & Battery -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                                <TextBlock Text="│" FontSize="11" Foreground="#3F3F46" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="14:26" FontSize="{Binding PreviewFontSizeNormal}" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="97% ⚡" FontSize="{Binding PreviewFontSizeNormal}" Foreground="#34D399" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,4,0,12" />
+
+                                    <!-- Hover Collapse Delay Slider -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.HoverDelayTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.HoverDelayDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="#27272A" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding HoverCollapseDelayMs, StringFormat={}{0} ms}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentLightBrush}" />
+                                        </Border>
+                                    </Grid>
+                                    <Slider Style="{StaticResource ModernSlider}"
+                                            Minimum="200" Maximum="1200"
+                                            TickFrequency="50" IsSnapToTickEnabled="True"
+                                            Value="{Binding HoverCollapseDelayMs, Mode=TwoWay}"
+                                            Margin="0,0,0,12" />
+
+                                    <Border Height="1" Background="#27272A" Margin="0,4,0,12" />
+
+                                    <!-- Target Monitor Selection -->
+                                    <TextBlock Text="{Binding L10n[Settings.MonitorTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <TextBlock Text="{Binding L10n[Settings.MonitorDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
+                                    <ComboBox ItemsSource="{Binding AvailableMonitors}"
+                                              SelectedItem="{Binding SelectedMonitor, Mode=TwoWay}"
+                                              DisplayMemberPath="DisplayName"
+                                              Style="{StaticResource ModernComboBox}" />
+
+                                    <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
+
+                                    <!-- Accent Color Selection -->
+                                    <TextBlock Text="{Binding L10n[Settings.AccentColorTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <TextBlock Text="{Binding L10n[Settings.AccentColorDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
+                                    <ComboBox ItemsSource="{Binding AvailableAccentColors}"
+                                              SelectedItem="{Binding SelectedAccentColor, Mode=TwoWay}"
+                                              Style="{StaticResource ModernComboBox}" />
+
+                                    <!-- Custom Hex Color Input (Visible when Custom (Hex) is selected) -->
+                                    <StackPanel Visibility="{Binding IsCustomAccentSelected, Converter={StaticResource BoolToVis}}" Margin="0,10,0,0">
+                                        <TextBlock Text="{Binding L10n[Settings.CustomHexTitle]}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                        <TextBlock Text="{Binding L10n[Settings.CustomHexDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,6" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Text="{Binding CustomAccentColorHex, UpdateSourceTrigger=PropertyChanged}"
+                                                     Background="#14141E" Foreground="#FFFFFF" CaretBrush="{DynamicResource AccentLightBrush}"
+                                                     BorderBrush="#38384A" BorderThickness="1" Padding="10,6"
+                                                     FontSize="13" FontFamily="Consolas, Segoe UI" VerticalAlignment="Center" />
+                                            <Border Grid.Column="1" Width="26" Height="26" CornerRadius="6" Margin="8,0,0,0"
+                                                    Background="{DynamicResource AccentPrimaryBrush}" BorderBrush="#555566" BorderThickness="1"
+                                                    VerticalAlignment="Center" ToolTip="Accent Color Preview" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
+
+                                    <!-- Notch Background Material Selection -->
+                                    <TextBlock Text="{Binding L10n[Settings.NotchMaterialTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <TextBlock Text="{Binding L10n[Settings.NotchMaterialDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
+                                    <ComboBox ItemsSource="{Binding AvailableMaterials}"
+                                              SelectedItem="{Binding SelectedMaterial, Mode=TwoWay}"
+                                              Style="{StaticResource ModernComboBox}" />
+                                    <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
+
+                                    <!-- Album Art Dynamic Accent Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsAlbumArtAccentEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.AlbumArtAccentTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.AlbumArtAccentDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 1: SISTEM & PERILAKU ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=1}">
+                            <TextBlock Text="{Binding L10n[Settings.SystemSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <!-- Autostart Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsAutostartEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.AutostartTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.AutostartDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Startup Welcome Sound Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding StartupSoundEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.StartupSoundTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.StartupSoundDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Fullscreen Auto-Hide Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsFullscreenAutoHideEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.FullscreenHideTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.FullscreenHideDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <!-- Fullscreen Slim Bar Sub-Option -->
+                                    <StackPanel Margin="0,0,0,12"
+                                                Visibility="{Binding IsFullscreenAutoHideEnabled, Converter={StaticResource BoolToVis}}">
+                                        <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                                  IsChecked="{Binding IsFullscreenSlimBarEnabled, Mode=TwoWay}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding L10n[Settings.FullscreenSlimBarTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                                <TextBlock Text="{Binding L10n[Settings.FullscreenSlimBarDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </CheckBox>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Privacy Indicator Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsPrivacyIndicatorEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.PrivacyTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.PrivacyDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Notification Duration Slider -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.NotificationDurationTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.NotificationDurationDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="#27272A" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding NotificationDurationDisplay}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentLightBrush}" />
+                                        </Border>
+                                    </Grid>
+                                    <Slider Style="{StaticResource ModernSlider}"
+                                            Minimum="2" Maximum="10"
+                                            TickFrequency="1" IsSnapToTickEnabled="True"
+                                            Value="{Binding NotificationDurationSeconds, Mode=TwoWay}"
+                                            Margin="0,0,0,4" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 2: WIDGET NOTCH ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=2}">
+                            <TextBlock Text="{Binding L10n[Settings.WidgetsSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <!-- Media Widget Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsMediaWidgetEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.MediaTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.MediaDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Download Monitor Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsDownloadMonitorEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.DownloadMonitorTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.DownloadMonitorDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
+
+                                    <!-- Interactive Notch Companion & Mascot Section -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsPetEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="Interactive Notch Companion &amp; Mascot" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="Living desktop companion with smooth cursor gaze, breathing physics, and touch reactivity" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <!-- Pet Style Gallery & Options (Visible when Pet is enabled) -->
+                                    <StackPanel Visibility="{Binding IsPetEnabled, Converter={StaticResource BoolToVis}}" Margin="0,14,0,0">
+                                        <Grid Margin="2,0,0,8">
+                                            <TextBlock Text="CHOOSE COMPANION MASCOT (PURE VECTOR)" FontSize="11" FontWeight="Bold" Foreground="#A1A1AA" VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <!-- Multi-Character Gallery Grid (Pastel Mochi & Astro Mascot) -->
+                                        <ItemsControl ItemsSource="{Binding FilteredPetCharacters}" Margin="0,2,0,8">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Height="76" Margin="0,0,0,8" CornerRadius="10" Padding="8" Cursor="Hand" Background="#131418" BorderThickness="1.5">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="BorderBrush" Value="#27272A" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                            <Setter Property="BorderBrush" Value="#38BDF8" />
+                                                                            <Setter Property="Background" Value="#1A202C" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <Border.InputBindings>
+                                                                <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.SelectPetCharacterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" />
+                                                            </Border.InputBindings>
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="48" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                </Grid.ColumnDefinitions>
+                                                                
+                                                                <!-- Character Thumbnail / Icon -->
+                                                                <Border Width="44" Height="36" Background="#1C1E26" BorderBrush="#3F3F46" BorderThickness="0.8" CornerRadius="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                    <Image Source="{Binding ThumbnailSource}" Stretch="Uniform" Width="36" Height="28" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                                </Border>
+
+                                                                <!-- Character Info -->
+                                                                <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" Foreground="#F4F4F5" TextTrimming="CharacterEllipsis" />
+                                                                        <Border Visibility="{Binding IsRecommended, Converter={StaticResource BoolToVis}}" Background="#0284C7" CornerRadius="3" Padding="4,1" Margin="5,0,0,0" VerticalAlignment="Center">
+                                                                            <TextBlock Text="VECTOR" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" />
+                                                                        </Border>
+                                                                    </StackPanel>
+                                                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#A1A1AA" TextWrapping="Wrap" MaxHeight="34" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 3: INFORMASI CUACA ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=3}">
+                            <TextBlock Text="{Binding L10n[Settings.WeatherSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <!-- Toggle Cuaca -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsWeatherEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.WeatherEnableTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.WeatherEnableDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Active Location Badge -->
+                                    <TextBlock Text="{Binding L10n[Settings.WeatherCurrentLocation]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <Border Background="#20202A" CornerRadius="8" Padding="10,8" Margin="0,4,0,10">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding L10n[Settings.Active]}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding ActiveWeatherLocationFormatted}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </DockPanel>
+                                    </Border>
+
+                                    <!-- Manual Location Search Bar -->
+                                    <TextBlock Text="{Binding L10n[Settings.SearchLocationManual]}" FontSize="12" FontWeight="SemiBold" Foreground="#D4D4D8" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" Text="{Binding WeatherSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                                 Background="#20202A" Foreground="#F4F4F5" BorderBrush="#3F3F46" BorderThickness="1"
+                                                 Padding="8,6" FontSize="12" VerticalContentAlignment="Center">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding SearchWeatherLocationCommand}"/>
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+                                        <Button Grid.Column="1" Command="{Binding SearchWeatherLocationCommand}"
+                                                Content="{Binding L10n[Settings.SearchButton]}" Padding="12,6" Margin="6,0,0,0"
+                                                Background="{DynamicResource AccentPrimaryBrush}" Foreground="#FFFFFF"
+                                                FontWeight="SemiBold" FontSize="12" Cursor="Hand">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- Search Results List -->
+                                    <StackPanel Visibility="{Binding HasWeatherSearchResults, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10">
+                                        <TextBlock Text="{Binding WeatherSearchStatus}" FontSize="12" Foreground="#A1A1AA" Margin="0,0,0,4"/>
+                                        <Border Background="#20202A" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="8" MaxHeight="140">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource ModernSlimScrollViewer}">
+                                                <ItemsControl ItemsSource="{Binding WeatherSearchResults}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding DataContext.SelectWeatherLocationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="8,6"
+                                                                    HorizontalContentAlignment="Left">
+                                                                <Button.Template>
+                                                                    <ControlTemplate TargetType="Button">
+                                                                        <Border x:Name="ItemBdr" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                                                            <StackPanel>
+                                                                                <TextBlock Text="{Binding FormattedDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="#F4F4F5"/>
+                                                                                <TextBlock Text="{Binding FormattedCoords}" FontSize="11" Foreground="#A1A1AA" Margin="0,1,0,0"/>
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                        <ControlTemplate.Triggers>
+                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                <Setter TargetName="ItemBdr" Property="Background" Value="#2A2A38"/>
+                                                                            </Trigger>
+                                                                        </ControlTemplate.Triggers>
+                                                                    </ControlTemplate>
+                                                                </Button.Template>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Quick Preset Cities -->
+                                    <TextBlock Text="{Binding L10n[Settings.QuickPresetsWeather]}" FontSize="12" Foreground="#A1A1AA" Margin="0,0,0,4"/>
+                                    <WrapPanel Margin="0,0,0,10">
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Jakarta" Content="Jakarta" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Bandung" Content="Bandung" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Surabaya" Content="Surabaya" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Semarang" Content="Semarang" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Yogyakarta" Content="Yogyakarta" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Medan" Content="Medan" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Makassar" Content="Makassar" Style="{StaticResource QuickCityChipStyle}"/>
+                                        <Button Command="{Binding QuickSelectWeatherCityCommand}" CommandParameter="Denpasar" Content="Denpasar" Style="{StaticResource QuickCityChipStyle}"/>
+                                    </WrapPanel>
+
+                                    <!-- Sync with Prayer Checkbox -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsLocationSynced, Mode=TwoWay}"
+                                              Margin="0,2,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.SyncLocationPrayer]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.SyncLocationPrayerDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Fahrenheit Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsFahrenheit, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.WeatherFahrenheitTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.WeatherFahrenheitDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 4: PENGINGAT SHOLAT ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=4}">
+                            <TextBlock Text="{Binding L10n[Settings.PrayerSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsPrayerReminderEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.PrayerEnableTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.PrayerEnableDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Active Prayer Location Badge -->
+                                    <TextBlock Text="{Binding L10n[Settings.PrayerCurrentLocation]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <Border Background="#20202A" CornerRadius="8" Padding="10,8" Margin="0,4,0,10">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding L10n[Settings.Active]}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding ActivePrayerLocationFormatted}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </DockPanel>
+                                    </Border>
+
+                                    <!-- Separate Prayer Search Bar (Visible if NOT synced) -->
+                                    <StackPanel Visibility="{Binding IsLocationSynced, Converter={StaticResource InverseBoolToVis}}" Margin="0,0,0,10">
+                                        <TextBlock Text="{Binding L10n[Settings.SearchPrayerManual]}" FontSize="12" FontWeight="SemiBold" Foreground="#D4D4D8" Margin="0,0,0,4" />
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="0" Text="{Binding PrayerSearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                                     Background="#20202A" Foreground="#F4F4F5" BorderBrush="#3F3F46" BorderThickness="1"
+                                                     Padding="8,6" FontSize="12" VerticalContentAlignment="Center">
+                                                <TextBox.InputBindings>
+                                                    <KeyBinding Key="Enter" Command="{Binding SearchPrayerLocationCommand}"/>
+                                                </TextBox.InputBindings>
+                                            </TextBox>
+                                            <Button Grid.Column="1" Command="{Binding SearchPrayerLocationCommand}"
+                                                    Content="{Binding L10n[Settings.SearchButton]}" Padding="12,6" Margin="6,0,0,0"
+                                                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="#FFFFFF"
+                                                    FontWeight="SemiBold" FontSize="12" Cursor="Hand">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </Grid>
+
+                                        <!-- Prayer Search Results -->
+                                        <StackPanel Visibility="{Binding HasPrayerSearchResults, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10">
+                                            <TextBlock Text="{Binding PrayerSearchStatus}" FontSize="12" Foreground="#A1A1AA" Margin="0,0,0,4"/>
+                                            <Border Background="#20202A" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="8" MaxHeight="140">
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto" Style="{StaticResource ModernSlimScrollViewer}">
+                                                    <ItemsControl ItemsSource="{Binding PrayerSearchResults}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Button Command="{Binding DataContext.SelectPrayerLocationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="8,6"
+                                                                        HorizontalContentAlignment="Left">
+                                                                    <Button.Template>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border x:Name="ItemBdr" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                                                                <StackPanel>
+                                                                                    <TextBlock Text="{Binding FormattedDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="#F4F4F5"/>
+                                                                                    <TextBlock Text="{Binding FormattedCoords}" FontSize="11" Foreground="#A1A1AA" Margin="0,1,0,0"/>
+                                                                                </StackPanel>
+                                                                            </Border>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                                    <Setter TargetName="ItemBdr" Property="Background" Value="#2A2A38"/>
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </Button.Template>
+                                                                </Button>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Quick Presets for Prayer -->
+                                        <TextBlock Text="{Binding L10n[Settings.QuickPresetsPrayer]}" FontSize="12" Foreground="#A1A1AA" Margin="0,0,0,4"/>
+                                        <WrapPanel Margin="0,0,0,6">
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Jakarta" Content="Jakarta" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Bandung" Content="Bandung" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Surabaya" Content="Surabaya" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Semarang" Content="Semarang" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Yogyakarta" Content="Yogyakarta" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Medan" Content="Medan" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Makassar" Content="Makassar" Style="{StaticResource QuickCityChipStyle}"/>
+                                            <Button Command="{Binding QuickSelectPrayerCityCommand}" CommandParameter="Denpasar" Content="Denpasar" Style="{StaticResource QuickCityChipStyle}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding PrayerSoundEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.PrayerSoundTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.PrayerSoundDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 5: WATER TRACKER ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=5}">
+                            <TextBlock Text="{Binding L10n[Settings.HydrationSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsWaterReminderEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.WaterEnableTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.WaterEnableDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,10,0,12" />
+
+                                    <!-- Standard Interval Selection -->
+                                    <TextBlock Text="{Binding L10n[Settings.WaterIntervalTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                    <TextBlock Text="{Binding L10n[Settings.WaterIntervalDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
+                                    <ComboBox ItemsSource="{Binding WaterIntervalOptions}"
+                                              SelectedItem="{Binding SelectedWaterInterval, Mode=TwoWay}"
+                                              DisplayMemberPath="DisplayName"
+                                              Style="{StaticResource ModernComboBox}"
+                                              Margin="0,0,0,12" />
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Sound / Alarm Checkbox -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding WaterSoundEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.WaterSoundTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.WaterSoundDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                    </Grid>
+                </ScrollViewer>
+
+                <!-- Footer Save & Close Button -->
+                <Grid Grid.Row="2" Margin="0,10,0,0">
+                    <Button HorizontalAlignment="Right"
+                            Click="CloseButton_Click"
+                            Content="{Binding L10n[Settings.SaveClose]}"
+                            Padding="22,7"
+                            Background="{DynamicResource AccentPrimaryBrush}"
+                            Foreground="#FFFFFF"
+                            FontWeight="SemiBold"
+                            FontSize="13"
+                            BorderThickness="0"
+                            Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bdr" Property="Background" Value="{DynamicResource AccentLightBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

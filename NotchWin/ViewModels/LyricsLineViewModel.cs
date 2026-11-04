@@ -9,6 +9,7 @@ namespace NotchWin.ViewModels
     {
         public TimeSpan Time { get; set; }
         public string Text { get; set; } = string.Empty;
+        public bool IsInterlude { get; set; }
 
         [ObservableProperty]
         private bool _isActive;
@@ -25,12 +26,17 @@ namespace NotchWin.ViewModels
         [ObservableProperty]
         private double _opacity = 0.55;
 
+        public double Dot1Opacity { get; set; } = 0.35;
+        public double Dot2Opacity { get; set; } = 0.35;
+        public double Dot3Opacity { get; set; } = 0.35;
+
         public LyricsLineViewModel() { }
 
-        public LyricsLineViewModel(TimeSpan time, string text)
+        public LyricsLineViewModel(TimeSpan time, string text, bool isInterlude = false)
         {
             Time = time;
             Text = text;
+            IsInterlude = isInterlude;
         }
 
         public void SetActive(bool active)
@@ -50,6 +56,10 @@ namespace NotchWin.ViewModels
                 ForegroundBrush = new SolidColorBrush(Color.FromRgb(161, 161, 170));
                 Opacity = 0.50;
             }
+        }
+
+        public void UpdateCountdown(double remainingSec)
+        {
         }
     }
 }

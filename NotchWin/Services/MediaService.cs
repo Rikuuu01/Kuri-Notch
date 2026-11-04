@@ -182,6 +182,28 @@ namespace NotchWin.Services
             await RefreshTrackInfoAsync();
         }
 
+        private GlobalSystemMediaTransportControlsSession? FindFallbackSession(GlobalSystemMediaTransportControlsSession? excludeSession)
+        {
+            try
+            {
+                if (_sessionManager == null) return null;
+                var sessions = _sessionManager.GetSessions();
+                return sessions.FirstOrDefault(s =>
+                {
+                    if (excludeSession != null && s == excludeSession) return false;
+                    var pi = s.GetPlaybackInfo();
+                    return pi != null &&
+                           pi.PlaybackStatus != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed &&
+                           pi.PlaybackStatus != GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped;
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Failed to query fallback SMTC session");
+                return null;
+            }
+        }
+
         public async Task RefreshTrackInfoAsync()
         {
             GlobalSystemMediaTransportControlsSession? session;
@@ -192,6 +214,18 @@ namespace NotchWin.Services
 
             if (session == null)
             {
+                var fallback = FindFallbackSession(null);
+                if (fallback != null)
+                {
+                    lock (_lock)
+                    {
+                        _currentSession = fallback;
+                        SubscribeToSession(_currentSession);
+                    }
+                    await RefreshTrackInfoAsync();
+                    return;
+                }
+
                 _lockedPlayingTrack = null;
                 ApplyTrackInfo(MediaTrackInfo.Empty);
                 return;
@@ -201,11 +235,24 @@ namespace NotchWin.Services
             {
                 var playbackInfo = session.GetPlaybackInfo();
 
-                // If playback is closed or stopped, clear media
+                // If playback is closed or stopped, check for a fallback active/paused session first before declaring Empty!
                 if (playbackInfo == null ||
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed ||
                     playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped)
                 {
+                    var fallback = FindFallbackSession(session);
+                    if (fallback != null)
+                    {
+                        lock (_lock)
+                        {
+                            UnsubscribeFromSession(session);
+                            _currentSession = fallback;
+                            SubscribeToSession(_currentSession);
+                        }
+                        await RefreshTrackInfoAsync();
+                        return;
+                    }
+
                     _lockedPlayingTrack = null;
                     ApplyTrackInfo(MediaTrackInfo.Empty);
                     return;
@@ -225,14 +272,63 @@ namespace NotchWin.Services
 
                 if (props == null || (string.IsNullOrWhiteSpace(props.Title) && string.IsNullOrWhiteSpace(props.Artist)))
                 {
+                    var fallback = FindFallbackSession(session);
+                    if (fallback != null)
+                    {
+                        lock (_lock)
+                        {
+                            UnsubscribeFromSession(session);
+                            _currentSession = fallback;
+                            SubscribeToSession(_currentSession);
+                        }
+                        await RefreshTrackInfoAsync();
+                        return;
+                    }
+
                     _lockedPlayingTrack = null;
                     ApplyTrackInfo(MediaTrackInfo.Empty);
                     return;
                 }
 
-                var timeline = session.GetTimelineProperties();
+                GlobalSystemMediaTransportControlsSessionTimelineProperties? timeline = null;
+                try
+                {
+                    timeline = session.GetTimelineProperties();
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "Failed to get timeline properties from session");
+                }
+
+                var startTime = timeline?.StartTime ?? TimeSpan.Zero;
+                var endTime = timeline?.EndTime ?? TimeSpan.Zero;
+                var dur = endTime > startTime ? endTime - startTime : TimeSpan.Zero;
+
                 var pos = timeline?.Position ?? TimeSpan.Zero;
-                var dur = (timeline?.EndTime ?? TimeSpan.Zero) - (timeline?.StartTime ?? TimeSpan.Zero);
+                if (pos > TimeSpan.Zero && startTime > TimeSpan.Zero && pos >= startTime)
+                {
+                    pos -= startTime;
+                }
+
+                // GSMTC reports Position at the instant LastUpdatedTime occurred.
+                // When actively playing, calculate current position by adding elapsed time since LastUpdatedTime.
+                if (timeline != null && isPlaying && timeline.LastUpdatedTime > DateTimeOffset.MinValue && timeline.LastUpdatedTime.Year >= 2020)
+                {
+                    var elapsed = DateTimeOffset.UtcNow - timeline.LastUpdatedTime;
+                    if (elapsed > TimeSpan.Zero && elapsed < TimeSpan.FromHours(24))
+                    {
+                        pos += elapsed;
+                    }
+                }
+
+                if (dur > TimeSpan.Zero && pos > dur)
+                {
+                    pos = dur;
+                }
+                else if (pos < TimeSpan.Zero)
+                {
+                    pos = TimeSpan.Zero;
+                }
 
                 var newTrack = new MediaTrackInfo
                 {
@@ -240,7 +336,7 @@ namespace NotchWin.Services
                     Artist = props.Artist,
                     Thumbnail = null, // Will load below if accepted
                     IsPlaying = isPlaying,
-                    Position = pos >= TimeSpan.Zero ? pos : TimeSpan.Zero,
+                    Position = pos,
                     Duration = dur > TimeSpan.Zero ? dur : TimeSpan.Zero,
                     HasMedia = !string.IsNullOrWhiteSpace(props.Title),
                     SourceAppId = session.SourceAppUserModelId ?? string.Empty
@@ -272,6 +368,7 @@ namespace NotchWin.Services
                         var bitmap = new BitmapImage();
                         bitmap.BeginInit();
                         bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.DecodePixelWidth = 200;
                         bitmap.StreamSource = memStream;
                         bitmap.EndInit();
                         bitmap.Freeze();
@@ -283,6 +380,25 @@ namespace NotchWin.Services
                     }
                 }
                 newTrack.Thumbnail = thumbnail;
+
+                // Re-anchor playback position right before applying to eliminate any latency
+                // introduced by asynchronous thumbnail stream loading and image decoding.
+                if (timeline != null && isPlaying && timeline.LastUpdatedTime > DateTimeOffset.MinValue && timeline.LastUpdatedTime.Year >= 2020)
+                {
+                    var freshElapsed = DateTimeOffset.UtcNow - timeline.LastUpdatedTime;
+                    if (freshElapsed > TimeSpan.Zero && freshElapsed < TimeSpan.FromHours(24))
+                    {
+                        var freshPos = timeline.Position;
+                        if (freshPos > TimeSpan.Zero && startTime > TimeSpan.Zero && freshPos >= startTime)
+                        {
+                            freshPos -= startTime;
+                        }
+                        freshPos += freshElapsed;
+                        if (dur > TimeSpan.Zero && freshPos > dur) freshPos = dur;
+                        else if (freshPos < TimeSpan.Zero) freshPos = TimeSpan.Zero;
+                        newTrack.Position = freshPos;
+                    }
+                }
 
                 // Update locked playing track reference
                 if (newTrack.HasMedia && newTrack.Duration > TimeSpan.FromSeconds(5))
@@ -337,8 +453,8 @@ namespace NotchWin.Services
         private void ApplyTrackInfo(MediaTrackInfo track)
         {
             CurrentTrack = track;
-            Log.Information("Media Track Applied: '{Title}' by '{Artist}' (IsPlaying={IsPlaying}, Duration={Duration})",
-                track.Title, track.Artist, track.IsPlaying, track.Duration);
+            Log.Information("Media Track Applied: '{Title}' by '{Artist}' (IsPlaying={IsPlaying}, Position={Position}, Duration={Duration})",
+                track.Title, track.Artist, track.IsPlaying, track.Position, track.Duration);
 
             MediaTrackChanged?.Invoke(this, track);
             PlaybackStateChanged?.Invoke(this, track.IsPlaying);

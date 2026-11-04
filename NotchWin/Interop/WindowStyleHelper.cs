@@ -25,6 +25,36 @@ namespace NotchWin.Interop
             );
         }
 
+        public static bool EnsureTopmost(IntPtr hwnd)
+        {
+            if (hwnd == IntPtr.Zero) return false;
+
+            // SWP_SHOWWINDOW is intentionally omitted: asserting z-order must not
+            // resurrect a window that is currently hidden or collapsing.
+            return NativeMethods.SetWindowPos(
+                hwnd,
+                NativeMethods.HWND_TOPMOST,
+                0, 0, 0, 0,
+                NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOOWNERZORDER
+            );
+        }
+
+        public static void SetNoActivate(IntPtr hwnd, bool noActivate)
+        {
+            if (hwnd == IntPtr.Zero) return;
+
+            long exStyle = NativeMethods.GetWindowLongPtr(hwnd, NativeMethods.GWL_EXSTYLE).ToInt64();
+            if (noActivate)
+            {
+                exStyle |= NativeMethods.WS_EX_NOACTIVATE;
+            }
+            else
+            {
+                exStyle &= ~NativeMethods.WS_EX_NOACTIVATE;
+            }
+            NativeMethods.SetWindowLongPtr(hwnd, NativeMethods.GWL_EXSTYLE, new IntPtr(exStyle));
+        }
+
         public static void AttachNoActivateHook(HwndSource source)
         {
             source.AddHook(WndProc);

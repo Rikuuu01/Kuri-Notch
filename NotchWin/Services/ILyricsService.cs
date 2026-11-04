@@ -7,6 +7,6 @@ namespace NotchWin.Services
 {
     public interface ILyricsService
     {
-        Task<LyricsResult> GetLyricsAsync(string title, string artist, TimeSpan duration, CancellationToken ct = default);
+        Task<LyricsFetchResult> GetLyricsCandidatesAsync(string rawTitle, string rawArtist, TimeSpan duration, CancellationToken ct = default);
     }
 }

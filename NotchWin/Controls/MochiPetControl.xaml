@@ -1,0 +1,56 @@
+<UserControl x:Class="NotchWin.Controls.MochiPetControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:NotchWin.Controls"
+             mc:Ignorable="d" 
+             Cursor="Hand"
+             Focusable="False"
+             Background="#00FFFFFF"
+             SnapsToDevicePixels="True"
+             MouseEnter="Control_MouseEnter"
+             MouseLeave="Control_MouseLeave"
+             PreviewMouseLeftButtonDown="Control_PreviewMouseLeftButtonDown"
+             PreviewMouseLeftButtonUp="Control_PreviewMouseLeftButtonUp">
+
+    <UserControl.Resources>
+        <!-- Pastel Mochi Resources -->
+        <LinearGradientBrush x:Key="PastelBodyBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+            <GradientStop Color="#E4D9FF" Offset="0"/>
+            <GradientStop Color="#BFCBFF" Offset="1"/>
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="PastelBodyBorderBrush" Color="#9A92E0"/>
+        <SolidColorBrush x:Key="PastelEyeWhiteBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="PastelInkBrush" Color="#1E1E2A"/>
+        <SolidColorBrush x:Key="PastelHeadphoneBrush" Color="#4A4E6D"/>
+        <SolidColorBrush x:Key="PastelHeadphoneEdgeBrush" Color="#2F324A"/>
+    </UserControl.Resources>
+
+    <Viewbox Stretch="Uniform">
+        <Grid Width="28" Height="20" Background="#00FFFFFF">
+            <!-- Root Container with Click Squash Transform -->
+            <Grid x:Name="CharacterRoot" Width="28" Height="20" RenderTransformOrigin="0.5, 0.5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid.RenderTransform>
+                    <ScaleTransform x:Name="SquashScaleTransform" ScaleX="1.0" ScaleY="1.0" />
+                </Grid.RenderTransform>
+
+                <!-- ========================================== -->
+                <!-- STYLE 1: PASTEL MOCHI (MascotControl.xaml) -->
+                <!-- ========================================== -->
+                <local:MascotControl x:Name="PastelMascot" Visibility="Collapsed" Width="28" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                <!-- ========================================== -->
+                <!-- STYLE 2: ASTRO MASCOT (AstroMascotControl) -->
+                <!-- ========================================== -->
+                <local:AstroMascotControl x:Name="AstroMascot" Visibility="Collapsed" Width="28" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                <!-- ========================================== -->
+                <!-- STYLE 3: EGG MASCOT (EggMascotControl) -->
+                <!-- ========================================== -->
+                <local:EggMascotControl x:Name="EggMascot" Visibility="Collapsed" Width="28" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+            </Grid>
+        </Grid>
+    </Viewbox>
+</UserControl>
