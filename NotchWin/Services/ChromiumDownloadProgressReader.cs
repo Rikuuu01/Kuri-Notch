@@ -19,32 +19,38 @@ namespace NotchWin.Services
 
         public static Dictionary<string, long> ReadTotals(IEnumerable<string> historyDatabases)
         {
+            return ReadProgress(historyDatabases).Totals;
+        }
+
+        public static (Dictionary<string, long> Totals, Dictionary<string, string> TargetNames) ReadProgress(IEnumerable<string> historyDatabases)
+        {
             var totals = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            var targetNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (string database in historyDatabases)
             {
                 try
                 {
-                    ReadDatabase(database, totals);
+                    ReadDatabase(database, totals, targetNames);
                 }
                 catch (DllNotFoundException)
                 {
-                    return totals;
+                    return (totals, targetNames);
                 }
                 catch (EntryPointNotFoundException)
                 {
-                    return totals;
+                    return (totals, targetNames);
                 }
                 catch (Exception ex)
                 {
-                    Log.Debug(ex, "DownloadMonitor: could not read download sizes from {Db}", database);
+                    Log.Debug(ex, "DownloadMonitor: could not read download progress from {Db}", database);
                 }
             }
 
-            return totals;
+            return (totals, targetNames);
         }
 
-        private static void ReadDatabase(string path, Dictionary<string, long> totals)
+        private static void ReadDatabase(string path, Dictionary<string, long> totals, Dictionary<string, string> targetNames)
         {
             if (!File.Exists(path)) return;
 
@@ -71,11 +77,28 @@ namespace NotchWin.Services
 
                 while (SqliteNative.Step(statement) == SqliteNative.Row)
                 {
+                    string currentPath = ReadText(statement, 0);
+                    string targetPath = ReadText(statement, 1);
                     long total = SqliteNative.ColumnInt64(statement, 2);
-                    if (total <= 0) continue;
 
-                    AddKey(totals, ReadText(statement, 0), total);
-                    AddKey(totals, ReadText(statement, 1), total);
+                    if (!string.IsNullOrEmpty(currentPath) && !string.IsNullOrEmpty(targetPath))
+                    {
+                        string targetFileName = Path.GetFileName(targetPath);
+                        if (!string.IsNullOrEmpty(targetFileName))
+                        {
+                            string normCurrent = NormalizePath(currentPath);
+                            if (normCurrent.Length > 0)
+                            {
+                                targetNames[normCurrent] = targetFileName;
+                            }
+                        }
+                    }
+
+                    if (total > 0)
+                    {
+                        AddKey(totals, currentPath, total);
+                        AddKey(totals, targetPath, total);
+                    }
                 }
             }
             finally

@@ -6,6 +6,7 @@ namespace NotchWin.Widgets
         Media,
         Battery,
         Volume,
-        Notification
+        Notification,
+        Timer
     }
 }

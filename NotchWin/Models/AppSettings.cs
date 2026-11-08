@@ -4,16 +4,26 @@ namespace NotchWin.Models
 {
     public class AppSettings
     {
+        public static AppSettings Current => Services.SettingsService.Instance?.CurrentSettings ?? new();
+
         public string Language { get; set; } = "en";
         public double TopOffset { get; set; } = 0.0;
         public double NotchScale { get; set; } = 1.0;
         public double FontScale { get; set; } = 1.0;
         public int HoverCollapseDelayMs { get; set; } = 450;
         public int HoverExpandDelayMs { get; set; } = 280;
-        public bool IsMediaWidgetEnabled { get; set; } = true;
+        public bool IsMediaWidgetEnabled { get; set; } = false;
         public bool IsPrivacyIndicatorEnabled { get; set; } = true;
         public int NotificationDurationSeconds { get; set; } = 3;
+        public bool IsAccentColorEnabled { get; set; } = true;
+        public bool ShowWeatherInCollapsedNotch { get; set; } = false;
+        public bool ShowBatteryInCollapsedNotch { get; set; } = false;
+        public bool ShowPetInCollapsedNotch { get; set; } = false;
         public bool IsAlbumArtAccentEnabled { get; set; } = true;
+        /// <summary>Garis cahaya sisa waktu timer/stopwatch di sekeliling outline notch tertutup.</summary>
+        public bool IsNotchTimerGlowEnabled { get; set; } = true;
+        /// <summary>Cahaya berjalan keliling outline notch saat alert tampil (maks 20 detik).</summary>
+        public bool IsNotchAlertGlowEnabled { get; set; } = true;
         public string AccentColor { get; set; } = "Blue";
         public string NotchMaterial { get; set; } = "OLED";
         public string CustomAccentColorHex { get; set; } = "#3B82F6";
@@ -29,6 +39,12 @@ namespace NotchWin.Models
         public string TargetMonitorDeviceName { get; set; } = string.Empty;
         public int LyricOffsetMs { get; set; } = 0;
         public bool IsLyricsEnabled { get; set; } = false;
+        public bool IsLyricsKaraokeEnabled { get; set; } = true;
+        public bool IsSyllableSyncEnabled { get; set; } = true;
+        public bool IsLrcRedEnabled { get; set; } = true;
+        public string SpicyLyricsApiKey { get; set; } = string.Empty;
+        public bool LyricsBold { get; set; } = true;
+        public double LyricsTextSize { get; set; } = 12.0;
 
         // Slide: Cuaca (Weather)
         public bool IsWeatherEnabled { get; set; } = true;
@@ -55,5 +71,32 @@ namespace NotchWin.Models
         public bool IsDownloadMonitorEnabled { get; set; } = true;
         public bool IsPetEnabled { get; set; } = true;
         public PetStyle PetStyle { get; set; } = PetStyle.PastelMochi;
+
+        // Shelf & Phone Share
+        public bool ShelfRemoveAfterDrag { get; set; } = false;
+        public bool IsPhoneShareEnabled { get; set; } = true;
+        public string PhoneFolder { get; set; } = string.Empty;
+
+        // Screen Time Tracking
+        public bool IsScreenTimeEnabled { get; set; } = true;
+        public int ScreenTimeIdleSeconds { get; set; } = 120;
+
+        // Modul Navbar (Urutan & Enable/Disable Menu Notch)
+        public System.Collections.Generic.List<NavbarModuleConfig> NavbarModules { get; set; } = GetDefaultNavbarModules();
+
+        public static System.Collections.Generic.List<NavbarModuleConfig> GetDefaultNavbarModules() => new()
+        {
+            new NavbarModuleConfig("home", true),
+            new NavbarModuleConfig("control", true),
+            new NavbarModuleConfig("media", true),
+            new NavbarModuleConfig("weather", true),
+            new NavbarModuleConfig("prayer", true),
+            new NavbarModuleConfig("water", true),
+            new NavbarModuleConfig("note", true),
+            new NavbarModuleConfig("clipboard", true),
+            new NavbarModuleConfig("timer", true),
+            new NavbarModuleConfig("shelf", true),
+            new NavbarModuleConfig("screentime", true),
+        };
     }
 }

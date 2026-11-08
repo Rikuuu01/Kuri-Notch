@@ -24,12 +24,15 @@ namespace NotchWin.Services
 
         private AppSettings _currentSettings = new();
 
+        public static SettingsService? Instance { get; private set; }
+
         public AppSettings CurrentSettings => _currentSettings;
 
         public event EventHandler<AppSettings>? SettingsChanged;
 
         public SettingsService()
         {
+            Instance = this;
             LoadSynchronous();
         }
 
@@ -48,6 +51,24 @@ namespace NotchWin.Services
                             // Nilai enum 0 berasal dari gaya maskot lama yang sudah dihapus.
                             loaded.PetStyle = PetStyle.PastelMochi;
                         }
+
+                        // Pastikan seluruh modul navbar terdaftar lengkap
+                        var defaultModules = AppSettings.GetDefaultNavbarModules();
+                        if (loaded.NavbarModules == null || loaded.NavbarModules.Count == 0)
+                        {
+                            loaded.NavbarModules = defaultModules;
+                        }
+                        else
+                        {
+                            foreach (var def in defaultModules)
+                            {
+                                if (!loaded.NavbarModules.Exists(m => string.Equals(m.Id, def.Id, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    loaded.NavbarModules.Add(def);
+                                }
+                            }
+                        }
+
                         _currentSettings = loaded;
                         LocalizationService.Instance.CurrentLanguage = _currentSettings.Language ?? "en";
                         Log.Information("Settings loaded synchronously from {Path} (Language: {Lang})", SettingsFilePath, _currentSettings.Language);

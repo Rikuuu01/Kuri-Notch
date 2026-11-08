@@ -15,6 +15,8 @@ namespace NotchWin.ViewModels
     {
         private readonly IShelfService _shelfService;
 
+        public LocalizationService L10n => LocalizationService.Instance;
+
         public ObservableCollection<ShelfItem> Items => _shelfService.Items;
 
         public bool HasItems => Items.Count > 0;
@@ -22,9 +24,9 @@ namespace NotchWin.ViewModels
 
         public string ItemsCountText => Items.Count switch
         {
-            0 => "Empty Shelf",
-            1 => "1 Item",
-            _ => $"{Items.Count} Items"
+            0 => L10n.Get("Shelf.EmptyCount"),
+            1 => L10n.Get("Shelf.OneItem"),
+            _ => L10n.Get("Shelf.ItemsCount", Items.Count)
         };
 
         public string TotalSizeText
@@ -43,6 +45,18 @@ namespace NotchWin.ViewModels
         {
             _shelfService = shelfService;
             Items.CollectionChanged += OnItemsCollectionChanged;
+            LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged(object? sender, string e)
+        {
+            _shelfService.RefreshMissingStates();
+            OnPropertyChanged(nameof(ItemsCountText));
+        }
+
+        public void RefreshMissingStates()
+        {
+            _shelfService.RefreshMissingStates();
         }
 
         private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -64,7 +78,7 @@ namespace NotchWin.ViewModels
             using var dialog = new OpenFileDialog
             {
                 Multiselect = true,
-                Title = "Select files to temporarily store in Shelf"
+                Title = L10n.Get("Shelf.SelectFilesTitle")
             };
 
             if (dialog.ShowDialog() == DialogResult.OK && dialog.FileNames.Length > 0)

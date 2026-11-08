@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -472,20 +473,52 @@ namespace NotchWin.Services
                    lower.Contains("vivaldi");
         }
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+        private const byte VK_MEDIA_NEXT_TRACK = 0xB0;
+        private const byte VK_MEDIA_PREV_TRACK = 0xB1;
+        private const byte VK_MEDIA_PLAY_PAUSE = 0xB3;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+
+        public static void SendMediaKey(byte vkCode)
+        {
+            try
+            {
+                keybd_event(vkCode, 0, 0, UIntPtr.Zero);
+                keybd_event(vkCode, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to send virtual media key 0x{VkCode:X2}", vkCode);
+            }
+        }
+
         public async Task TogglePlayPauseAsync()
         {
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
+            if (session == null && _sessionManager != null)
+            {
+                try { session = _sessionManager.GetCurrentSession(); } catch { }
+            }
+
+            bool success = false;
             if (session != null)
             {
                 try
                 {
-                    await session.TryTogglePlayPauseAsync();
+                    success = await session.TryTogglePlayPauseAsync();
                 }
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "Failed to toggle play/pause via SMTC");
                 }
+            }
+
+            if (!success)
+            {
+                SendMediaKey(VK_MEDIA_PLAY_PAUSE);
             }
         }
 
@@ -496,16 +529,27 @@ namespace NotchWin.Services
 
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
+            if (session == null && _sessionManager != null)
+            {
+                try { session = _sessionManager.GetCurrentSession(); } catch { }
+            }
+
+            bool success = false;
             if (session != null)
             {
                 try
                 {
-                    await session.TrySkipNextAsync();
+                    success = await session.TrySkipNextAsync();
                 }
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "Failed to skip next via SMTC");
                 }
+            }
+
+            if (!success)
+            {
+                SendMediaKey(VK_MEDIA_NEXT_TRACK);
             }
         }
 
@@ -516,16 +560,27 @@ namespace NotchWin.Services
 
             GlobalSystemMediaTransportControlsSession? session;
             lock (_lock) { session = _currentSession; }
+            if (session == null && _sessionManager != null)
+            {
+                try { session = _sessionManager.GetCurrentSession(); } catch { }
+            }
+
+            bool success = false;
             if (session != null)
             {
                 try
                 {
-                    await session.TrySkipPreviousAsync();
+                    success = await session.TrySkipPreviousAsync();
                 }
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "Failed to skip previous via SMTC");
                 }
+            }
+
+            if (!success)
+            {
+                SendMediaKey(VK_MEDIA_PREV_TRACK);
             }
         }
 

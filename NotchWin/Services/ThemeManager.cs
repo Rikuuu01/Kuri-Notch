@@ -52,9 +52,16 @@ namespace NotchWin.Services
 
     {
 
+        public static bool IsAccentColorEnabled { get; set; } = true;
+
         public static (Color Primary, Color Light) GetAccentColors(string colorName)
 
         {
+
+            if (!IsAccentColorEnabled)
+            {
+                return (Color.FromRgb(0x52, 0x52, 0x5B), Color.FromRgb(0xD4, 0xD4, 0xD8));
+            }
 
             if (colorName == "Windows (Auto)" || colorName == "Auto" || colorName == "Windows")
 
@@ -185,19 +192,27 @@ namespace NotchWin.Services
 
             ActiveThemeSetting = colorName;
 
-
-
-            // If an album accent is actively playing / media is running with dynamic accent, don't overwrite it unless explicitly forced
-
-            if ((_isUsingDynamicAlbumAccent || IsMediaRunning) && CurrentAlbumAccent.HasValue && !force)
-
+            // If accent colors are disabled, apply pitch black / neutral monochrome theme
+            if (!IsAccentColorEnabled)
             {
-
+                var (monoPrimary, monoLight) = GetAccentColors(colorName);
+                ApplyColorsToApp(monoPrimary, monoLight, animate: _hasInitialized);
+                _hasInitialized = true;
                 return;
-
             }
 
-
+            // If not forced and an album accent is known, ALWAYS prioritize the album cover accent!
+            if (!force && CurrentAlbumAccent.HasValue)
+            {
+                _isUsingDynamicAlbumAccent = true;
+                byte rAccentL = (byte)Math.Min(255, CurrentAlbumAccent.Value.R + 45);
+                byte gAccentL = (byte)Math.Min(255, CurrentAlbumAccent.Value.G + 45);
+                byte bAccentL = (byte)Math.Min(255, CurrentAlbumAccent.Value.B + 45);
+                Color lightAccent = Color.FromRgb(rAccentL, gAccentL, bAccentL);
+                ApplyColorsToApp(CurrentAlbumAccent.Value, lightAccent, animate: _hasInitialized);
+                _hasInitialized = true;
+                return;
+            }
 
             _isUsingDynamicAlbumAccent = false;
 
@@ -219,13 +234,22 @@ namespace NotchWin.Services
 
         {
 
+            var previousAccent = CurrentAlbumAccent;
+            // Always cache the album accent so it is immediately available when accents are turned on
+            CurrentAlbumAccent = primary;
+
+            if (!IsAccentColorEnabled)
+            {
+                return;
+            }
+
             // Avoid restarting animation if the new color is virtually identical to current
 
-            if (_isUsingDynamicAlbumAccent && CurrentAlbumAccent.HasValue)
+            if (_isUsingDynamicAlbumAccent && previousAccent.HasValue)
 
             {
 
-                var cur = CurrentAlbumAccent.Value;
+                var cur = previousAccent.Value;
 
                 int delta = Math.Abs(cur.R - primary.R) + Math.Abs(cur.G - primary.G) + Math.Abs(cur.B - primary.B);
 
@@ -242,8 +266,6 @@ namespace NotchWin.Services
 
 
             _isUsingDynamicAlbumAccent = true;
-
-            CurrentAlbumAccent = primary;
 
 
 
@@ -270,9 +292,11 @@ namespace NotchWin.Services
         public static void ApplyMaterial(string material)
         {
             CurrentMaterial = material;
-            var (primary, light) = CurrentAlbumAccent.HasValue && _isUsingDynamicAlbumAccent
-                ? (CurrentAlbumAccent.Value, Color.FromRgb((byte)Math.Min(255, CurrentAlbumAccent.Value.R + 45), (byte)Math.Min(255, CurrentAlbumAccent.Value.G + 45), (byte)Math.Min(255, CurrentAlbumAccent.Value.B + 45)))
-                : GetAccentColors(ActiveThemeSetting);
+            var (primary, light) = (!IsAccentColorEnabled)
+                ? GetAccentColors(ActiveThemeSetting)
+                : (CurrentAlbumAccent.HasValue
+                    ? (CurrentAlbumAccent.Value, Color.FromRgb((byte)Math.Min(255, CurrentAlbumAccent.Value.R + 45), (byte)Math.Min(255, CurrentAlbumAccent.Value.G + 45), (byte)Math.Min(255, CurrentAlbumAccent.Value.B + 45)))
+                    : GetAccentColors(ActiveThemeSetting));
             ApplyColorsToApp(primary, light, animate: _hasInitialized);
         }
 
@@ -348,7 +372,7 @@ namespace NotchWin.Services
 
                     app.Resources["AccentLightBrush"] = lightBrush;
 
-                    app.Resources["AccentGlowColor"] = light;
+                    app.Resources["AccentGlowColor"] = IsAccentColorEnabled ? light : Color.FromArgb(0, 0, 0, 0);
 
                     app.Resources["NotchStrokeBrush"] = strokeBrush;
 
@@ -382,6 +406,77 @@ namespace NotchWin.Services
 
         public static (LinearGradientBrush Background, LinearGradientBrush Stroke) CreateGradientBrushes(Color primary, Color light)
         {
+            LinearGradientBrush strokeBrush;
+            LinearGradientBrush bgBrush;
+
+            if (!IsAccentColorEnabled)
+            {
+                if (CurrentMaterial == "TintedGlass")
+                {
+                    bgBrush = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0.5, 0),
+                        EndPoint = new Point(0.5, 1),
+                        GradientStops = new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromArgb(235, 0, 0, 0), 0.0),
+                            new GradientStop(Color.FromArgb(242, 0, 0, 0), 0.35),
+                            new GradientStop(Color.FromArgb(250, 0, 0, 0), 0.70),
+                            new GradientStop(Color.FromArgb(255, 0, 0, 0), 1.0)
+                        }
+                    };
+                }
+                else if (CurrentMaterial == "Acrylic")
+                {
+                    bgBrush = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0.5, 0),
+                        EndPoint = new Point(0.5, 1),
+                        GradientStops = new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromArgb(215, 0, 0, 0), 0.0),
+                            new GradientStop(Color.FromArgb(230, 0, 0, 0), 0.35),
+                            new GradientStop(Color.FromArgb(242, 0, 0, 0), 0.70),
+                            new GradientStop(Color.FromArgb(255, 0, 0, 0), 1.0)
+                        }
+                    };
+                }
+                else
+                {
+                    // True OLED Pitch Black: 100% solid pure black (#000000)
+                    bgBrush = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0.5, 0),
+                        EndPoint = new Point(0.5, 1),
+                        GradientStops = new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromRgb(0x00, 0x00, 0x00), 0.0),
+                            new GradientStop(Color.FromRgb(0x00, 0x00, 0x00), 0.35),
+                            new GradientStop(Color.FromRgb(0x00, 0x00, 0x00), 0.70),
+                            new GradientStop(Color.FromRgb(0x00, 0x00, 0x00), 1.0)
+                        }
+                    };
+                }
+
+                // Zero glow on edges: completely transparent stroke
+                strokeBrush = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0.5, 0),
+                    EndPoint = new Point(0.5, 1),
+                    GradientStops = new GradientStopCollection
+                    {
+                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.0),
+                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.35),
+                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.70),
+                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 1.0)
+                    }
+                };
+
+                strokeBrush.Freeze();
+                bgBrush.Freeze();
+                return (bgBrush, strokeBrush);
+            }
+
             byte rStroke = (byte)Math.Clamp(light.R * 0.85 + 30, 0, 255);
             byte gStroke = (byte)Math.Clamp(light.G * 0.85 + 35, 0, 255);
             byte bStroke = (byte)Math.Clamp(light.B * 0.85 + 40, 0, 255);
@@ -402,9 +497,6 @@ namespace NotchWin.Services
             byte gEnd = (byte)Math.Clamp(light.G * 0.60 + 25, 0, 255);
             byte bEnd = (byte)Math.Clamp(light.B * 0.60 + 30, 0, 255);
             Color bgEnd = Color.FromRgb(rEnd, gEnd, bEnd);
-
-            LinearGradientBrush strokeBrush;
-            LinearGradientBrush bgBrush;
 
             if (CurrentMaterial == "TintedGlass")
             {
@@ -502,6 +594,22 @@ namespace NotchWin.Services
         public static LinearGradientBrush CreatePlayPauseBrush(Color primary, Color light)
 
         {
+
+            if (!IsAccentColorEnabled)
+            {
+                var monoBrush = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(1, 1),
+                    GradientStops = new GradientStopCollection
+                    {
+                        new GradientStop(Color.FromRgb(0xE4, 0xE4, 0xE7), 0.0),
+                        new GradientStop(Color.FromRgb(0x71, 0x71, 0x7A), 1.0)
+                    }
+                };
+                monoBrush.Freeze();
+                return monoBrush;
+            }
 
             var brush = new LinearGradientBrush
 

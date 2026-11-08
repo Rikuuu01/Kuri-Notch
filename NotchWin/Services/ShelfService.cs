@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -42,10 +43,197 @@ namespace NotchWin.Services
         private const uint FILE_ATTRIBUTE_NORMAL = 0x00000080;
         private const uint FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
 
+        private const int MaxItems = 200;
+
+        private static readonly string DataDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NotchWin"
+        );
+
+        private static readonly string FilePath = Path.Combine(DataDirectory, "shelf.json");
+
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true
+        };
+
         public ObservableCollection<ShelfItem> Items { get; } = new();
 
         private readonly object _lock = new();
         private readonly Dictionary<string, DateTime> _recentlyAdded = new(StringComparer.OrdinalIgnoreCase);
+
+        public ShelfService()
+        {
+            LoadShelf();
+        }
+
+        private void LoadShelf()
+        {
+            try
+            {
+                if (!File.Exists(FilePath)) return;
+
+                string json = File.ReadAllText(FilePath);
+                ShelfState? state;
+                try
+                {
+                    state = JsonSerializer.Deserialize<ShelfState>(json, JsonOptions);
+                }
+                catch (JsonException)
+                {
+                    string badPath = FilePath + ".bad";
+                    try { File.Move(FilePath, badPath, overwrite: true); } catch { }
+                    Log.Warning("Shelf state file was corrupt; moved to {BadPath}", badPath);
+                    return;
+                }
+
+                if (state?.Items == null) return;
+
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var record in state.Items.OrderByDescending(r => r.AddedAt))
+                {
+                    if (Items.Count >= MaxItems) break;
+                    if (record == null || string.IsNullOrWhiteSpace(record.Path)) continue;
+
+                    string path = NormalizePath(record.Path);
+                    if (string.IsNullOrEmpty(path) || !seen.Add(path)) continue;
+
+                    // Jangan sentuh path jaringan saat startup: bisa menggantung lama bila share offline.
+                    bool isUnc = path.StartsWith(@"\\", StringComparison.Ordinal);
+                    bool probe = !isUnc;
+
+                    bool isDir;
+                    if (probe)
+                    {
+                        isDir = Directory.Exists(path);
+                    }
+                    else
+                    {
+                        isDir = record.IsDirectory;
+                    }
+
+                    Items.Add(BuildItem(path, isDir, record.AddedAt, record.Id, probe));
+                }
+
+                Log.Information("Shelf loaded {Count} items from {Path}", Items.Count, FilePath);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to load shelf state from {Path}", FilePath);
+            }
+        }
+
+        private void SaveShelf()
+        {
+            try
+            {
+                Directory.CreateDirectory(DataDirectory);
+
+                var state = new ShelfState
+                {
+                    Version = 1,
+                    Items = Items.Select(i => new ShelfEntryRecord
+                    {
+                        Id = i.Id,
+                        Path = i.FilePath,
+                        AddedAt = i.AddedAt,
+                        IsDirectory = i.IsDirectory
+                    }).ToList()
+                };
+
+                string json = JsonSerializer.Serialize(state, JsonOptions);
+                string tempPath = FilePath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, FilePath, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to save shelf state to {Path}", FilePath);
+            }
+        }
+
+        private ShelfItem BuildItem(string path, bool isDir, DateTime addedAt, Guid id, bool probe)
+        {
+            string fileName = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrEmpty(fileName)) fileName = path;
+
+            string ext = isDir ? string.Empty : Path.GetExtension(path).ToLowerInvariant();
+            bool isFile = probe && !isDir && File.Exists(path);
+            bool isImage = !isDir && IsImageExtension(ext);
+
+            long sizeBytes = 0;
+            if (isFile)
+            {
+                try { sizeBytes = new FileInfo(path).Length; } catch { }
+            }
+
+            var item = new ShelfItem
+            {
+                Id = id,
+                FilePath = path,
+                FileName = fileName,
+                FileExtension = ext,
+                FileSizeBytes = sizeBytes,
+                FileSizeFormatted = isDir ? "Folder" : FormatFileSize(sizeBytes),
+                IsDirectory = isDir,
+                IsImage = isImage,
+                AddedAt = addedAt
+            };
+
+            if (probe)
+            {
+                item.Thumbnail = GenerateThumbnail(path, isDir, isImage);
+
+                bool exists = isDir ? Directory.Exists(path) : File.Exists(path);
+                if (!exists)
+                {
+                    item.IsMissing = true;
+                    item.StatusText = GetMissingStatusText(path);
+                }
+            }
+
+            return item;
+        }
+
+        private static string GetMissingStatusText(string path)
+        {
+            string root = string.Empty;
+            try { root = Path.GetPathRoot(path) ?? string.Empty; } catch { }
+
+            bool driveMissing = !string.IsNullOrEmpty(root) && !Directory.Exists(root);
+            return LocalizationService.Instance.Get(driveMissing ? "Shelf.DriveNotFound" : "Shelf.FileNotFound");
+        }
+
+        private static bool IsImageExtension(string ext)
+        {
+            return ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".webp" || ext == ".gif";
+        }
+
+        public void RefreshMissingStates()
+        {
+            foreach (var item in Items)
+            {
+                if (string.IsNullOrWhiteSpace(item.FilePath)) continue;
+
+                bool exists = item.IsDirectory ? Directory.Exists(item.FilePath) : File.Exists(item.FilePath);
+                if (!exists)
+                {
+                    string root = string.Empty;
+                    try { root = Path.GetPathRoot(item.FilePath) ?? string.Empty; } catch { }
+
+                    if (!string.IsNullOrEmpty(root) && !Directory.Exists(root))
+                    {
+                        item.IsMissing = true;
+                        item.StatusText = LocalizationService.Instance.Get("Shelf.DriveNotFound");
+                        continue;
+                    }
+                }
+
+                item.IsMissing = !exists;
+                item.StatusText = exists ? string.Empty : LocalizationService.Instance.Get("Shelf.FileNotFound");
+            }
+        }
 
         public static string NormalizePath(string path)
         {
@@ -124,34 +312,7 @@ namespace NotchWin.Services
                             Items.Remove(existing);
                         }
 
-                        string fileName = isDir ? new DirectoryInfo(path).Name : Path.GetFileName(path);
-                        string ext = isDir ? string.Empty : Path.GetExtension(path).ToLowerInvariant();
-                        long sizeBytes = 0;
-
-                        if (isFile)
-                        {
-                            try
-                            {
-                                sizeBytes = new FileInfo(path).Length;
-                            }
-                            catch { }
-                        }
-
-                        bool isImage = isFile && (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".webp" || ext == ".gif");
-                        ImageSource? thumbnail = GenerateThumbnail(path, isDir, isImage);
-
-                        var item = new ShelfItem
-                        {
-                            FilePath = path,
-                            FileName = fileName,
-                            FileExtension = ext,
-                            FileSizeBytes = sizeBytes,
-                            FileSizeFormatted = isDir ? "Folder" : FormatFileSize(sizeBytes),
-                            IsDirectory = isDir,
-                            IsImage = isImage,
-                            Thumbnail = thumbnail,
-                            AddedAt = DateTime.Now
-                        };
+                        var item = BuildItem(path, isDir, DateTime.Now, Guid.NewGuid(), probe: true);
 
                         Items.Insert(0, item);
                         _recentlyAdded[path] = now;
@@ -164,6 +325,19 @@ namespace NotchWin.Services
                 }
             }
 
+            if (addedCount > 0)
+            {
+                while (Items.Count > MaxItems)
+                {
+                    Items.RemoveAt(Items.Count - 1);
+                }
+
+                SaveShelf();
+            }
+
+            Log.Information("Shelf add: {Added} new of {Total} path(s), {Skipped} duplicate/ignored",
+                addedCount, validPaths.Count, validPaths.Count - addedCount);
+
             return addedCount;
         }
 
@@ -175,11 +349,18 @@ namespace NotchWin.Services
             {
                 Items.Remove(rem);
             }
+
+            if (toRemove.Count > 0)
+            {
+                SaveShelf();
+            }
         }
 
         public void ClearAll()
         {
+            if (Items.Count == 0) return;
             Items.Clear();
+            SaveShelf();
         }
 
         public void OpenItem(ShelfItem item)

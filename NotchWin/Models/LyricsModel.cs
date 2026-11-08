@@ -4,17 +4,41 @@ using System.Text.Json.Serialization;
 
 namespace NotchWin.Models
 {
+    public class SyllableItem
+    {
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public int CharStartIndex { get; set; }
+        public int CharLength { get; set; }
+
+        public SyllableItem() { }
+
+        public SyllableItem(TimeSpan start, TimeSpan end, string text, int charStart = 0, int charLen = 0)
+        {
+            StartTime = start;
+            EndTime = end;
+            Text = text;
+            CharStartIndex = charStart;
+            CharLength = charLen > 0 ? charLen : text.Length;
+        }
+    }
+
     public class LyricsLine
     {
         public TimeSpan Time { get; set; }
+        public TimeSpan? EndTime { get; set; }
         public string Text { get; set; } = string.Empty;
+        public List<SyllableItem> Syllables { get; set; } = new List<SyllableItem>();
+        public bool HasSyllables => Syllables != null && Syllables.Count > 0;
 
         public LyricsLine() { }
 
-        public LyricsLine(TimeSpan time, string text)
+        public LyricsLine(TimeSpan time, string text, TimeSpan? endTime = null)
         {
             Time = time;
             Text = text;
+            EndTime = endTime;
         }
     }
 
@@ -23,6 +47,8 @@ namespace NotchWin.Models
         public bool Found { get; set; }
         public bool IsInstrumental { get; set; }
         public bool IsSynced { get; set; }
+        public bool IsSyllableSynced { get; set; }
+        public string Provider { get; set; } = "LRCLIB";
         public int BaseOffsetMs { get; set; } = 0;
         public List<LyricsLine> Lines { get; set; } = new List<LyricsLine>();
         public string? PlainLyrics { get; set; }
@@ -47,6 +73,8 @@ namespace NotchWin.Models
         public double? Duration { get; set; }
         public bool IsInstrumental { get; set; }
         public bool IsSynced { get; set; }
+        public bool IsSyllableSynced { get; set; }
+        public string Provider { get; set; } = "LRCLIB";
         public double Score { get; set; }
         public LyricsResult Result { get; set; } = LyricsResult.Empty;
     }

@@ -24,6 +24,13 @@ bld/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+*.buildcheck*/
+
+# Scratch & Checkpoints
+_checkpoints/
+.qoder/
+scratch/
+test_ttml.cs
 
 # OS generated files
 .DS_Store

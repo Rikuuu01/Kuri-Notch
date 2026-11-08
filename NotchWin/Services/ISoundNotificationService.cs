@@ -6,6 +6,7 @@ namespace NotchWin.Services
         void PlayTimerAlarm();
         void PlayWaterReminder();
         void PlayPrayerCall();
+        void StopPrayerCall();
         void PlayStartupSound();
     }
 }

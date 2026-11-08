@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NotchWin.Services;
+using NotchWin.Widgets;
 using Serilog;
 
 namespace NotchWin.ViewModels
@@ -16,13 +17,20 @@ namespace NotchWin.ViewModels
         public string DeltaText { get; set; } = string.Empty;
     }
 
-    public partial class TimerStopwatchViewModel : ObservableObject
+    public partial class TimerStopwatchViewModel : ObservableObject, INotchWidget
     {
         private readonly DispatcherTimer _tickTimer;
         private readonly Stopwatch _stopwatch = new();
         private TimeSpan _lastLapTime = TimeSpan.Zero;
 
+        public WidgetType Type => WidgetType.Timer;
+        public string Name => "Timer";
+        public int Priority => 30;
+        public bool IsActive => false; // Alternasi live activity terjadi in-place di widget Media & Clock tiap 3 detik
+
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ShowTimerInCollapsed))]
+        [NotifyPropertyChangedFor(nameof(ShowStopwatchInCollapsed))]
         private bool _isTimerMode = true;
 
         #region Timer Properties
@@ -35,6 +43,9 @@ namespace NotchWin.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(StartPauseText))]
         [NotifyPropertyChangedFor(nameof(IsAnyTimerRunning))]
+        [NotifyPropertyChangedFor(nameof(IsActive))]
+        [NotifyPropertyChangedFor(nameof(ShowTimerInCollapsed))]
+        [NotifyPropertyChangedFor(nameof(ShowStopwatchInCollapsed))]
         [NotifyPropertyChangedFor(nameof(SubNotchDisplay))]
         private bool _isTimerRunning;
 
@@ -58,6 +69,9 @@ namespace NotchWin.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(StopwatchStartPauseText))]
         [NotifyPropertyChangedFor(nameof(IsAnyTimerRunning))]
+        [NotifyPropertyChangedFor(nameof(IsActive))]
+        [NotifyPropertyChangedFor(nameof(ShowTimerInCollapsed))]
+        [NotifyPropertyChangedFor(nameof(ShowStopwatchInCollapsed))]
         [NotifyPropertyChangedFor(nameof(SubNotchDisplay))]
         private bool _isStopwatchRunning;
 
@@ -77,12 +91,23 @@ namespace NotchWin.ViewModels
         [NotifyPropertyChangedFor(nameof(StopwatchSubNotchDisplay))]
         private string _stopwatchCentiseconds = ".00";
 
+        /// <summary>
+        /// Progres menit berjalan (0..1) untuk garis cahaya di outline notch. Naik sekali per detik
+        /// supaya notch tidak menerima PropertyChanged 20x/detik dari jalur stopwatch.
+        /// </summary>
+        public double StopwatchOutlineFraction { get; private set; }
+
+        private int _lastStopwatchWholeSeconds = -1;
+
         public ObservableCollection<LapItem> Laps { get; } = new();
 
         public bool HasLaps => Laps.Count > 0;
         public bool HasNoLaps => Laps.Count == 0;
 
         public bool IsAnyTimerRunning => IsTimerRunning || IsStopwatchRunning;
+
+        public bool ShowTimerInCollapsed => IsTimerRunning && (IsTimerMode || !IsStopwatchRunning);
+        public bool ShowStopwatchInCollapsed => IsStopwatchRunning && (!IsTimerMode || !IsTimerRunning);
 
         public string SubNotchDisplay => IsTimerRunning
             ? TimerDisplay
@@ -96,7 +121,7 @@ namespace NotchWin.ViewModels
         public TimerStopwatchViewModel(ISoundNotificationService? soundNotificationService = null)
         {
             _soundNotificationService = soundNotificationService;
-            _tickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            _tickTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(40) };
             _tickTimer.Tick += OnTick;
 
             LocalizationService.Instance.LanguageChanged += (_, _) =>
@@ -113,12 +138,17 @@ namespace NotchWin.ViewModels
         }
 
         #region Timer Commands
+        private DateTime _timerTargetEndTime;
+
         [RelayCommand]
         public void StartPauseTimer()
         {
             if (IsTimerRunning)
             {
                 IsTimerRunning = false;
+                var timeLeft = _timerTargetEndTime - DateTime.UtcNow;
+                RemainingTimerSeconds = (int)Math.Max(0, Math.Ceiling(timeLeft.TotalSeconds));
+                UpdateTimerDisplay();
                 CheckTimerActive();
                 Log.Information("Timer paused at {Display}", TimerDisplay);
             }
@@ -128,8 +158,9 @@ namespace NotchWin.ViewModels
                 {
                     RemainingTimerSeconds = TotalTimerSeconds > 0 ? TotalTimerSeconds : 300;
                 }
-                _lastTimerSecondCheck = DateTime.Now;
+                _timerTargetEndTime = DateTime.UtcNow.AddSeconds(RemainingTimerSeconds);
                 IsTimerRunning = true;
+                CheckTimerActive();
                 _tickTimer.Start();
                 Log.Information("Timer started: {Display} ({Seconds}s)", TimerDisplay, RemainingTimerSeconds);
             }
@@ -167,6 +198,10 @@ namespace NotchWin.ViewModels
                 int newSecs = Math.Clamp(RemainingTimerSeconds + deltaSecs, 10, 3600 * 24);
                 RemainingTimerSeconds = newSecs;
                 if (newSecs > TotalTimerSeconds) TotalTimerSeconds = newSecs;
+                if (IsTimerRunning)
+                {
+                    _timerTargetEndTime = DateTime.UtcNow.AddSeconds(RemainingTimerSeconds);
+                }
                 UpdateTimerDisplay();
                 Log.Information("Timer adjusted by {Delta}s to {Display}", deltaSecs, TimerDisplay);
             }
@@ -209,6 +244,9 @@ namespace NotchWin.ViewModels
             _lastLapTime = TimeSpan.Zero;
             StopwatchMinutesSeconds = "00:00";
             StopwatchCentiseconds = ".00";
+            _lastStopwatchWholeSeconds = -1;
+            StopwatchOutlineFraction = 0.0;
+            OnPropertyChanged(nameof(StopwatchOutlineFraction));
             Laps.Clear();
             CheckTimerActive();
             OnPropertyChanged(nameof(HasLaps));
@@ -236,33 +274,29 @@ namespace NotchWin.ViewModels
         }
         #endregion
 
-        private DateTime _lastTimerSecondCheck = DateTime.MinValue;
-
         private void OnTick(object? sender, EventArgs e)
         {
-            // Timer Tick
+            // Timer Tick (Target End Time calculation, immune to drift & UI lag)
             if (IsTimerRunning)
             {
-                if ((DateTime.Now - _lastTimerSecondCheck).TotalSeconds >= 1.0)
+                var timeLeft = _timerTargetEndTime - DateTime.UtcNow;
+                int secsLeft = (int)Math.Max(0, Math.Ceiling(timeLeft.TotalSeconds));
+                if (secsLeft != RemainingTimerSeconds)
                 {
-                    _lastTimerSecondCheck = DateTime.Now;
-                    if (RemainingTimerSeconds > 0)
+                    RemainingTimerSeconds = secsLeft;
+                    UpdateTimerDisplay();
+                    if (RemainingTimerSeconds <= 0)
                     {
-                        RemainingTimerSeconds--;
-                        UpdateTimerDisplay();
-                        if (RemainingTimerSeconds == 0)
+                        IsTimerRunning = false;
+                        Log.Information("Timer reached 0! Triggered alarm");
+                        TimerFinished?.Invoke(this, EventArgs.Empty);
+                        if (_soundNotificationService != null)
                         {
-                            IsTimerRunning = false;
-                            Log.Information("Timer reached 0! Triggered alarm");
-                            TimerFinished?.Invoke(this, EventArgs.Empty);
-                            if (_soundNotificationService != null)
-                            {
-                                _soundNotificationService.PlayTimerAlarm();
-                            }
-                            else
-                            {
-                                System.Media.SystemSounds.Exclamation.Play();
-                            }
+                            _soundNotificationService.PlayTimerAlarm();
+                        }
+                        else
+                        {
+                            System.Media.SystemSounds.Exclamation.Play();
                         }
                     }
                 }
@@ -272,8 +306,25 @@ namespace NotchWin.ViewModels
             if (IsStopwatchRunning)
             {
                 var el = _stopwatch.Elapsed;
-                StopwatchMinutesSeconds = $"{el.Minutes:D2}:{el.Seconds:D2}";
-                StopwatchCentiseconds = $".{el.Milliseconds / 10:D2}";
+                string newMinSec = $"{el.Minutes:D2}:{el.Seconds:D2}";
+                string newCenti = $".{el.Milliseconds / 10:D2}";
+
+                if (newMinSec != StopwatchMinutesSeconds)
+                {
+                    StopwatchMinutesSeconds = newMinSec;
+                }
+                if (newCenti != StopwatchCentiseconds)
+                {
+                    StopwatchCentiseconds = newCenti;
+                }
+
+                int wholeSeconds = (int)el.TotalSeconds;
+                if (wholeSeconds != _lastStopwatchWholeSeconds)
+                {
+                    _lastStopwatchWholeSeconds = wholeSeconds;
+                    StopwatchOutlineFraction = (wholeSeconds % 60) / 60.0;
+                    OnPropertyChanged(nameof(StopwatchOutlineFraction));
+                }
             }
 
             CheckTimerActive();
@@ -287,8 +338,9 @@ namespace NotchWin.ViewModels
             }
             else
             {
-                // Dynamic interval: 50ms when stopwatch is active (needs centiseconds), 250ms when only timer is active
-                _tickTimer.Interval = IsStopwatchRunning ? TimeSpan.FromMilliseconds(50) : TimeSpan.FromMilliseconds(250);
+                // Dynamic interval: 40ms (~25 fps Render priority) saat stopwatch aktif untuk centiseconds mulus,
+                // 80ms saat timer countdown aktif untuk deteksi detik yang presisi tanpa jeda/stuck.
+                _tickTimer.Interval = IsStopwatchRunning ? TimeSpan.FromMilliseconds(40) : TimeSpan.FromMilliseconds(80);
             }
         }
     }

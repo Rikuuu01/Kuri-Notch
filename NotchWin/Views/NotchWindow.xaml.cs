@@ -289,7 +289,7 @@ public partial class NotchWindow : Window
 	private DispatcherTimer? _overlayWindowSettleTimer;
 	private DispatcherTimer? _shelfDropEffectTimer;
 	private IntPtr _notchHwnd;
-	private IntPtr _lyricsVersionPopupHwnd;
+	// _lyricsVersionPopupHwnd removed
 	private IntPtr _devicePickerPopupHwnd;
 	private bool _privacyOverlayActive;
 	private IntPtr _foregroundWinEventHook;
@@ -538,6 +538,8 @@ public partial class NotchWindow : Window
 
 	private bool _isLyricSlotA = true;
 	private bool _collapsedLyricsWidthRetryQueued;
+	// Lebar minimum area lirik di pill; baris yang lebih panjang membuat notch ikut melebar.
+	private const double MinCollapsedLyricTextWidth = 100.0;
 
 
 
@@ -623,6 +625,8 @@ public partial class NotchWindow : Window
 
 
 	private bool _isInternalDragOut;
+
+	private bool _shelfDropInsideNotch;
 
 
 
@@ -721,13 +725,10 @@ public partial class NotchWindow : Window
 	private Shape[]? _navIcons;
 	private bool _navPillSyncing;
 	private bool _navPillFollowQueued;
-	private int _navPillFollowRetries;
 	private DoubleAnimation? _navPillAnimX;
 	private DoubleAnimation? _navPillAnimWidth;
 	private FrameworkElement[]? _navContents;
 	private Ellipse[]? _navDots;
-	private double[]? _navFullWidths;
-	private bool _navFullWidthsMeasured;
 	private bool _navDockAnimating;
 	private int _navPillTabIndex = -1;
 	private bool _navDockExpanded;
@@ -857,6 +858,13 @@ public partial class NotchWindow : Window
 
 
 	private static readonly SolidColorBrush DockHoverBg = new SolidColorBrush(Color.FromRgb(36, 26, 56));
+
+	private static readonly SolidColorBrush ConvertNormalBg = new SolidColorBrush(Color.FromRgb(19, 19, 32));
+	private static readonly SolidColorBrush ConvertHoverBg = new SolidColorBrush(Color.FromRgb(20, 44, 37));
+	private static readonly SolidColorBrush ConvertNormalBorder = new SolidColorBrush(Color.FromRgb(37, 37, 56));
+	private static readonly SolidColorBrush ConvertHoverBorder = new SolidColorBrush(Color.FromRgb(52, 211, 153));
+
+	private static LocalizationService L10n => LocalizationService.Instance;
 
 
 
@@ -1310,6 +1318,17 @@ public partial class NotchWindow : Window
 
 		ViewModel.Shelf.Items.CollectionChanged += OnShelfItemsCollectionChanged;
 
+		if (ShelfItemsControl != null)
+		{
+			ShelfItemsControl.IsVisibleChanged += (_, _) =>
+			{
+				if (ShelfItemsControl.IsVisible)
+				{
+					ScheduleShelfContainerSync();
+				}
+			};
+		}
+
 
 
 
@@ -1317,6 +1336,8 @@ public partial class NotchWindow : Window
 
 
 		DataContext = ViewModel;
+		SyncNavbarModuleConfiguration();
+		PrepareStartupEntrance();
 
 
 
@@ -1420,6 +1441,8 @@ public partial class NotchWindow : Window
 
 				}
 
+				StartOutlineAlertGlow();
+
 			});
 
 		};
@@ -1464,6 +1487,7 @@ public partial class NotchWindow : Window
 
 				UpdateWindowVisibility();
 				UpdateDownloadSubNotchVisibility();
+				SyncNotchOutlineFx();
 
 
 
@@ -1569,6 +1593,7 @@ public partial class NotchWindow : Window
 
 		ViewModel.PropertyChanged += OnViewModelPropertyChanged;
 		ViewModel.Download.PropertyChanged += OnDownloadPropertyChanged;
+		RegisterOutlineFxHandlers();
 
 
 
@@ -1834,6 +1859,18 @@ public partial class NotchWindow : Window
 
 					double num2 = (double)(1 - idx) * num;
 
+						double scrollDurationMs = 320.0;
+						if (ViewModel.Media.IsCurrentLyricsUntimed)
+						{
+							double remainingMs = 4000.0;
+							if (idx + 1 < ViewModel.Media.LyricsLines.Count)
+							{
+								remainingMs = (ViewModel.Media.LyricsLines[idx + 1].Time - ViewModel.Media.Position).TotalMilliseconds;
+							}
+
+							scrollDurationMs = Math.Clamp(remainingMs, 500.0, 12000.0);
+						}
+
 
 
 
@@ -1880,7 +1917,7 @@ public partial class NotchWindow : Window
 
 
 
-							Duration = TimeSpan.FromMilliseconds(320.0),
+							Duration = TimeSpan.FromMilliseconds(scrollDurationMs),
 
 
 
@@ -2464,6 +2501,7 @@ public partial class NotchWindow : Window
 		{
 			Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => ExpandNavDock(animate: false));
 		}
+		ResetCollapsedTimerSlotStates(false);
 		Services.MemoryManagementService.Instance.Initialize();
 
 
@@ -2795,11 +2833,7 @@ public partial class NotchWindow : Window
 		{
 
 			if (!ExpandedContentGrid.IsVisible)
-
 			{
-
-				_navFullWidthsMeasured = false;
-
 			}
 
 			ResetNavDockState();
@@ -2958,6 +2992,7 @@ public partial class NotchWindow : Window
 
 
 
+
 	}
 
 
@@ -2983,6 +3018,7 @@ public partial class NotchWindow : Window
 	private bool _startupGreetingPlanned;
 	private bool _startupGreetingActive;
 	private CancellationTokenSource? _startupGreetingCts;
+
 	private void PrepareStartupEntrance()
 	{
 		if (ViewModel == null || !ViewModel.IsNotchVisible || ViewModel.IsSlimBarVisible)
@@ -2999,6 +3035,26 @@ public partial class NotchWindow : Window
 		PillScaleTransform.ScaleY = 0.9;
 		ContentHost.Opacity = 0.0;
 		_startupGreetingPlanned = CanPlayStartupGreeting();
+		if (_startupGreetingPlanned)
+		{
+			ContentHost.IsHitTestVisible = false;
+			HideGreetingTargetPets();
+			if (WelcomeOverlay != null)
+			{
+				WelcomeOverlay.Visibility = Visibility.Visible;
+				WelcomeOverlay.Opacity = 0.0;
+			}
+			if (WelcomeOverlayTranslate != null)
+			{
+				WelcomeOverlayTranslate.X = 0.0;
+				WelcomeOverlayTranslate.Y = 0.0;
+			}
+			if (WelcomePetScale != null)
+			{
+				WelcomePetScale.ScaleX = 1.05;
+				WelcomePetScale.ScaleY = 1.05;
+			}
+		}
 	}
 	private void PlayStartupEntranceAnimation()
 	{
@@ -3548,10 +3604,6 @@ public partial class NotchWindow : Window
 			Log.Debug("Topmost keeper: SetWindowPos(HWND_TOPMOST) failed.");
 		}
 
-		if (_lyricsVersionPopupHwnd != IntPtr.Zero)
-		{
-			WindowStyleHelper.EnsureTopmost(_lyricsVersionPopupHwnd);
-		}
 
 		if (_devicePickerPopupHwnd != IntPtr.Zero)
 		{
@@ -6097,6 +6149,10 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
+			UpdateOutlineFxGeometry(notchWidth, notchHeight, num, notchBottomRadius);
+
+
+
 			double width = notchWidth + 2.0 * num;
 
 
@@ -6190,7 +6246,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-				double subNotchY = notchHeight - 1.5;
+				double subNotchY = Math.Round(notchHeight - 1.0);
 				if (Math.Abs(SubNotchBaseTranslate.Y - subNotchY) > 0.01)
 				{
 					SubNotchBaseTranslate.Y = subNotchY;
@@ -7276,6 +7332,12 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 			}
 
+			if (ViewModel?.IsSliderDragging == true)
+			{
+				handled = true;
+				return new IntPtr(1);
+			}
+
 
 
 
@@ -7788,7 +7850,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-					if (!_isContextMenuOpen && ViewModel.CurrentState == NotchState.Expanded && !ViewModel.IsLockedExpanded && !_wasAutoExpandedByDrag && !(ViewModel?.Volume?.IsDevicePickerOpen ?? false) && !(ViewModel?.Media?.IsLyricsVersionPickerOpen ?? false))
+					if (!_isContextMenuOpen && ViewModel.CurrentState == NotchState.Expanded && !ViewModel.IsLockedExpanded && !_wasAutoExpandedByDrag && !(ViewModel?.Volume?.IsDevicePickerOpen ?? false) && !(ViewModel?.Media?.IsLyricsVersionPickerOpen ?? false) && !(ViewModel?.IsSliderDragging ?? false))
 
 
 
@@ -7933,6 +7995,10 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 		NotchState currentState = ViewModel.CurrentState;
+		if (currentState != NotchState.Collapsed)
+		{
+			SetOutlineFxVisible(false);
+		}
 
 
 
@@ -8055,6 +8121,10 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		bool isNotifActive = ViewModel.WidgetHost.CurrentWidgetType == WidgetType.Notification && ViewModel.WidgetHost.IsTransientActive;
 
 		AnimateNotificationSubNotch(flag2 && isNotifActive);
+		AnimateTimerSubNotch(ViewModel?.TimerStopwatch?.IsTimerRunning ?? false);
+		AnimateStopwatchSubNotch(ViewModel?.TimerStopwatch?.IsStopwatchRunning ?? false);
+		UpdateDownloadSubNotchVisibility();
+		SyncNotchOutlineFx();
 
 
 
@@ -8106,7 +8176,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		TimeSpan timeSpan = TimeSpan.FromMilliseconds(flag2 ? 340 : 270);
+		TimeSpan timeSpan = TimeSpan.FromMilliseconds(flag2 ? 360 : 230);
 
 
 
@@ -8114,31 +8184,9 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		QuarticEase easingFunction = new QuarticEase
-
-
-
-
-
-
-
-		{
-
-
-
-
-
-
-
-			EasingMode = EasingMode.EaseOut
-
-
-
-
-
-
-
-		};
+		IEasingFunction easingFunction = (flag && flag2)
+			? (IEasingFunction)new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.28 }
+			: new QuarticEase { EasingMode = EasingMode.EaseOut };
 
 
 
@@ -9670,52 +9718,6 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	private void LyricsVersionPopup_Opened(object? sender, EventArgs e)
-	{
-		_lyricsVersionPopupHwnd = IntPtr.Zero;
-		if (sender is not System.Windows.Controls.Primitives.Popup popup || popup.Child == null)
-		{
-			return;
-		}
-
-		if (PresentationSource.FromVisual(popup.Child) is HwndSource source && source.Handle != IntPtr.Zero)
-		{
-			_lyricsVersionPopupHwnd = source.Handle;
-			WindowStyleHelper.EnsureTopmost(source.Handle);
-		}
-	}
-
-
-
-
-
-
-
-
-	private void LyricsVersionPopup_Closed(object? sender, EventArgs e)
-	{
-		_lyricsVersionPopupHwnd = IntPtr.Zero;
-		if (!IsLoaded) return;
-		if (!PillContainer.IsMouseOver)
-		{
-			ViewModel.OnMouseLeave();
-		}
-	}
-
 	private void DevicePickerPopup_Opened(object? sender, EventArgs e)
 	{
 		_devicePickerPopupHwnd = IntPtr.Zero;
@@ -9739,6 +9741,113 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		if (!PillContainer.IsMouseOver && !IsCursorOverNotch())
 		{
 			ViewModel.OnMouseLeave();
+		}
+	}
+
+	private Slider? _draggedSlider;
+
+	private static T? FindVisualParent<T>(DependencyObject? child) where T : DependencyObject
+	{
+		while (child != null)
+		{
+			if (child is T parent)
+			{
+				return parent;
+			}
+			child = VisualTreeHelper.GetParent(child);
+		}
+		return null;
+	}
+
+	private void SlimSlider_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+	{
+		if (ViewModel != null)
+		{
+			ViewModel.IsSliderDragging = true;
+		}
+
+		if (sender is Slider slider && slider.IsEnabled && (e.LeftButton == MouseButtonState.Pressed || e.ChangedButton == MouseButton.Left))
+		{
+			// If user clicked directly on the Thumb ("bulet"), let native WPF Thumb handle capture & dragging
+			if (e.OriginalSource is DependencyObject dep && FindVisualParent<System.Windows.Controls.Primitives.Thumb>(dep) != null)
+			{
+				_draggedSlider = null;
+				return;
+			}
+
+			// If clicked on the track bar outside the Thumb, jump to point and capture mouse for continuous dragging
+			_draggedSlider = slider;
+			slider.CaptureMouse();
+			UpdateSlimSliderFromPosition(slider, e.GetPosition(slider).X);
+		}
+	}
+
+	private void SlimSlider_PreviewMouseMove(object sender, MouseEventArgs e)
+	{
+		if (_draggedSlider != null && _draggedSlider.IsMouseCaptured)
+		{
+			UpdateSlimSliderFromPosition(_draggedSlider, e.GetPosition(_draggedSlider).X);
+		}
+	}
+
+	private void SlimSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+	{
+		if (_draggedSlider != null)
+		{
+			if (_draggedSlider.IsMouseCaptured)
+			{
+				_draggedSlider.ReleaseMouseCapture();
+			}
+			_draggedSlider = null;
+		}
+
+		if (ViewModel != null)
+		{
+			ViewModel.IsSliderDragging = false;
+		}
+	}
+
+	private void Window_PreviewMouseMove(object sender, MouseEventArgs e)
+	{
+		if (_draggedSlider != null && _draggedSlider.IsMouseCaptured)
+		{
+			UpdateSlimSliderFromPosition(_draggedSlider, e.GetPosition(_draggedSlider).X);
+		}
+	}
+
+	private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+	{
+		if (_draggedSlider != null)
+		{
+			if (_draggedSlider.IsMouseCaptured)
+			{
+				_draggedSlider.ReleaseMouseCapture();
+			}
+			_draggedSlider = null;
+		}
+
+		if (ViewModel != null && ViewModel.IsSliderDragging)
+		{
+			ViewModel.IsSliderDragging = false;
+		}
+
+		if (PillContainer != null && !PillContainer.IsMouseOver)
+		{
+			ViewModel?.OnMouseLeave();
+		}
+	}
+
+	private static void UpdateSlimSliderFromPosition(Slider slider, double mouseX)
+	{
+		double width = slider.ActualWidth;
+		if (width <= 0) return;
+		double fraction = Math.Clamp(mouseX / width, 0.0, 1.0);
+		double newValue = slider.Minimum + fraction * (slider.Maximum - slider.Minimum);
+		int rounded = (int)Math.Round(newValue);
+		if ((int)slider.Value != rounded)
+		{
+			Log.Information(">>> UpdateSlimSliderFromPosition: Value changed from {Old} to {New}", slider.Value, rounded);
+			slider.Value = rounded;
 		}
 	}
 
@@ -9773,7 +9882,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		if (!_isContextMenuOpen && !(ViewModel?.Media?.IsLyricsVersionPickerOpen ?? false) && !(ViewModel?.Volume?.IsDevicePickerOpen ?? false))
+		if (!_isContextMenuOpen && !(ViewModel?.Media?.IsLyricsVersionPickerOpen ?? false) && !(ViewModel?.Volume?.IsDevicePickerOpen ?? false) && !(ViewModel?.IsSliderDragging ?? false))
 
 
 
@@ -9822,53 +9931,204 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void PillBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
 		if (ViewModel.CurrentState == NotchState.Collapsed)
-
-
-
-
-
-
-
 		{
+			if (ViewModel.IsCollapsedDownloadPhaseActive && ViewModel.Download?.HasActiveDownloads == true)
+			{
+				ViewModel.NavigateToDownloadsPanel();
+				return;
+			}
 
+			if (ViewModel.TimerStopwatch.IsAnyTimerRunning && ViewModel.IsCollapsedTimerPhaseActive)
+			{
+				ViewModel.TimerStopwatch.IsTimerMode = !ViewModel.IsCollapsedStopwatchDisplay;
+				ViewModel.NavigateToTimerSlide();
+				return;
+			}
 
-
-
-
-
+			if (ViewModel.WidgetHost.CurrentWidgetType == WidgetType.Timer)
+			{
+				ViewModel.TimerStopwatch.IsTimerMode = ViewModel.TimerStopwatch.ShowTimerInCollapsed;
+				ViewModel.NavigateToTimerSlide();
+				return;
+			}
 
 			ViewModel.OnPillClicked();
+		}
+	}
 
-
-
-
-
-
-
+	private void AnimateCollapsedTimerAlternation(bool toTimerPhase)
+	{
+		if (ViewModel?.CurrentState != NotchState.Collapsed || MediaLeftNormalSlot == null)
+		{
+			ResetCollapsedTimerSlotStates(toTimerPhase);
+			return;
 		}
 
+		if (ViewModel?.TimerStopwatch?.IsAnyTimerRunning != true)
+		{
+			ResetCollapsedTimerSlotStates(false);
+			return;
+		}
 
+		var springEase = new BackEase
+		{
+			EasingMode = EasingMode.EaseOut,
+			Amplitude = 0.35
+		};
 
+		var fadeEase = new CubicEase
+		{
+			EasingMode = EasingMode.EaseOut
+		};
 
+		var outEase = new CubicEase
+		{
+			EasingMode = EasingMode.EaseIn
+		};
 
+		var outDuration = TimeSpan.FromMilliseconds(180);
+		var inDuration = TimeSpan.FromMilliseconds(420);
+		var inFadeDuration = TimeSpan.FromMilliseconds(240);
+		var inBeginTime = TimeSpan.FromMilliseconds(40);
 
+		FrameworkElement[] outgoingSlots;
+		TranslateTransform[] outgoingTranslates;
+		ScaleTransform[] outgoingScales;
 
+		FrameworkElement[] incomingSlots;
+		TranslateTransform[] incomingTranslates;
+		ScaleTransform[] incomingScales;
+
+		if (toTimerPhase)
+		{
+			outgoingSlots = new FrameworkElement[] { MediaLeftNormalSlot, MediaRightNormalSlot, ClockLeftNormalSlot, ClockRightNormalSlot };
+			outgoingTranslates = new TranslateTransform[] { MediaLeftNormalTranslate, MediaRightNormalTranslate, ClockLeftNormalTranslate, ClockRightNormalTranslate };
+			outgoingScales = new ScaleTransform[] { MediaLeftNormalScale, MediaRightNormalScale, ClockLeftNormalScale, ClockRightNormalScale };
+
+			incomingSlots = new FrameworkElement[] { MediaLeftTimerSlot, MediaRightTimerSlot, ClockLeftTimerSlot, ClockRightTimerSlot };
+			incomingTranslates = new TranslateTransform[] { MediaLeftTimerTranslate, MediaRightTimerTranslate, ClockLeftTimerTranslate, ClockRightTimerTranslate };
+			incomingScales = new ScaleTransform[] { MediaLeftTimerScale, MediaRightTimerScale, ClockLeftTimerScale, ClockRightTimerScale };
+		}
+		else
+		{
+			outgoingSlots = new FrameworkElement[] { MediaLeftTimerSlot, MediaRightTimerSlot, ClockLeftTimerSlot, ClockRightTimerSlot };
+			outgoingTranslates = new TranslateTransform[] { MediaLeftTimerTranslate, MediaRightTimerTranslate, ClockLeftTimerTranslate, ClockRightTimerTranslate };
+			outgoingScales = new ScaleTransform[] { MediaLeftTimerScale, MediaRightTimerScale, ClockLeftTimerScale, ClockRightTimerScale };
+
+			incomingSlots = new FrameworkElement[] { MediaLeftNormalSlot, MediaRightNormalSlot, ClockLeftNormalSlot, ClockRightNormalSlot };
+			incomingTranslates = new TranslateTransform[] { MediaLeftNormalTranslate, MediaRightNormalTranslate, ClockLeftNormalTranslate, ClockRightNormalTranslate };
+			incomingScales = new ScaleTransform[] { MediaLeftNormalScale, MediaRightNormalScale, ClockLeftNormalScale, ClockRightNormalScale };
+		}
+
+		for (int i = 0; i < outgoingSlots.Length; i++)
+		{
+			var slot = outgoingSlots[i];
+			var trans = outgoingTranslates[i];
+			var scale = outgoingScales[i];
+
+			var fadeOut = new DoubleAnimation(0.0, outDuration) { EasingFunction = outEase };
+			var slideOut = new DoubleAnimation(-6.0, outDuration) { EasingFunction = outEase };
+			var scaleOut = new DoubleAnimation(0.85, outDuration) { EasingFunction = outEase };
+
+			slot.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+			trans.BeginAnimation(TranslateTransform.YProperty, slideOut);
+			scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleOut);
+			scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleOut);
+		}
+
+		for (int i = 0; i < incomingSlots.Length; i++)
+		{
+			var slot = incomingSlots[i];
+			var trans = incomingTranslates[i];
+			var scale = incomingScales[i];
+
+			trans.Y = 6.0;
+			scale.ScaleX = 0.85;
+			scale.ScaleY = 0.85;
+			slot.Opacity = 0.0;
+
+			var fadeIn = new DoubleAnimation(0.0, 1.0, inFadeDuration) { BeginTime = inBeginTime, EasingFunction = fadeEase };
+			var springIn = new DoubleAnimation(6.0, 0.0, inDuration) { BeginTime = inBeginTime, EasingFunction = springEase };
+			var scaleIn = new DoubleAnimation(0.85, 1.0, inDuration) { BeginTime = inBeginTime, EasingFunction = springEase };
+
+			slot.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+			trans.BeginAnimation(TranslateTransform.YProperty, springIn);
+			scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleIn);
+			scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleIn);
+		}
+	}
+
+	private void AnimateCollapsedTimerSubSwap()
+	{
+		if (ViewModel?.CurrentState != NotchState.Collapsed || MediaLeftTimerSlot == null) return;
+		if (ViewModel.IsCollapsedTimerPhaseActive != true) return;
+
+		var springEase = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+		var fadeEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+		var inDuration = TimeSpan.FromMilliseconds(420);
+		var inFadeDuration = TimeSpan.FromMilliseconds(240);
+
+		FrameworkElement[] timerSlots = { MediaLeftTimerSlot, MediaRightTimerSlot, ClockLeftTimerSlot, ClockRightTimerSlot };
+		TranslateTransform[] timerTranslates = { MediaLeftTimerTranslate, MediaRightTimerTranslate, ClockLeftTimerTranslate, ClockRightTimerTranslate };
+		ScaleTransform[] timerScales = { MediaLeftTimerScale, MediaRightTimerScale, ClockLeftTimerScale, ClockRightTimerScale };
+
+		for (int i = 0; i < timerSlots.Length; i++)
+		{
+			var slot = timerSlots[i];
+			var trans = timerTranslates[i];
+			var scale = timerScales[i];
+
+			trans.Y = 6.0;
+			scale.ScaleX = 0.85;
+			scale.ScaleY = 0.85;
+			slot.Opacity = 0.3;
+
+			slot.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.3, 1.0, inFadeDuration) { EasingFunction = fadeEase });
+			trans.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(6.0, 0.0, inDuration) { EasingFunction = springEase });
+			scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.85, 1.0, inDuration) { EasingFunction = springEase });
+			scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.85, 1.0, inDuration) { EasingFunction = springEase });
+		}
+	}
+
+	private void ResetCollapsedTimerSlotStates(bool isTimerPhase)
+	{
+		if (MediaLeftNormalSlot == null) return;
+
+		FrameworkElement[] normalSlots = { MediaLeftNormalSlot, MediaRightNormalSlot, ClockLeftNormalSlot, ClockRightNormalSlot };
+		TranslateTransform[] normalTranslates = { MediaLeftNormalTranslate, MediaRightNormalTranslate, ClockLeftNormalTranslate, ClockRightNormalTranslate };
+		ScaleTransform[] normalScales = { MediaLeftNormalScale, MediaRightNormalScale, ClockLeftNormalScale, ClockRightNormalScale };
+
+		FrameworkElement[] timerSlots = { MediaLeftTimerSlot, MediaRightTimerSlot, ClockLeftTimerSlot, ClockRightTimerSlot };
+		TranslateTransform[] timerTranslates = { MediaLeftTimerTranslate, MediaRightTimerTranslate, ClockLeftTimerTranslate, ClockRightTimerTranslate };
+		ScaleTransform[] timerScales = { MediaLeftTimerScale, MediaRightTimerScale, ClockLeftTimerScale, ClockRightTimerScale };
+
+		for (int i = 0; i < normalSlots.Length; i++)
+		{
+			normalSlots[i].BeginAnimation(UIElement.OpacityProperty, null);
+			normalTranslates[i].BeginAnimation(TranslateTransform.YProperty, null);
+			normalScales[i].BeginAnimation(ScaleTransform.ScaleXProperty, null);
+			normalScales[i].BeginAnimation(ScaleTransform.ScaleYProperty, null);
+
+			normalSlots[i].Opacity = isTimerPhase ? 0.0 : 1.0;
+			normalTranslates[i].Y = isTimerPhase ? -6.0 : 0.0;
+			normalScales[i].ScaleX = isTimerPhase ? 0.85 : 1.0;
+			normalScales[i].ScaleY = isTimerPhase ? 0.85 : 1.0;
+		}
+
+		for (int i = 0; i < timerSlots.Length; i++)
+		{
+			timerSlots[i].BeginAnimation(UIElement.OpacityProperty, null);
+			timerTranslates[i].BeginAnimation(TranslateTransform.YProperty, null);
+			timerScales[i].BeginAnimation(ScaleTransform.ScaleXProperty, null);
+			timerScales[i].BeginAnimation(ScaleTransform.ScaleYProperty, null);
+
+			timerSlots[i].Opacity = isTimerPhase ? 1.0 : 0.0;
+			timerTranslates[i].Y = isTimerPhase ? 0.0 : 6.0;
+			timerScales[i].ScaleX = isTimerPhase ? 1.0 : 0.85;
+			timerScales[i].ScaleY = isTimerPhase ? 1.0 : 0.85;
+		}
 	}
 
 
@@ -10293,76 +10553,68 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
-		if (e.PropertyName == "IsPrayerEnabled" || e.PropertyName == "TotalActiveSlides")
-
-
-
-
-
-
-
+		if (e.PropertyName == nameof(NotchViewModel.IsCollapsedTimerPhaseActive))
 		{
-
-
-
-
-
-
-
 			Dispatcher.Invoke(() =>
-
-
-
-
-
-
-
 			{
-
-
-
-
-
-
-
-				ResetSlideViews(ViewModel.CurrentSlideIndex);
-
-
-
-
-
-
-
+				if (ViewModel != null)
+				{
+					AnimateCollapsedTimerAlternation(ViewModel.IsCollapsedTimerPhaseActive);
+				}
 			});
-
-
-
-
-
-
-
+		}
+		else if (e.PropertyName == nameof(NotchViewModel.IsCollapsedDownloadPhaseActive))
+		{
+			Dispatcher.Invoke(() =>
+			{
+				if (ViewModel != null)
+				{
+					AnimateCollapsedDownloadAlternation(ViewModel.IsCollapsedDownloadPhaseActive);
+				}
+			});
+		}
+		else if (e.PropertyName == nameof(NotchViewModel.IsCollapsedStopwatchDisplay))
+		{
+			Dispatcher.Invoke(() =>
+			{
+				AnimateCollapsedTimerSubSwap();
+			});
+		}
+		else if (e.PropertyName == nameof(NotchViewModel.CurrentState))
+		{
+			Dispatcher.Invoke(() =>
+			{
+				if (ViewModel?.CurrentState != NotchState.Collapsed)
+				{
+					ResetCollapsedTimerSlotStates(false);
+				}
+				AnimateTimerSubNotch(ViewModel?.TimerStopwatch?.IsTimerRunning ?? false);
+				AnimateStopwatchSubNotch(ViewModel?.TimerStopwatch?.IsStopwatchRunning ?? false);
+			});
 		}
 
+		if (e.PropertyName == nameof(NotchViewModel.ShowWeatherInCollapsedNotch) ||
+		    e.PropertyName == nameof(NotchViewModel.ShowBatteryInCollapsedNotch) ||
+		    e.PropertyName == nameof(NotchViewModel.ShowPetInCollapsedNotch) ||
+		    e.PropertyName == nameof(NotchViewModel.IsPetEnabled))
+		{
+			Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+			{
+				if (ViewModel?.Media.IsCollapsedLyricsActive == true)
+				{
+					UpdateCollapsedLyricsWidth(ViewModel?.Media.CollapsedDisplayLyricText);
+				}
+			}));
+		}
 
-
-
-
-
+		if (e.PropertyName == "IsPrayerEnabled" || e.PropertyName == "TotalActiveSlides" || e.PropertyName == "ActiveModuleIds")
+		{
+			Dispatcher.Invoke(() =>
+			{
+				SyncNavbarModuleConfiguration();
+			});
+		}
 
 		if (e.PropertyName == nameof(NotchViewModel.IsPrivacyActive))
 
@@ -10876,7 +11128,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		return new FrameworkElement[9] { SlideControlCenterCard, SlideMediaCard, SlideWeatherCard, SlidePrayerCard, SlideWaterCard, SlideNoteCard, SlideClipboardCard, SlideTimerCard, SlideShelfCard };
+		return new FrameworkElement[11] { SlideHomeCard, SlideControlCenterCard, SlideMediaCard, SlideWeatherCard, SlidePrayerCard, SlideWaterCard, SlideNoteCard, SlideClipboardCard, SlideTimerCard, SlideShelfCard, SlideScreenTimeCard };
 
 
 
@@ -10900,70 +11152,39 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-	private FrameworkElement?[] GetCards()
-
-
-
-
-
-
-
+	private FrameworkElement? GetCardForModuleId(string moduleId) => moduleId switch
 	{
+		"home" => SlideHomeCard,
+		"control" => SlideControlCenterCard,
+		"media" => SlideMediaCard,
+		"weather" => SlideWeatherCard,
+		"prayer" => SlidePrayerCard,
+		"water" => SlideWaterCard,
+		"note" => SlideNoteCard,
+		"clipboard" => SlideClipboardCard,
+		"timer" => SlideTimerCard,
+		"shelf" => SlideShelfCard,
+		"screentime" => SlideScreenTimeCard,
+		_ => null
+	};
 
-
-
-
-
-
-
-		NotchViewModel viewModel = ViewModel;
-
-
-
-
-
-
-
-		if (viewModel != null && !viewModel.IsPrayerEnabled)
-
-
-
-
-
-
-
+	private FrameworkElement?[] GetCards()
+	{
+		if (ViewModel == null || ViewModel.ActiveModuleIds == null || ViewModel.ActiveModuleIds.Count == 0)
 		{
-
-
-
-
-
-
-
-			return new FrameworkElement[8] { SlideControlCenterCard, SlideMediaCard, SlideWeatherCard, SlideWaterCard, SlideNoteCard, SlideClipboardCard, SlideTimerCard, SlideShelfCard };
-
-
-
-
-
-
-
+			return GetAllPossibleCards();
 		}
 
-
-
-
-
-
-
-		return new FrameworkElement[9] { SlideControlCenterCard, SlideMediaCard, SlideWeatherCard, SlidePrayerCard, SlideWaterCard, SlideNoteCard, SlideClipboardCard, SlideTimerCard, SlideShelfCard };
-
-
-
-
-
-
-
+		var list = new System.Collections.Generic.List<FrameworkElement>();
+		foreach (var id in ViewModel.ActiveModuleIds)
+		{
+			var card = GetCardForModuleId(id);
+			if (card != null)
+			{
+				list.Add(card);
+			}
+		}
+		return list.ToArray();
 	}
 
 
@@ -10997,6 +11218,10 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 		_displayedSlideIndex = activeIndex;
+		if (ViewModel != null && ViewModel.IsScreenTimeActive)
+		{
+			ViewModel.ScreenTime?.Refresh();
+		}
 
 
 
@@ -11737,22 +11962,105 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		return solidColorBrush;
 	}
 
+	private readonly System.Collections.Generic.Dictionary<string, (Button Button, TextBlock Label, Shape Icon, FrameworkElement Content, Ellipse Dot)> _moduleNavMap = new();
+
+	private void InitNavModuleMap()
+	{
+		if (_moduleNavMap.Count > 0)
+		{
+			return;
+		}
+		_moduleNavMap["home"] = (NavTab0, NavLabel0, NavIcon0, NavGroup0, NavDot0);
+		_moduleNavMap["control"] = (NavTab1, NavLabel1, NavIcon1, NavGroup1, NavDot1);
+		_moduleNavMap["media"] = (NavTab2, NavLabel2, NavIcon2, NavGroup2, NavDot2);
+		_moduleNavMap["weather"] = (NavTab3, NavLabel3, NavIcon3, NavGroup3, NavDot3);
+		_moduleNavMap["prayer"] = (NavTab4, NavLabel4, NavIcon4, NavGroup4, NavDot4);
+		_moduleNavMap["water"] = (NavTab5, NavLabel5, NavIcon5, NavGroup5, NavDot5);
+		_moduleNavMap["note"] = (NavTab6, NavLabel6, NavIcon6, NavGroup6, NavDot6);
+		_moduleNavMap["clipboard"] = (NavTab7, NavLabel7, NavIcon7, NavGroup7, NavDot7);
+		_moduleNavMap["timer"] = (NavTab8, NavLabel8, NavIcon8, NavGroup8, NavDot8);
+		_moduleNavMap["shelf"] = (NavTab9, NavLabel9, NavIcon9, NavGroup9, NavDot9);
+		_moduleNavMap["screentime"] = (NavTab10, NavLabel10, NavIcon10, NavGroup10, NavDot10);
+	}
+
+	public void SyncNavbarModuleConfiguration()
+	{
+		InitNavModuleMap();
+		if (NavTabsPanel == null)
+		{
+			return;
+		}
+
+		var activeIds = ViewModel?.ActiveModuleIds;
+		if (activeIds == null || activeIds.Count == 0)
+		{
+			activeIds = new string[11] { "home", "control", "media", "weather", "prayer", "water", "note", "clipboard", "timer", "shelf", "screentime" };
+		}
+
+		NavTabsPanel.Children.Clear();
+
+		var activeButtons = new System.Collections.Generic.List<Button>();
+		var activeLabels = new System.Collections.Generic.List<TextBlock>();
+		var activeIcons = new System.Collections.Generic.List<Shape>();
+		var activeContents = new System.Collections.Generic.List<FrameworkElement>();
+		var activeDots = new System.Collections.Generic.List<Ellipse>();
+
+		for (int i = 0; i < activeIds.Count; i++)
+		{
+			string id = activeIds[i];
+			if (_moduleNavMap.TryGetValue(id, out var items))
+			{
+				items.Button.Visibility = Visibility.Visible;
+				items.Button.CommandParameter = id;
+				items.Button.Margin = (i == activeIds.Count - 1) ? new Thickness(0) : new Thickness(0, 0, 2, 0);
+
+				NavTabsPanel.Children.Add(items.Button);
+
+				activeButtons.Add(items.Button);
+				activeLabels.Add(items.Label);
+				activeIcons.Add(items.Icon);
+				activeContents.Add(items.Content);
+				activeDots.Add(items.Dot);
+			}
+		}
+
+		// Hide any disabled buttons
+		foreach (var kvp in _moduleNavMap)
+		{
+			if (!activeIds.Contains(kvp.Key))
+			{
+				kvp.Value.Button.Visibility = Visibility.Collapsed;
+			}
+		}
+
+		_navTabs = activeButtons.ToArray();
+		_navLabels = activeLabels.ToArray();
+		_navIcons = activeIcons.ToArray();
+		_navContents = activeContents.ToArray();
+		_navDots = activeDots.ToArray();
+
+		if (ViewModel != null && ViewModel.CurrentSlideIndex >= _navTabs.Length)
+		{
+			ViewModel.CurrentSlideIndex = 0;
+		}
+
+		int activeIdx = ViewModel?.CurrentSlideIndex ?? 0;
+		ResetSlideViews(activeIdx, updateNavPill: true);
+		UpdateNavPill(activeIdx, animate: false);
+	}
+
 	private void EnsureNavPillComponents()
 	{
 		if (_navTabs != null && _navLabels != null && _navIcons != null && _navContents != null && _navDots != null)
 		{
 			return;
 		}
-		_navTabs = new Button[9] { NavTab0, NavTab1, NavTab2, NavTab3, NavTab4, NavTab5, NavTab6, NavTab7, NavTab8 };
-		_navLabels = new TextBlock[9] { NavLabel0, NavLabel1, NavLabel2, NavLabel3, NavLabel4, NavLabel5, NavLabel6, NavLabel7, NavLabel8 };
-		_navIcons = new Shape[9] { NavIcon0, NavIcon1, NavIcon2, NavIcon3, NavIcon4, NavIcon5, NavIcon6, NavIcon7, NavIcon8 };
-		_navContents = new FrameworkElement[9] { NavGroup0, NavGroup1, NavGroup2, NavGroup3, NavGroup4, NavGroup5, NavGroup6, NavGroup7, NavGroup8 };
-		_navDots = new Ellipse[9] { NavDot0, NavDot1, NavDot2, NavDot3, NavDot4, NavDot5, NavDot6, NavDot7, NavDot8 };
+		SyncNavbarModuleConfiguration();
 	}
 
 	private void OnShelfItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 	{
-		_navFullWidthsMeasured = false;
+		ScheduleShelfContainerSync();
 		if (!_navDockExpanded || _navDockAnimating || ViewModel == null)
 		{
 			return;
@@ -11762,9 +12070,72 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		UpdateNavPill(ViewModel.CurrentSlideIndex, animate: true);
 	}
 
+	private bool _shelfContainerSyncScheduled;
+
+	/// <summary>
+	/// WPF kadang menyisakan ContentPresenter tambahan di items host ketika collection berubah
+	/// sambil kontrol beralih visibilitas, sehingga satu file tampil dua kali. Setelah layout,
+	/// jumlah container dibandingkan dengan jumlah item; bila tidak sama, generator di-reset.
+	/// </summary>
+	private void ScheduleShelfContainerSync()
+	{
+		if (_shelfContainerSyncScheduled || ShelfItemsControl == null)
+		{
+			return;
+		}
+
+		_shelfContainerSyncScheduled = true;
+		Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+		{
+			_shelfContainerSyncScheduled = false;
+			try
+			{
+				Panel? host = FindShelfItemsHost();
+				if (host == null || host.Children.Count == ShelfItemsControl.Items.Count)
+				{
+					return;
+				}
+
+				Log.Information("Shelf container desync: {Containers} containers for {Items} items, resyncing",
+					host.Children.Count, ShelfItemsControl.Items.Count);
+				ShelfItemsControl.Items.Refresh();
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Shelf container resync skipped");
+			}
+		}));
+	}
+
+	private Panel? FindShelfItemsHost()
+	{
+		if (ShelfItemsControl == null)
+		{
+			return null;
+		}
+
+		var pending = new Stack<DependencyObject>();
+		pending.Push(ShelfItemsControl);
+		while (pending.Count > 0)
+		{
+			DependencyObject current = pending.Pop();
+			if (current is Panel panel && panel.IsItemsHost)
+			{
+				return panel;
+			}
+
+			int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(current);
+			for (int i = 0; i < count; i++)
+			{
+				pending.Push(System.Windows.Media.VisualTreeHelper.GetChild(current, i));
+			}
+		}
+
+		return null;
+	}
+
 	public void InvalidateNavFullWidths()
 	{
-		_navFullWidthsMeasured = false;
 		if (!_navDockExpanded || _navDockAnimating || ViewModel == null)
 		{
 			return;
@@ -11805,107 +12176,36 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 	private void ExpandNavDock(bool animate)
 	{
-		if (_navDockExpanded)
-		{
-			StopNavDockCloseTimer();
-			return;
-		}
 		_navDockExpanded = true;
+		_navDockAnimating = false;
 		StopNavDockCloseTimer();
 		EnsureNavPillComponents();
-		EnsureNavFullWidthsMeasured();
-		if (!animate)
+		if (ViewModel != null)
 		{
-			ApplyNavDockExpandedState();
-			_navDockAnimating = false;
-			if (ViewModel != null)
-			{
-				UpdateNavPill(ViewModel.CurrentSlideIndex, animate: false);
-			}
-			return;
+			UpdateNavPill(ViewModel.CurrentSlideIndex, animate);
 		}
-		_navDockAnimating = true;
-		if (!AnimateNavPillExpand())
-		{
-			SetNavOpacity(NavActivePill, 0.0);
-		}
-		AnimateNavDockContents(expand: true);
-		AnimateNavDockWidths(expand: true, FinishNavDockExpand);
 	}
 
 	private void FinishNavDockExpand()
 	{
-		if (!_navDockExpanded)
-		{
-			return;
-		}
 		_navDockAnimating = false;
 		if (ViewModel != null)
 		{
 			UpdateNavPill(ViewModel.CurrentSlideIndex, animate: false);
 		}
-		if (NavActivePill.Opacity < 1.0)
+		if (NavActivePill != null && NavActivePill.Opacity < 1.0)
 		{
-			AnimateNavOpacity(NavActivePill, 1.0, NavDockFadeInDuration, TimeSpan.Zero);
+			NavActivePill.Opacity = 1.0;
 		}
 	}
 
 	private bool AnimateNavPillExpand()
 	{
-		if (NavActivePill == null || NavActivePillTranslate == null || _navTabs == null || _navFullWidths == null || ViewModel == null)
-		{
-			return false;
-		}
-		int index = MapSlideToPhysicalTabIndex(ViewModel.CurrentSlideIndex);
-		if (index < 0 || index >= _navTabs.Length)
-		{
-			return false;
-		}
-		double fromX;
-		double fromWidth;
-		if (!TryMeasureNavPillTarget(index, out fromX, out fromWidth))
-		{
-			return false;
-		}
-		double targetX = fromX;
-		for (int i = 0; i < index; i++)
-		{
-			targetX += Math.Max(0.0, _navFullWidths[i] - _navTabs[i].ActualWidth);
-		}
-		StartNavPillShapeAnimation(fromX, fromWidth, targetX, _navFullWidths[index], NavDockGrowDuration);
-		AnimateNavOpacity(NavActivePill, 1.0, NavDockFadeInDuration, TimeSpan.FromMilliseconds(40.0));
-		return true;
+		return false;
 	}
 
 	private void AnimateNavPillCollapse()
 	{
-		if (NavActivePill == null || NavActivePillTranslate == null || _navTabs == null || ViewModel == null)
-		{
-			return;
-		}
-		int index = _navPillTabIndex;
-		if (index < 0 || index >= _navTabs.Length)
-		{
-			index = MapSlideToPhysicalTabIndex(ViewModel.CurrentSlideIndex);
-		}
-		if (index < 0 || index >= _navTabs.Length)
-		{
-			return;
-		}
-		double expandedX;
-		double expandedWidth;
-		if (!TryMeasureNavPillTarget(index, out expandedX, out expandedWidth))
-		{
-			return;
-		}
-		double targetX = expandedX;
-		for (int i = 0; i < index; i++)
-		{
-			targetX -= Math.Max(0.0, _navTabs[i].ActualWidth - NavCompactButtonWidth);
-		}
-		double fromX = NavActivePillTranslate.X;
-		double fromWidth = ((NavActivePill.ActualWidth > 0.0) ? NavActivePill.ActualWidth : expandedWidth);
-		StartNavPillShapeAnimation(fromX, fromWidth, targetX, NavCompactButtonWidth, NavDockShrinkDuration);
 	}
 
 	private void StartNavPillShapeAnimation(double fromX, double fromWidth, double targetX, double targetWidth, Duration duration)
@@ -11938,282 +12238,263 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 	private void CollapseNavDock(bool animate)
 	{
-		_navDockExpanded = false;
+		_navDockExpanded = true;
 		StopNavDockCloseTimer();
 		EnsureNavPillComponents();
-		if (animate)
+		_navDockAnimating = false;
+		if (ViewModel != null)
 		{
-			AnimateNavPillCollapse();
+			UpdateNavPill(ViewModel.CurrentSlideIndex, animate);
 		}
-		AnimateNavOpacity(NavActivePill, 0.0, NavDockFadeOutDuration, TimeSpan.Zero);
-		if (!animate)
-		{
-			_navDockAnimating = false;
-			ApplyNavDockCompactState();
-			return;
-		}
-		_navDockAnimating = true;
-		AnimateNavDockContents(expand: false);
-		AnimateNavDockWidths(expand: false, delegate
-		{
-			if (_navDockExpanded)
-			{
-				return;
-			}
-			_navDockAnimating = false;
-		});
 	}
 
 	private void ResetNavDockState()
 	{
-		_navDockExpanded = false;
+		_navDockExpanded = true;
 		StopNavDockCloseTimer();
 		EnsureNavPillComponents();
 		_navDockAnimating = false;
-		ApplyNavDockCompactState();
+		if (ViewModel != null)
+		{
+			UpdateNavPill(ViewModel.CurrentSlideIndex, animate: false);
+		}
 	}
 
 	private void ApplyNavDockCompactState()
 	{
-		if (_navTabs == null || _navContents == null || _navDots == null)
+		if (ViewModel != null)
 		{
-			return;
+			UpdateNavPill(ViewModel.CurrentSlideIndex, animate: false);
 		}
-		for (int i = 0; i < _navTabs.Length; i++)
-		{
-			Button button = _navTabs[i];
-			button.BeginAnimation(FrameworkElement.WidthProperty, null);
-			button.Width = NavCompactButtonWidth;
-			SetNavOpacity(_navContents[i], 0.0);
-			SetNavOpacity(_navDots[i], 1.0);
-		}
-		SetNavOpacity(NavActivePill, 0.0);
 	}
 
 	private void ApplyNavDockExpandedState()
 	{
-		if (_navTabs == null || _navContents == null || _navDots == null || _navFullWidths == null)
+		if (ViewModel != null)
 		{
-			return;
+			UpdateNavPill(ViewModel.CurrentSlideIndex, animate: false);
 		}
-		for (int i = 0; i < _navTabs.Length; i++)
-		{
-			Button button = _navTabs[i];
-			button.BeginAnimation(FrameworkElement.WidthProperty, null);
-			button.Width = _navFullWidths[i];
-			SetNavOpacity(_navContents[i], 1.0);
-			SetNavOpacity(_navDots[i], 0.0);
-		}
-		SetNavOpacity(NavActivePill, 1.0);
 	}
 
 	private void EnsureNavFullWidthsMeasured()
 	{
-		if (_navFullWidthsMeasured && _navFullWidths != null)
-		{
-			return;
-		}
-		if (_navTabs == null || NavTabsPanel == null)
-		{
-			return;
-		}
-		bool wasAnimating = _navDockAnimating;
-		_navDockAnimating = true;
-		try
-		{
-			for (int i = 0; i < _navTabs.Length; i++)
-			{
-				_navTabs[i].BeginAnimation(FrameworkElement.WidthProperty, null);
-				_navTabs[i].Width = double.NaN;
-			}
-			NavTabsPanel.UpdateLayout();
-			double[] array = new double[_navTabs.Length];
-			for (int j = 0; j < _navTabs.Length; j++)
-			{
-				array[j] = _navTabs[j].ActualWidth;
-			}
-			_navFullWidths = array;
-			_navFullWidthsMeasured = true;
-		}
-		finally
-		{
-			for (int k = 0; k < _navTabs.Length; k++)
-			{
-				_navTabs[k].Width = NavCompactButtonWidth;
-			}
-			NavTabsPanel.UpdateLayout();
-			_navDockAnimating = wasAnimating;
-		}
+		EnsureNavPillComponents();
 	}
 
 	private void AnimateNavDockContents(bool expand)
 	{
-		if (_navContents == null || _navDots == null)
-		{
-			return;
-		}
-		double contentOpacity = (expand ? 1.0 : 0.0);
-		double dotOpacity = (expand ? 0.0 : 1.0);
-		TimeSpan contentBegin = TimeSpan.FromMilliseconds(expand ? 60.0 : 0.0);
-		TimeSpan dotBegin = TimeSpan.FromMilliseconds(expand ? 0.0 : 40.0);
-		for (int i = 0; i < _navContents.Length; i++)
-		{
-			AnimateNavOpacity(_navContents[i], contentOpacity, NavDockFadeInDuration, contentBegin);
-			AnimateNavOpacity(_navDots[i], dotOpacity, NavDockFadeInDuration, dotBegin);
-		}
 	}
 
 	private void AnimateNavDockWidths(bool expand, Action onCompleted)
 	{
-		if (_navTabs == null || (expand && _navFullWidths == null))
-		{
-			onCompleted();
-			return;
-		}
-		Duration duration = (expand ? NavDockGrowDuration : NavDockShrinkDuration);
-		int pending = _navTabs.Length;
-		Action completedOne = delegate
-		{
-			pending--;
-			if (pending <= 0)
-			{
-				onCompleted();
-			}
-		};
-		for (int i = 0; i < _navTabs.Length; i++)
-		{
-			double targetWidth = (expand ? _navFullWidths![i] : NavCompactButtonWidth);
-			StartNavButtonWidthAnimation(_navTabs[i], targetWidth, duration, completedOne);
-		}
+		onCompleted?.Invoke();
 	}
 
 	private static void StartNavButtonWidthAnimation(Button button, double targetWidth, Duration duration, Action onCompleted)
 	{
-		double fromWidth = button.ActualWidth;
-		if (double.IsNaN(fromWidth) || fromWidth <= 0.0)
-		{
-			fromWidth = button.Width;
-		}
-		if (double.IsNaN(fromWidth) || fromWidth <= 0.0)
-		{
-			fromWidth = targetWidth;
-		}
-		button.Width = targetWidth;
-		DoubleAnimation animation = new DoubleAnimation
-		{
-			From = fromWidth,
-			To = targetWidth,
-			Duration = duration,
-			EasingFunction = NavDockEase,
-			FillBehavior = FillBehavior.Stop
-		};
-		animation.Completed += delegate
-		{
-			onCompleted();
-		};
-		button.BeginAnimation(FrameworkElement.WidthProperty, animation);
+		onCompleted?.Invoke();
 	}
 
 	private static void AnimateNavOpacity(UIElement element, double targetOpacity, Duration duration, TimeSpan beginTime)
 	{
-		DoubleAnimation animation = new DoubleAnimation
-		{
-			To = targetOpacity,
-			Duration = duration,
-			BeginTime = beginTime,
-			EasingFunction = NavDockEase,
-			FillBehavior = FillBehavior.Stop
-		};
-		animation.Completed += delegate
-		{
-			element.Opacity = targetOpacity;
-		};
-		element.BeginAnimation(UIElement.OpacityProperty, animation);
+		if (element != null) element.Opacity = targetOpacity;
 	}
 
 	private static void SetNavOpacity(UIElement element, double opacity)
 	{
-		element.BeginAnimation(UIElement.OpacityProperty, null);
-		element.Opacity = opacity;
+		if (element != null)
+		{
+			element.BeginAnimation(UIElement.OpacityProperty, null);
+			element.Opacity = opacity;
+		}
 	}
 
 	private int MapSlideToPhysicalTabIndex(int slideIndex)
 	{
-		if (ViewModel == null || ViewModel.IsPrayerEnabled)
+		if (_navTabs == null || _navTabs.Length == 0)
 		{
-			return Math.Clamp(slideIndex, 0, 8);
+			return Math.Clamp(slideIndex, 0, 9);
 		}
-		if (slideIndex <= 2)
-		{
-			return Math.Clamp(slideIndex, 0, 2);
-		}
-		return Math.Clamp(slideIndex + 1, 4, 8);
+		return Math.Clamp(slideIndex, 0, _navTabs.Length - 1);
 	}
 
-	private void ApplyNavTabVisualState(int physicalIndex)
+	private const double NavTabInactiveWidth = 28.0;
+	private const double NavTabActiveWidth = 84.0;
+	private static readonly Duration NavTabTransitionDuration = new Duration(TimeSpan.FromMilliseconds(170.0));
+	private static readonly CubicEase NavTabEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+	private void ApplyNavTabVisualState(int physicalIndex, int prevPhysicalIndex = -1, bool animate = false)
 	{
 		Brush accent = (Brush)FindResource("AccentLightBrush");
+		bool shouldAnimate = animate && prevPhysicalIndex >= 0 && prevPhysicalIndex < _navTabs!.Length && prevPhysicalIndex != physicalIndex;
+
 		for (int i = 0; i < _navTabs!.Length; i++)
 		{
 			bool isActive = i == physicalIndex;
-			Ellipse dot = _navDots![i];
-			if (dot != null)
+
+			Button button = _navTabs[i];
+			if (button != null)
 			{
-				Brush dotBrush = (isActive ? accent : NavDotIdleBrush);
-				if (dot.Fill != dotBrush)
+				if (isActive)
 				{
-					dot.Fill = dotBrush;
+					button.Tag = "Active";
+
+					if (shouldAnimate)
+					{
+						DoubleAnimation expandAnim = new DoubleAnimation
+						{
+							To = NavTabActiveWidth,
+							Duration = NavTabTransitionDuration,
+							EasingFunction = NavTabEase
+						};
+						button.BeginAnimation(FrameworkElement.WidthProperty, expandAnim);
+					}
+					else
+					{
+						button.BeginAnimation(FrameworkElement.WidthProperty, null);
+						button.Width = NavTabActiveWidth;
+					}
+				}
+				else
+				{
+					button.Tag = null;
+
+					if (shouldAnimate && i == prevPhysicalIndex)
+					{
+						DoubleAnimation shrinkAnim = new DoubleAnimation
+						{
+							To = NavTabInactiveWidth,
+							Duration = NavTabTransitionDuration,
+							EasingFunction = NavTabEase
+						};
+						button.BeginAnimation(FrameworkElement.WidthProperty, shrinkAnim);
+					}
+					else
+					{
+						button.BeginAnimation(FrameworkElement.WidthProperty, null);
+						button.Width = NavTabInactiveWidth;
+					}
 				}
 			}
+
+			if (_navContents != null && i < _navContents.Length)
+			{
+				FrameworkElement content = _navContents[i];
+				if (content != null)
+				{
+					content.Opacity = 1.0;
+					content.Visibility = Visibility.Visible;
+				}
+			}
+
+			if (_navDots != null && i < _navDots.Length)
+			{
+				Ellipse dot = _navDots[i];
+				if (dot != null)
+				{
+					dot.Visibility = Visibility.Collapsed;
+				}
+			}
+
 			Shape icon = _navIcons![i];
-			if (icon == null)
+			if (icon != null)
 			{
-				continue;
+				if (icon == NavIcon0)
+				{
+					Brush iconFill = isActive ? NavTextActiveBrush : NavIconIdleBrush;
+					if (icon.Fill != iconFill)
+					{
+						icon.Fill = iconFill;
+					}
+					if (icon.Stroke != null)
+					{
+						icon.Stroke = null;
+					}
+				}
+				else
+				{
+					Brush iconBrush = (icon == NavIcon5 && isActive) ? NavIconWaterBrush : (isActive ? accent : NavIconIdleBrush);
+					if (icon.Stroke != iconBrush)
+					{
+						icon.Stroke = iconBrush;
+					}
+					if (icon.Fill != null)
+					{
+						icon.Fill = null;
+					}
+				}
 			}
-			Brush iconBrush = (i == 4 && isActive) ? NavIconWaterBrush : (isActive ? accent : NavIconIdleBrush);
-			if (icon.Stroke != iconBrush)
-			{
-				icon.Stroke = iconBrush;
-			}
-			if (icon.Fill != null)
-			{
-				icon.Fill = null;
-			}
+
 			if (_navLabels != null && i < _navLabels.Length)
 			{
 				TextBlock label = _navLabels[i];
 				if (label != null)
 				{
-					Brush labelBrush = (isActive ? NavTextActiveBrush : NavTextIdleBrush);
-					if (label.Foreground != labelBrush)
+					if (isActive)
 					{
-						label.Foreground = labelBrush;
+						label.Visibility = Visibility.Visible;
+						if (label.Foreground != NavTextActiveBrush)
+						{
+							label.Foreground = NavTextActiveBrush;
+						}
+						FontWeight targetWeight = FontWeights.SemiBold;
+						if (label.FontWeight != targetWeight)
+						{
+							label.FontWeight = targetWeight;
+						}
+
+						if (shouldAnimate)
+						{
+							DoubleAnimation fadeAnim = new DoubleAnimation
+							{
+								From = 0.0,
+								To = 1.0,
+								Duration = NavTabTransitionDuration,
+								EasingFunction = NavTabEase
+							};
+							label.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+						}
+						else
+						{
+							label.BeginAnimation(UIElement.OpacityProperty, null);
+							label.Opacity = 1.0;
+						}
 					}
-					FontWeight targetWeight = (isActive ? FontWeights.SemiBold : FontWeights.Normal);
-					if (label.FontWeight != targetWeight)
+					else
 					{
-						label.FontWeight = targetWeight;
+						label.BeginAnimation(UIElement.OpacityProperty, null);
+						label.Opacity = 0.0;
+						label.Visibility = Visibility.Collapsed;
+						if (label.Foreground != NavTextIdleBrush)
+						{
+							label.Foreground = NavTextIdleBrush;
+						}
+						FontWeight targetWeight = FontWeights.Normal;
+						if (label.FontWeight != targetWeight)
+						{
+							label.FontWeight = targetWeight;
+						}
 					}
 				}
 			}
+		}
+
+		if (NavActivePill != null)
+		{
+			NavActivePill.Visibility = Visibility.Collapsed;
 		}
 	}
 
 	private bool IsNavPillTargetMeasured(int physicalIndex)
 	{
 		Button button = _navTabs![physicalIndex];
-		if (button == null || button.ActualWidth <= 0.0)
-		{
-			return false;
-		}
-		TextBlock label = _navLabels![physicalIndex];
-		return label == null || label.Visibility != Visibility.Visible || label.ActualWidth > 0.0;
+		return button != null && (button.ActualWidth > 0.0 || button.Width > 0.0);
 	}
 
 	private bool TryMeasureNavPillTarget(int physicalIndex, out double x, out double width)
 	{
 		x = 0.0;
-		width = 0.0;
+		width = NavTabActiveWidth;
 		Button button = _navTabs![physicalIndex];
 		if (button == null || NavTabsHost == null)
 		{
@@ -12235,7 +12516,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		{
 			return false;
 		}
-		width = button.ActualWidth;
+		width = button.ActualWidth > 0.0 ? button.ActualWidth : NavTabActiveWidth;
 		return width > 0.0;
 	}
 
@@ -12343,38 +12624,15 @@ public void ApplyNotchScale(double scale, bool animate = true)
 			return;
 		}
 		bool flag = num != _navPillTabIndex;
-		double x;
-		double width;
+		int prevIndex = _navPillTabIndex;
 		_navPillSyncing = true;
 		try
 		{
-			if (flag)
-			{
-				ApplyNavTabVisualState(num);
-				NavTabsHost.InvalidateMeasure();
-			}
-			if (!TryMeasureNavPillTarget(num, out x, out width))
-			{
-				if (_navPillFollowRetries < 3)
-				{
-					_navPillFollowRetries++;
-					QueueNavPillFollow();
-				}
-				return;
-			}
+			ApplyNavTabVisualState(num, prevIndex, flag && animate);
 		}
 		finally
 		{
 			_navPillSyncing = false;
-		}
-		_navPillFollowRetries = 0;
-		if (flag && animate && _navPillTabIndex >= 0)
-		{
-			StartNavPillGlide(x, width);
-		}
-		else
-		{
-			SnapNavPill(x, width);
 		}
 		_navPillTabIndex = num;
 	}
@@ -12939,7 +13197,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		double num2 = 140.0;
+		double num2 = 110.0;
 
 
 
@@ -12963,7 +13221,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		TimeSpan timeSpan = TimeSpan.FromMilliseconds(260.0);
+		TimeSpan timeSpan = TimeSpan.FromMilliseconds(350.0);
 
 
 
@@ -13171,7 +13429,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		DoubleAnimation doubleAnimation = new DoubleAnimation(0.0, toValue, timeSpan)
+		DoubleAnimation doubleAnimation = new DoubleAnimation(0.0, toValue, TimeSpan.FromMilliseconds(240.0))
 
 
 
@@ -13203,7 +13461,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		DoubleAnimation animation = new DoubleAnimation(1.0, 0.0, timeSpan)
+		DoubleAnimation animation = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(200.0))
 
 
 
@@ -13395,7 +13653,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		DoubleAnimation animation2 = new DoubleAnimation(0.0, 1.0, timeSpan)
+		DoubleAnimation animation2 = new DoubleAnimation(0.0, 1.0, TimeSpan.FromMilliseconds(320.0))
 
 
 
@@ -15044,53 +15302,15 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void MediaSeekSlider_PreviewMouseUp(object sender, MouseButtonEventArgs e)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
 		ViewModel.Media.IsSeeking = false;
-
-
-
-
-
-
-
-		if (MediaSeekSlider != null)
-
-
-
-
-
-
-
+		if (sender is Slider slider)
 		{
-
-
-
-
-
-
-
+			ViewModel.Media.SeekToSecondsAsync(slider.Value);
+		}
+		else if (MediaSeekSlider != null)
+		{
 			ViewModel.Media.SeekToSecondsAsync(MediaSeekSlider.Value);
-
-
-
-
-
-
-
 		}
 
 
@@ -16054,6 +16274,8 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 		TextBlock outgoingText = _isLyricSlotA ? CollapsedLyricTextA : CollapsedLyricTextB;
+		FrameworkElement outgoingSlot = _isLyricSlotA ? CollapsedLyricSlotA : CollapsedLyricSlotB;
+		TextBlock outgoingOverlay = _isLyricSlotA ? CollapsedLyricOverlayA : CollapsedLyricOverlayB;
 
 
 
@@ -16078,6 +16300,8 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 		TextBlock incomingText = _isLyricSlotA ? CollapsedLyricTextB : CollapsedLyricTextA;
+		FrameworkElement incomingSlot = _isLyricSlotA ? CollapsedLyricSlotB : CollapsedLyricSlotA;
+		TextBlock incomingOverlay = _isLyricSlotA ? CollapsedLyricOverlayB : CollapsedLyricOverlayA;
 
 
 
@@ -16269,7 +16493,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-				outgoingText.BeginAnimation(UIElement.OpacityProperty, null);
+				outgoingSlot.BeginAnimation(UIElement.OpacityProperty, null);
 
 
 
@@ -16278,6 +16502,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 				outgoingText.Text = string.Empty;
+				outgoingOverlay.Text = string.Empty;
 
 
 
@@ -16293,7 +16518,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-				outgoingText.Opacity = 0.0;
+				outgoingSlot.Opacity = 0.0;
 
 
 
@@ -16325,7 +16550,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			outgoingText.BeginAnimation(UIElement.OpacityProperty, outFade);
+			outgoingSlot.BeginAnimation(UIElement.OpacityProperty, outFade);
 
 
 
@@ -16358,6 +16583,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 			outgoingText.Text = string.Empty;
+			outgoingOverlay.Text = string.Empty;
 
 
 
@@ -16373,7 +16599,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			outgoingText.Opacity = 0.0;
+			outgoingSlot.Opacity = 0.0;
 
 
 
@@ -16413,7 +16639,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		incomingText.BeginAnimation(UIElement.OpacityProperty, null);
+		incomingSlot.BeginAnimation(UIElement.OpacityProperty, null);
 
 
 
@@ -16422,6 +16648,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 		incomingText.Text = newLyric;
+		incomingOverlay.Text = newLyric;
 
 		UpdateCollapsedLyricsWidth(newLyric);
 
@@ -16439,7 +16666,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		incomingText.Opacity = 0.0;
+		incomingSlot.Opacity = 0.0;
 
 
 
@@ -16591,7 +16818,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			incomingText.BeginAnimation(UIElement.OpacityProperty, null);
+			incomingSlot.BeginAnimation(UIElement.OpacityProperty, null);
 
 
 
@@ -16607,7 +16834,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			incomingText.Opacity = 1.0;
+			incomingSlot.Opacity = 1.0;
 
 
 
@@ -16639,7 +16866,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		incomingText.BeginAnimation(UIElement.OpacityProperty, inFade);
+		incomingSlot.BeginAnimation(UIElement.OpacityProperty, inFade);
 
 
 
@@ -16735,7 +16962,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			CollapsedLyricTextA.BeginAnimation(UIElement.OpacityProperty, null);
+			CollapsedLyricSlotA.BeginAnimation(UIElement.OpacityProperty, null);
 
 
 
@@ -16743,7 +16970,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			CollapsedLyricTextB.BeginAnimation(UIElement.OpacityProperty, null);
+			CollapsedLyricSlotB.BeginAnimation(UIElement.OpacityProperty, null);
 
 
 
@@ -16760,6 +16987,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 			CollapsedLyricTextA.Text = text ?? string.Empty;
+			CollapsedLyricOverlayA.Text = text ?? string.Empty;
 
 
 
@@ -16775,7 +17003,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			CollapsedLyricTextA.Opacity = string.IsNullOrWhiteSpace(text) ? 0.0 : 1.0;
+			CollapsedLyricSlotA.Opacity = string.IsNullOrWhiteSpace(text) ? 0.0 : 1.0;
 
 
 
@@ -16792,6 +17020,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 			CollapsedLyricTextB.Text = string.Empty;
+			CollapsedLyricOverlayB.Text = string.Empty;
 
 
 
@@ -16807,7 +17036,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			CollapsedLyricTextB.Opacity = 0.0;
+			CollapsedLyricSlotB.Opacity = 0.0;
 
 			UpdateCollapsedLyricsWidth(text);
 
@@ -16876,22 +17105,34 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		}
 
 		TextBlock textBlock = CollapsedLyricTextA;
-		TextBlock probe = new TextBlock
-		{
-			FontFamily = textBlock.FontFamily,
-			FontSize = textBlock.FontSize,
-			FontStyle = textBlock.FontStyle,
-			FontWeight = textBlock.FontWeight,
-			FontStretch = textBlock.FontStretch,
-			Text = lyricText,
-			TextWrapping = TextWrapping.NoWrap
-		};
-		TextOptions.SetTextFormattingMode(probe, TextOptions.GetTextFormattingMode(textBlock));
-		TextOptions.SetTextRenderingMode(probe, TextOptions.GetTextRenderingMode(textBlock));
-		probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-		double chrome = notchWidth - containerWidth;
-		double targetWidth = chrome + probe.DesiredSize.Width + 2.0;
+		double MeasureWidth(string text, double fontSize)
+		{
+			TextBlock probe = new TextBlock
+			{
+				FontFamily = textBlock.FontFamily,
+				FontSize = fontSize,
+				FontStyle = textBlock.FontStyle,
+				FontWeight = textBlock.FontWeight,
+				FontStretch = textBlock.FontStretch,
+				Text = text,
+				TextWrapping = TextWrapping.NoWrap
+			};
+			TextOptions.SetTextFormattingMode(probe, TextOptions.GetTextFormattingMode(textBlock));
+			TextOptions.SetTextRenderingMode(probe, TextOptions.GetTextRenderingMode(textBlock));
+			probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+			return probe.DesiredSize.Width;
+		}
+
+		double mainWidth = MeasureWidth(lyricText, textBlock.FontSize);
+
+		double measuredChrome = (containerWidth > 0.0 && notchWidth > containerWidth) ? (notchWidth - containerWidth) : 0.0;
+		double dynamicChrome = 104.0;
+		if (ViewModel.ShowWeatherInCollapsedNotch) dynamicChrome += 68.0;
+		if (ViewModel.ShowBatteryInCollapsedNotch && ViewModel.Battery?.HasBattery == true) dynamicChrome += 68.0;
+		if (ViewModel.ShowPetInCollapsedNotch && ViewModel.IsPetEnabled) dynamicChrome += 34.0;
+		double chrome = Math.Max(dynamicChrome, measuredChrome);
+		double targetWidth = chrome + Math.Max(MinCollapsedLyricTextWidth, mainWidth) + 14.0;
 		ViewModel.SetCollapsedLyricsWidthOverride(targetWidth);
 	}
 
@@ -17543,6 +17784,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 			ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
 				ViewModel.Download.PropertyChanged -= OnDownloadPropertyChanged;
+				ShutdownOutlineFx();
 				ViewModel.Shutdown();
 
 
@@ -17730,62 +17972,14 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void AnimateTimerSubNotch(bool isRunning)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
-		if (TimerSubNotchPill == null || TimerSubNotchAnimTranslate == null || _isTimerSubNotchShowing == isRunning)
-
-
-
-
-
-
-
+		bool shouldShow = isRunning && (ViewModel?.CurrentState == NotchState.Expanded);
+		if (TimerSubNotchPill == null || TimerSubNotchAnimTranslate == null || _isTimerSubNotchShowing == shouldShow)
 		{
-
-
-
-
-
-
-
 			return;
-
-
-
-
-
-
-
 		}
-
-
-
-
-
-
-
-		_isTimerSubNotchShowing = isRunning;
-
-
-
-
-
-
-
-		if (isRunning)
+		_isTimerSubNotchShowing = shouldShow;
+		if (shouldShow)
 
 
 
@@ -18258,62 +18452,14 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void AnimateStopwatchSubNotch(bool isRunning)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
-		if (StopwatchSubNotchPill == null || StopwatchSubNotchAnimTranslate == null || _isStopwatchSubNotchShowing == isRunning)
-
-
-
-
-
-
-
+		bool shouldShow = isRunning && (ViewModel?.CurrentState == NotchState.Expanded);
+		if (StopwatchSubNotchPill == null || StopwatchSubNotchAnimTranslate == null || _isStopwatchSubNotchShowing == shouldShow)
 		{
-
-
-
-
-
-
-
 			return;
-
-
-
-
-
-
-
 		}
-
-
-
-
-
-
-
-		_isStopwatchSubNotchShowing = isRunning;
-
-
-
-
-
-
-
-		if (isRunning)
+		_isStopwatchSubNotchShowing = shouldShow;
+		if (shouldShow)
 
 
 
@@ -18899,6 +19045,8 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 			&& ViewModel.Download.HasActiveDownloads
 
+			&& ViewModel.CurrentState == NotchState.Expanded
+
 			&& !ViewModel.IsFullscreenActive
 
 			&& !ViewModel.IsSlimBarVisible
@@ -18907,6 +19055,111 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 		AnimateDownloadSubNotch(shouldShow);
 
+	}
+
+	private void CollapsedDownloadHost_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+	{
+		e.Handled = true;
+		ViewModel?.NavigateToDownloadsPanel();
+	}
+
+	private void AnimateCollapsedDownloadAlternation(bool toDownloadPhase)
+	{
+		if (CollapsedNormalWidgetsHost == null || CollapsedDownloadHost == null) return;
+		if (ViewModel?.CurrentState != NotchState.Collapsed)
+		{
+			ResetCollapsedDownloadSlotStates(toDownloadPhase);
+			return;
+		}
+
+		var springEase = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+		var fadeEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+		var outEase = new CubicEase { EasingMode = EasingMode.EaseIn };
+
+		var outDuration = TimeSpan.FromMilliseconds(180);
+		var inDuration = TimeSpan.FromMilliseconds(420);
+		var inFadeDuration = TimeSpan.FromMilliseconds(240);
+		var inBeginTime = TimeSpan.FromMilliseconds(40);
+
+		FrameworkElement outgoingSlot = toDownloadPhase ? CollapsedNormalWidgetsHost : CollapsedDownloadHost;
+		TranslateTransform outgoingTrans = toDownloadPhase ? CollapsedNormalWidgetsTranslate : CollapsedDownloadTranslate;
+		ScaleTransform outgoingScale = toDownloadPhase ? CollapsedNormalWidgetsScale : CollapsedDownloadScale;
+
+		FrameworkElement incomingSlot = toDownloadPhase ? CollapsedDownloadHost : CollapsedNormalWidgetsHost;
+		TranslateTransform incomingTrans = toDownloadPhase ? CollapsedDownloadTranslate : CollapsedNormalWidgetsTranslate;
+		ScaleTransform incomingScale = toDownloadPhase ? CollapsedDownloadScale : CollapsedNormalWidgetsScale;
+
+		var fadeOut = new DoubleAnimation(0.0, outDuration) { EasingFunction = outEase };
+		var slideOut = new DoubleAnimation(-6.0, outDuration) { EasingFunction = outEase };
+		var scaleOut = new DoubleAnimation(0.85, outDuration) { EasingFunction = outEase };
+
+		fadeOut.Completed += (_, _) =>
+		{
+			if (outgoingSlot != null)
+			{
+				outgoingSlot.Visibility = Visibility.Collapsed;
+			}
+		};
+
+		outgoingSlot.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+		outgoingTrans.BeginAnimation(TranslateTransform.YProperty, slideOut);
+		outgoingScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleOut);
+		outgoingScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleOut);
+
+		incomingSlot.Visibility = Visibility.Visible;
+		incomingTrans.Y = 6.0;
+		incomingScale.ScaleX = 0.85;
+		incomingScale.ScaleY = 0.85;
+		incomingSlot.Opacity = 0.0;
+
+		var fadeIn = new DoubleAnimation(0.0, 1.0, inFadeDuration) { BeginTime = inBeginTime, EasingFunction = fadeEase };
+		var springIn = new DoubleAnimation(6.0, 0.0, inDuration) { BeginTime = inBeginTime, EasingFunction = springEase };
+		var scaleIn = new DoubleAnimation(0.85, 1.0, inDuration) { BeginTime = inBeginTime, EasingFunction = springEase };
+
+		incomingSlot.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+		incomingTrans.BeginAnimation(TranslateTransform.YProperty, springIn);
+		incomingScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleIn);
+		incomingScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleIn);
+	}
+
+	private void ResetCollapsedDownloadSlotStates(bool isDownloadPhase)
+	{
+		if (CollapsedNormalWidgetsHost == null || CollapsedDownloadHost == null) return;
+
+		CollapsedNormalWidgetsHost.BeginAnimation(UIElement.OpacityProperty, null);
+		CollapsedNormalWidgetsTranslate?.BeginAnimation(TranslateTransform.YProperty, null);
+		CollapsedNormalWidgetsScale?.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+		CollapsedNormalWidgetsScale?.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+
+		CollapsedDownloadHost.BeginAnimation(UIElement.OpacityProperty, null);
+		CollapsedDownloadTranslate?.BeginAnimation(TranslateTransform.YProperty, null);
+		CollapsedDownloadScale?.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+		CollapsedDownloadScale?.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+
+		if (isDownloadPhase)
+		{
+			CollapsedNormalWidgetsHost.Opacity = 0.0;
+			CollapsedNormalWidgetsHost.Visibility = Visibility.Collapsed;
+			if (CollapsedNormalWidgetsTranslate != null) CollapsedNormalWidgetsTranslate.Y = -6.0;
+			if (CollapsedNormalWidgetsScale != null) { CollapsedNormalWidgetsScale.ScaleX = 0.85; CollapsedNormalWidgetsScale.ScaleY = 0.85; }
+
+			CollapsedDownloadHost.Opacity = 1.0;
+			CollapsedDownloadHost.Visibility = Visibility.Visible;
+			if (CollapsedDownloadTranslate != null) CollapsedDownloadTranslate.Y = 0.0;
+			if (CollapsedDownloadScale != null) { CollapsedDownloadScale.ScaleX = 1.0; CollapsedDownloadScale.ScaleY = 1.0; }
+		}
+		else
+		{
+			CollapsedNormalWidgetsHost.Opacity = 1.0;
+			CollapsedNormalWidgetsHost.Visibility = Visibility.Visible;
+			if (CollapsedNormalWidgetsTranslate != null) CollapsedNormalWidgetsTranslate.Y = 0.0;
+			if (CollapsedNormalWidgetsScale != null) { CollapsedNormalWidgetsScale.ScaleX = 1.0; CollapsedNormalWidgetsScale.ScaleY = 1.0; }
+
+			CollapsedDownloadHost.Opacity = 0.0;
+			CollapsedDownloadHost.Visibility = Visibility.Collapsed;
+			if (CollapsedDownloadTranslate != null) CollapsedDownloadTranslate.Y = 6.0;
+			if (CollapsedDownloadScale != null) { CollapsedDownloadScale.ScaleX = 0.85; CollapsedDownloadScale.ScaleY = 0.85; }
+		}
 	}
 
 	private void OnDownloadPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -19901,7 +20154,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		if (DropTargetShelf != null && DropTargetDock != null && DragChoiceOverlay != null && DragChoiceOverlay.Visibility == Visibility.Visible)
+		if (DropTargetShelf != null && DropTargetConvert != null && DropTargetDock != null && DragChoiceOverlay != null && DragChoiceOverlay.Visibility == Visibility.Visible)
 
 
 
@@ -19926,6 +20179,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 			Point position2 = e.GetPosition(DropTargetDock);
+			Point position3 = e.GetPosition(DropTargetConvert);
 
 
 
@@ -19942,6 +20196,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 			bool flag = position2.X >= 0.0 && position2.Y >= 0.0 && position2.X <= DropTargetDock.ActualWidth && position2.Y <= DropTargetDock.ActualHeight;
+			bool flag2 = position3.X >= 0.0 && position3.Y >= 0.0 && position3.X <= DropTargetConvert.ActualWidth && position3.Y <= DropTargetConvert.ActualHeight;
 
 
 
@@ -19981,6 +20236,10 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
+			else if (flag2)
+			{
+				HighlightConvertTarget();
+			}
 			else if (flag)
 
 
@@ -20238,7 +20497,13 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		if (e.Handled || _isInternalDragOut || !e.Data.GetDataPresent(DataFormats.FileDrop))
+		if (_isInternalDragOut)
+		{
+			_shelfDropInsideNotch = true;
+			return;
+		}
+
+		if (e.Handled || !e.Data.GetDataPresent(DataFormats.FileDrop))
 
 
 
@@ -20285,6 +20550,20 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
+
+			if (DropTargetConvert != null)
+			{
+				Point convertPoint = e.GetPosition(DropTargetConvert);
+				if (convertPoint.X >= 0.0 && convertPoint.Y >= 0.0 && convertPoint.X <= DropTargetConvert.ActualWidth && convertPoint.Y <= DropTargetConvert.ActualHeight)
+				{
+					var convertResult = new ImageConvertService().ConvertFiles(array);
+					ShowConvertResultToast(convertResult);
+					HideDragChoiceOverlay();
+					_wasAutoExpandedByDrag = false;
+					e.Handled = true;
+					return;
+				}
+			}
 
 			Point point = ((DropTargetDock != null) ? e.GetPosition(DropTargetDock) : new Point(-1.0, -1.0));
 
@@ -20878,6 +21157,105 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
+	private void HighlightConvertTarget()
+	{
+		if (_currentDropHighlight == 2) return;
+		_currentDropHighlight = 2;
+
+		if (DropTargetShelf == null || DropTargetConvert == null || DropTargetDock == null) return;
+
+		DropTargetShelf.Background = ShelfNormalBg;
+		DropTargetShelf.BorderBrush = ShelfNormalBorder;
+		if (DropTargetShelfBadgeText != null) DropTargetShelfBadgeText.Text = L10n["DropAction.ShelfBadge"];
+		if (DropTargetShelfBadge != null) DropTargetShelfBadge.Background = new SolidColorBrush(Color.FromRgb(22, 34, 53));
+
+		DropTargetConvert.Background = ConvertHoverBg;
+		DropTargetConvert.BorderBrush = ConvertHoverBorder;
+		if (DropTargetConvertBadgeText != null) DropTargetConvertBadgeText.Text = L10n["DropAction.ConvertBadgeActive"];
+		if (DropTargetConvertBadge != null) DropTargetConvertBadge.Background = new SolidColorBrush(Color.FromArgb(64, 52, 211, 153));
+
+		DropTargetDock.Background = DockNormalBg;
+		DropTargetDock.BorderBrush = DockNormalBorder;
+		if (DropTargetDockBadgeText != null) DropTargetDockBadgeText.Text = L10n["DropAction.DockBadge"];
+		if (DropTargetDockBadge != null) DropTargetDockBadge.Background = new SolidColorBrush(Color.FromRgb(37, 26, 56));
+	}
+
+	private void ResetConvertTarget()
+	{
+		if (DropTargetConvert == null) return;
+
+		DropTargetConvert.Background = ConvertNormalBg;
+		DropTargetConvert.BorderBrush = ConvertNormalBorder;
+		if (DropTargetConvertBadgeText != null) DropTargetConvertBadgeText.Text = L10n["DropAction.ConvertBadge"];
+		if (DropTargetConvertBadge != null) DropTargetConvertBadge.Background = new SolidColorBrush(Color.FromRgb(18, 42, 36));
+	}
+
+	private void ShowConvertResultToast(ImageConvertResult result)
+	{
+		string title;
+		string message;
+
+		if (result.Converted > 0)
+		{
+			title = L10n["Convert.SuccessTitle"];
+			message = result.LastOutputName ?? L10n.Get("Convert.SuccessMessage", result.Converted);
+		}
+		else if (result.Failed > 0)
+		{
+			title = L10n["Convert.FailedTitle"];
+			message = L10n.Get("Convert.FailedMessage", result.Failed);
+		}
+		else
+		{
+			title = L10n["Convert.NothingTitle"];
+			message = L10n["Convert.NothingMessage"];
+		}
+
+		ViewModel.TriggerTransientNotification("🔄", title, message);
+	}
+
+	private void DropTargetConvert_PreviewDragEnter(object sender, DragEventArgs e)
+	{
+		HighlightConvertTarget();
+		e.Effects = DragDropEffects.Copy;
+		e.Handled = true;
+	}
+
+	private void DropTargetConvert_PreviewDragOver(object sender, DragEventArgs e)
+	{
+		HighlightConvertTarget();
+		e.Effects = DragDropEffects.Copy;
+		e.Handled = true;
+	}
+
+	private void DropTargetConvert_PreviewDragLeave(object sender, DragEventArgs e)
+	{
+		if (DropTargetConvert != null)
+		{
+			Point p = e.GetPosition(DropTargetConvert);
+			if (p.X >= 0 && p.Y >= 0 && p.X <= DropTargetConvert.ActualWidth && p.Y <= DropTargetConvert.ActualHeight)
+			{
+				return;
+			}
+		}
+
+		ResetDropTargetsHighlight();
+	}
+
+	private void DropTargetConvert_Drop(object sender, DragEventArgs e)
+	{
+		if (e.Handled) return;
+		if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] array && array.Length != 0)
+		{
+			var result = new ImageConvertService().ConvertFiles(array);
+			ShowConvertResultToast(result);
+		}
+
+		HideDragChoiceOverlay();
+		_wasAutoExpandedByDrag = false;
+		e.Handled = true;
+	}
+
 		private int _currentDropHighlight = 0;
 
 
@@ -20886,11 +21264,12 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 	{
 
-		int target = shelf ? 1 : 2;
+		int target = shelf ? 1 : 3;
 
 		if (_currentDropHighlight == target) return;
 
 		_currentDropHighlight = target;
+		ResetConvertTarget();
 
 
 
@@ -20978,7 +21357,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DropTargetShelfBadgeText.Text = "✨ Lepaskan untuk Simpan ke Shelf!";
+				DropTargetShelfBadgeText.Text = L10n["DropAction.ShelfBadgeActive"];
 
 
 
@@ -21058,7 +21437,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DropTargetDockBadgeText.Text = "\ud83d\ude80 Lepaskan ke Dock";
+				DropTargetDockBadgeText.Text = L10n["DropAction.DockBadge"];
 
 
 
@@ -21162,7 +21541,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DropTargetDockBadgeText.Text = "✨ Lepaskan untuk Tambah ke Dock!";
+				DropTargetDockBadgeText.Text = L10n["DropAction.DockBadgeActive"];
 
 
 
@@ -21242,7 +21621,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DropTargetShelfBadgeText.Text = "\ud83d\udce5 Lepaskan ke Shelf";
+				DropTargetShelfBadgeText.Text = L10n["DropAction.ShelfBadge"];
 
 
 
@@ -21321,6 +21700,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 		if (_currentDropHighlight == 0) return;
 
 		_currentDropHighlight = 0;
+		ResetConvertTarget();
 
 
 
@@ -21376,7 +21756,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DropTargetShelfBadgeText.Text = "\ud83d\udce5 Lepaskan ke Shelf";
+				DropTargetShelfBadgeText.Text = L10n["DropAction.ShelfBadge"];
 
 
 
@@ -21480,7 +21860,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DropTargetDockBadgeText.Text = "\ud83d\ude80 Lepaskan ke Dock";
+				DropTargetDockBadgeText.Text = L10n["DropAction.DockBadge"];
 
 
 
@@ -22128,10 +22508,27 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
+	}
 
+	private void ShelfPhoneCopyLink_Click(object sender, RoutedEventArgs e)
+	{
+		string url = ViewModel.PhoneShare.Url;
+		if (string.IsNullOrWhiteSpace(url)) return;
 
+		try
+		{
+			Clipboard.SetText(url);
+			ViewModel.TriggerTransientNotification("📱", LocalizationService.Instance.Get("Phone.WindowTitle"), LocalizationService.Instance.Get("Phone.LinkCopied"));
+		}
+		catch
+		{
+			// Clipboard bisa sementara terkunci aplikasi lain; URL tetap terlihat di panel.
+		}
+	}
 
-
+	private void ShelfPhoneStop_Click(object sender, RoutedEventArgs e)
+	{
+		ViewModel.PhoneShare.Stop();
 	}
 
 
@@ -22269,6 +22666,7 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 			_isInternalDragOut = true;
+			_shelfDropInsideNotch = false;
 
 
 
@@ -22308,7 +22706,12 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 
-				DragDrop.DoDragDrop(frameworkElement, data, DragDropEffects.Copy);
+				DragDropEffects effects = DragDrop.DoDragDrop(frameworkElement, data, DragDropEffects.Copy);
+
+				if (effects != DragDropEffects.None && !_shelfDropInsideNotch && ViewModel.SettingsService.CurrentSettings.ShelfRemoveAfterDrag)
+				{
+					ViewModel.Shelf.RemoveItem(dataContext);
+				}
 
 
 

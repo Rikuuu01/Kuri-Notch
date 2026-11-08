@@ -61,5 +61,6 @@ namespace NotchWin.Services
         Task SetDefaultDeviceAsync(string deviceId);
         void RefreshAvailableDevices();
         void RefreshBluetoothRadioState();
+        Task<bool> ToggleBluetoothRadioAsync();
     }
 }

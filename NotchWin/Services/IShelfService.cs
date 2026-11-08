@@ -8,6 +8,7 @@ namespace NotchWin.Services
     {
         ObservableCollection<ShelfItem> Items { get; }
         int AddFiles(IEnumerable<string> filePaths);
+        void RefreshMissingStates();
         void RemoveItem(ShelfItem item);
         void ClearAll();
         void OpenItem(ShelfItem item);

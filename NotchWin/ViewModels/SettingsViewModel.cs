@@ -2,6 +2,8 @@ using System;
 
 using System.Collections.ObjectModel;
 
+using System.IO;
+
 using System.Linq;
 
 using System.Threading.Tasks;
@@ -54,6 +56,120 @@ namespace NotchWin.ViewModels
 
             new LanguageOption { Code = "id", DisplayName = "Bahasa Indonesia" }
 
+        };
+
+        public ObservableCollection<NavbarModuleItemViewModel> NavbarModules { get; } = new();
+
+        [RelayCommand]
+        public void MoveModuleUp(NavbarModuleItemViewModel? item)
+        {
+            if (item == null) return;
+            int idx = NavbarModules.IndexOf(item);
+            if (idx > 0)
+            {
+                NavbarModules.Move(idx, idx - 1);
+                UpdateModuleOrderState();
+                AutoSave();
+            }
+        }
+
+        [RelayCommand]
+        public void MoveModuleDown(NavbarModuleItemViewModel? item)
+        {
+            if (item == null) return;
+            int idx = NavbarModules.IndexOf(item);
+            if (idx >= 0 && idx < NavbarModules.Count - 1)
+            {
+                NavbarModules.Move(idx, idx + 1);
+                UpdateModuleOrderState();
+                AutoSave();
+            }
+        }
+
+        [RelayCommand]
+        public void ClearScreenTimeHistory()
+        {
+            var vm = System.Windows.Application.Current?.MainWindow?.DataContext as NotchViewModel;
+            vm?.ScreenTimeService?.ClearAllHistory();
+            System.Windows.MessageBox.Show(L10n["Settings.ScreenTimeCleared"], L10n["Settings.CategoryScreenTime"], System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+
+        [RelayCommand]
+        public void ResetNavbarModules()
+        {
+            _isInitializing = true;
+            try
+            {
+                LoadNavbarModules(AppSettings.GetDefaultNavbarModules());
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+            AutoSave();
+        }
+
+        private void LoadNavbarModules(System.Collections.Generic.List<NavbarModuleConfig>? configs)
+        {
+            NavbarModules.Clear();
+            var list = configs ?? AppSettings.GetDefaultNavbarModules();
+            var defaults = AppSettings.GetDefaultNavbarModules();
+
+            var fullList = new System.Collections.Generic.List<NavbarModuleConfig>(list);
+            foreach (var def in defaults)
+            {
+                if (!fullList.Any(m => string.Equals(m.Id, def.Id, StringComparison.OrdinalIgnoreCase)))
+                {
+                    fullList.Add(def);
+                }
+            }
+
+            foreach (var cfg in fullList)
+            {
+                var info = GetModuleDisplayInfo(cfg.Id);
+                bool enabled = string.Equals(cfg.Id, "home", StringComparison.OrdinalIgnoreCase) || cfg.IsEnabled;
+                var item = new NavbarModuleItemViewModel(cfg.Id, info.Title, info.Desc, info.Icon, enabled, OnModuleItemChanged);
+                NavbarModules.Add(item);
+            }
+            UpdateModuleOrderState();
+        }
+
+        private void OnModuleItemChanged()
+        {
+            if (_isInitializing) return;
+            var prayerItem = NavbarModules.FirstOrDefault(m => string.Equals(m.Id, "prayer", StringComparison.OrdinalIgnoreCase));
+            if (prayerItem != null && IsPrayerReminderEnabled != prayerItem.IsEnabled)
+            {
+                _isInitializing = true;
+                IsPrayerReminderEnabled = prayerItem.IsEnabled;
+                _isInitializing = false;
+            }
+            AutoSave();
+        }
+
+        private void UpdateModuleOrderState()
+        {
+            for (int i = 0; i < NavbarModules.Count; i++)
+            {
+                NavbarModules[i].OrderNumber = i + 1;
+                NavbarModules[i].CanMoveUp = i > 0;
+                NavbarModules[i].CanMoveDown = i < NavbarModules.Count - 1;
+            }
+        }
+
+        private (string Title, string Desc, string Icon) GetModuleDisplayInfo(string id) => id.ToLowerInvariant() switch
+        {
+            "home" => (L10n["Settings.ModuleHome"], L10n["Settings.ModuleHomeDesc"], "🏠"),
+            "control" => (L10n["Settings.ModuleControl"], L10n["Settings.ModuleControlDesc"], "🎛️"),
+            "media" => (L10n["Settings.ModuleMedia"], L10n["Settings.ModuleMediaDesc"], "🎵"),
+            "weather" => (L10n["Settings.ModuleWeather"], L10n["Settings.ModuleWeatherDesc"], "⛅"),
+            "prayer" => (L10n["Settings.ModulePrayer"], L10n["Settings.ModulePrayerDesc"], "🕌"),
+            "water" => (L10n["Settings.ModuleWater"], L10n["Settings.ModuleWaterDesc"], "💧"),
+            "note" => (L10n["Settings.ModuleNote"], L10n["Settings.ModuleNoteDesc"], "📝"),
+            "clipboard" => (L10n["Settings.ModuleClipboard"], L10n["Settings.ModuleClipboardDesc"], "📋"),
+            "timer" => (L10n["Settings.ModuleTimer"], L10n["Settings.ModuleTimerDesc"], "⏱️"),
+            "shelf" => (L10n["Settings.ModuleShelf"], L10n["Settings.ModuleShelfDesc"], "📁"),
+            _ => (id, string.Empty, "📦")
         };
 
 
@@ -152,7 +268,29 @@ namespace NotchWin.ViewModels
 
         private bool _isMediaWidgetEnabled;
 
+        [ObservableProperty]
+        private bool _isLyricsKaraokeEnabled = true;
 
+        [ObservableProperty]
+        private bool _isSyllableSyncEnabled = true;
+
+        [ObservableProperty]
+        private bool _isLrcRedEnabled = true;
+
+        [ObservableProperty]
+        private string _spicyLyricsApiKey = string.Empty;
+
+        [ObservableProperty]
+        private bool _showSecondLyricLine = true;
+
+        [ObservableProperty]
+        private bool _lyricsBold = true;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LyricsTextSizeDisplay))]
+        private double _lyricsTextSize = 12.0;
+
+        public string LyricsTextSizeDisplay => $"{LyricsTextSize:0}";
 
         [ObservableProperty]
 
@@ -172,9 +310,65 @@ namespace NotchWin.ViewModels
 
         [ObservableProperty]
 
+        private bool _shelfRemoveAfterDrag;
+
+        [ObservableProperty]
+        private bool _isPhoneShareEnabled = true;
+
+        [ObservableProperty]
+        private bool _isScreenTimeEnabled = true;
+
+        [ObservableProperty]
+        private int _screenTimeIdleSeconds = 120;
+
+        [ObservableProperty]
+        private bool _isNotchTimerGlowEnabled = true;
+
+        [ObservableProperty]
+        private bool _isNotchAlertGlowEnabled = true;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(PhoneFolderDisplay))]
+        private string _phoneFolder = string.Empty;
+
+        public string PhoneFolderDisplay => string.IsNullOrWhiteSpace(PhoneFolder)
+            ? Path.Combine(NotchWin.Interop.NativeMethods.GetKnownDownloadsFolder(), "Kuri Shelf")
+            : PhoneFolder;
+
+        [RelayCommand]
+        public void BrowsePhoneFolder()
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = L10n.Get("Settings.PhoneFolderTitle"),
+                InitialDirectory = Directory.Exists(PhoneFolderDisplay) ? PhoneFolderDisplay : string.Empty
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                PhoneFolder = dialog.FolderName;
+            }
+        }
+
+
+
+        [ObservableProperty]
+
         private bool _isAlbumArtAccentEnabled = true;
 
 
+
+        [ObservableProperty]
+        private bool _isAccentColorEnabled = true;
+
+        [ObservableProperty]
+        private bool _showWeatherInCollapsedNotch = false;
+
+        [ObservableProperty]
+        private bool _showBatteryInCollapsedNotch = false;
+
+        [ObservableProperty]
+        private bool _showPetInCollapsedNotch = false;
 
         [ObservableProperty]
 
@@ -526,10 +720,31 @@ namespace NotchWin.ViewModels
 
                 IsMediaWidgetEnabled = settings.IsMediaWidgetEnabled;
 
+                IsLyricsKaraokeEnabled = settings.IsLyricsKaraokeEnabled;
+                IsSyllableSyncEnabled = settings.IsSyllableSyncEnabled;
+                IsLrcRedEnabled = settings.IsLrcRedEnabled;
+                SpicyLyricsApiKey = settings.SpicyLyricsApiKey ?? string.Empty;
+                LyricsBold = settings.LyricsBold;
+                LyricsTextSize = Math.Clamp(settings.LyricsTextSize > 0 ? settings.LyricsTextSize : 12.0, 10.0, 14.0);
+
                 IsPrivacyIndicatorEnabled = settings.IsPrivacyIndicatorEnabled;
 
                 IsDownloadMonitorEnabled = settings.IsDownloadMonitorEnabled;
                 NotificationDurationSeconds = Math.Clamp(settings.NotificationDurationSeconds, 2, 10);
+
+                ShelfRemoveAfterDrag = settings.ShelfRemoveAfterDrag;
+                IsPhoneShareEnabled = settings.IsPhoneShareEnabled;
+                IsScreenTimeEnabled = settings.IsScreenTimeEnabled;
+                ScreenTimeIdleSeconds = settings.ScreenTimeIdleSeconds > 0 ? settings.ScreenTimeIdleSeconds : 120;
+                IsNotchTimerGlowEnabled = settings.IsNotchTimerGlowEnabled;
+                IsNotchAlertGlowEnabled = settings.IsNotchAlertGlowEnabled;
+                PhoneFolder = settings.PhoneFolder ?? string.Empty;
+
+                IsAccentColorEnabled = settings.IsAccentColorEnabled;
+                ThemeManager.IsAccentColorEnabled = settings.IsAccentColorEnabled;
+                ShowWeatherInCollapsedNotch = settings.ShowWeatherInCollapsedNotch;
+                ShowBatteryInCollapsedNotch = settings.ShowBatteryInCollapsedNotch;
+                ShowPetInCollapsedNotch = settings.ShowPetInCollapsedNotch;
 
                 IsAlbumArtAccentEnabled = settings.IsAlbumArtAccentEnabled;
 
@@ -630,6 +845,9 @@ namespace NotchWin.ViewModels
                 NotchWin.Services.PetCompanionService.Instance.Style = settings.PetStyle;
                 RefreshFilteredPetCharacters();
 
+                // Modul Navbar
+                LoadNavbarModules(settings.NavbarModules);
+
 
 
                 // Load monitors
@@ -708,9 +926,38 @@ namespace NotchWin.ViewModels
 
         partial void OnIsMediaWidgetEnabledChanged(bool value) => AutoSave();
 
+        partial void OnIsLyricsKaraokeEnabledChanged(bool value) => AutoSave();
+
+        partial void OnIsSyllableSyncEnabledChanged(bool value) => AutoSave();
+
+        partial void OnIsLrcRedEnabledChanged(bool value) => AutoSave();
+
+        partial void OnSpicyLyricsApiKeyChanged(string value) => AutoSave();
+
+
+        partial void OnLyricsBoldChanged(bool value) => AutoSave();
+
+        partial void OnLyricsTextSizeChanged(double value)
+        {
+            OnPropertyChanged(nameof(LyricsTextSizeDisplay));
+            AutoSave();
+        }
+
         partial void OnIsPrivacyIndicatorEnabledChanged(bool value) => AutoSave();
 
         partial void OnIsDownloadMonitorEnabledChanged(bool value) => AutoSave();
+
+        partial void OnShelfRemoveAfterDragChanged(bool value) => AutoSave();
+
+        partial void OnIsPhoneShareEnabledChanged(bool value) => AutoSave();
+        partial void OnIsScreenTimeEnabledChanged(bool value) => AutoSave();
+        partial void OnScreenTimeIdleSecondsChanged(int value) => AutoSave();
+
+        partial void OnIsNotchTimerGlowEnabledChanged(bool value) => AutoSave();
+
+        partial void OnIsNotchAlertGlowEnabledChanged(bool value) => AutoSave();
+
+        partial void OnPhoneFolderChanged(string value) => AutoSave();
 
         partial void OnNotificationDurationSecondsChanged(int value)
         {
@@ -762,7 +1009,15 @@ namespace NotchWin.ViewModels
 
         // Sholat
 
-        partial void OnIsPrayerReminderEnabledChanged(bool value) => AutoSave();
+        partial void OnIsPrayerReminderEnabledChanged(bool value)
+        {
+            var prayerItem = NavbarModules.FirstOrDefault(m => string.Equals(m.Id, "prayer", StringComparison.OrdinalIgnoreCase));
+            if (prayerItem != null && prayerItem.IsEnabled != value)
+            {
+                prayerItem.IsEnabled = value;
+            }
+            AutoSave();
+        }
 
         partial void OnPrayerCityPresetChanged(string value) => AutoSave();
 
@@ -894,6 +1149,32 @@ namespace NotchWin.ViewModels
                 _ => "OLED"
             };
             ThemeManager.ApplyMaterial(code);
+            AutoSave();
+        }
+
+        partial void OnIsAccentColorEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            ThemeManager.IsAccentColorEnabled = value;
+            ThemeManager.ApplyAccentColor(IsCustomAccentSelected ? CustomAccentColorHex : SelectedAccentColor, force: false);
+            AutoSave();
+        }
+
+        partial void OnShowWeatherInCollapsedNotchChanged(bool value)
+        {
+            if (_isInitializing) return;
+            AutoSave();
+        }
+
+        partial void OnShowBatteryInCollapsedNotchChanged(bool value)
+        {
+            if (_isInitializing) return;
+            AutoSave();
+        }
+
+        partial void OnShowPetInCollapsedNotchChanged(bool value)
+        {
+            if (_isInitializing) return;
             AutoSave();
         }
 
@@ -1084,6 +1365,13 @@ namespace NotchWin.ViewModels
 
                 IsMediaWidgetEnabled = defaults.IsMediaWidgetEnabled;
 
+                IsLyricsKaraokeEnabled = defaults.IsLyricsKaraokeEnabled;
+                IsSyllableSyncEnabled = defaults.IsSyllableSyncEnabled;
+                IsLrcRedEnabled = defaults.IsLrcRedEnabled;
+                SpicyLyricsApiKey = defaults.SpicyLyricsApiKey;
+                LyricsBold = defaults.LyricsBold;
+                LyricsTextSize = defaults.LyricsTextSize;
+
                 IsPetEnabled = defaults.IsPetEnabled;
                 SelectedPetStyle = defaults.PetStyle;
 
@@ -1091,6 +1379,20 @@ namespace NotchWin.ViewModels
 
                 IsDownloadMonitorEnabled = defaults.IsDownloadMonitorEnabled;
                 NotificationDurationSeconds = defaults.NotificationDurationSeconds;
+
+                ShelfRemoveAfterDrag = defaults.ShelfRemoveAfterDrag;
+                IsPhoneShareEnabled = defaults.IsPhoneShareEnabled;
+                IsScreenTimeEnabled = defaults.IsScreenTimeEnabled;
+                ScreenTimeIdleSeconds = defaults.ScreenTimeIdleSeconds;
+                IsNotchTimerGlowEnabled = defaults.IsNotchTimerGlowEnabled;
+                IsNotchAlertGlowEnabled = defaults.IsNotchAlertGlowEnabled;
+                PhoneFolder = defaults.PhoneFolder;
+
+                IsAccentColorEnabled = defaults.IsAccentColorEnabled;
+                ThemeManager.IsAccentColorEnabled = defaults.IsAccentColorEnabled;
+                ShowWeatherInCollapsedNotch = defaults.ShowWeatherInCollapsedNotch;
+                ShowBatteryInCollapsedNotch = defaults.ShowBatteryInCollapsedNotch;
+                ShowPetInCollapsedNotch = defaults.ShowPetInCollapsedNotch;
 
                 IsAlbumArtAccentEnabled = defaults.IsAlbumArtAccentEnabled;
 
@@ -1115,6 +1417,9 @@ namespace NotchWin.ViewModels
                 LocalizationService.Instance.CurrentLanguage = "en";
 
                 UpdateLocalizedDisplayStrings();
+
+                // Reset modul navbar
+                LoadNavbarModules(defaults.NavbarModules);
 
             }
 
@@ -1154,6 +1459,13 @@ namespace NotchWin.ViewModels
 
                 WaterIntervalOptions[4].DisplayName = isId ? "Setiap 120 Menit (2 Jam Sekali)" : "Every 120 Minutes (2 Hours)";
 
+            }
+
+            foreach (var item in NavbarModules)
+            {
+                var info = GetModuleDisplayInfo(item.Id);
+                item.Title = info.Title;
+                item.Description = info.Desc;
             }
 
         }
@@ -1419,12 +1731,25 @@ namespace NotchWin.ViewModels
 
                     IsMediaWidgetEnabled = IsMediaWidgetEnabled,
 
+                    IsLyricsEnabled = _settingsService.CurrentSettings.IsLyricsEnabled,
+                    LyricOffsetMs = _settingsService.CurrentSettings.LyricOffsetMs,
+                    IsLyricsKaraokeEnabled = IsLyricsKaraokeEnabled,
+                    IsSyllableSyncEnabled = IsSyllableSyncEnabled,
+                    IsLrcRedEnabled = IsLrcRedEnabled,
+                    SpicyLyricsApiKey = SpicyLyricsApiKey?.Trim() ?? string.Empty,
+                    LyricsBold = LyricsBold,
+                    LyricsTextSize = LyricsTextSize,
+
                     IsPrivacyIndicatorEnabled = IsPrivacyIndicatorEnabled,
 
                     IsDownloadMonitorEnabled = IsDownloadMonitorEnabled,
                     NotificationDurationSeconds = NotificationDurationSeconds,
 
                     IsAlbumArtAccentEnabled = IsAlbumArtAccentEnabled,
+                    IsAccentColorEnabled = IsAccentColorEnabled,
+                    ShowWeatherInCollapsedNotch = ShowWeatherInCollapsedNotch,
+                    ShowBatteryInCollapsedNotch = ShowBatteryInCollapsedNotch,
+                    ShowPetInCollapsedNotch = ShowPetInCollapsedNotch,
 
                     AccentColor = IsCustomAccentSelected ? CustomAccentColorHex : SelectedAccentColor,
                     NotchMaterial = SelectedMaterial switch
@@ -1492,6 +1817,18 @@ namespace NotchWin.ViewModels
                     IsPetEnabled = IsPetEnabled,
                     PetStyle = SelectedPetStyle,
 
+                    // Shelf & Phone Share
+
+                    ShelfRemoveAfterDrag = ShelfRemoveAfterDrag,
+                    IsPhoneShareEnabled = IsPhoneShareEnabled,
+                    IsScreenTimeEnabled = IsScreenTimeEnabled,
+                    ScreenTimeIdleSeconds = ScreenTimeIdleSeconds,
+                    IsNotchTimerGlowEnabled = IsNotchTimerGlowEnabled,
+                    IsNotchAlertGlowEnabled = IsNotchAlertGlowEnabled,
+                    PhoneFolder = PhoneFolder,
+
+                    NavbarModules = NavbarModules.Select(m => new NavbarModuleConfig(m.Id, m.IsEnabled)).ToList(),
+
                 };
 
 
@@ -1536,6 +1873,57 @@ namespace NotchWin.ViewModels
 
         public string DisplayName { get; set; } = "English";
 
+    }
+
+    public partial class NavbarModuleItemViewModel : ObservableObject
+    {
+        private readonly Action _onChanged;
+
+        public string Id { get; }
+
+        [ObservableProperty]
+        private string _title = string.Empty;
+
+        [ObservableProperty]
+        private string _description = string.Empty;
+
+        [ObservableProperty]
+        private string _iconGlyph = string.Empty;
+
+        public bool CanDisable => !string.Equals(Id, "home", StringComparison.OrdinalIgnoreCase);
+
+        [ObservableProperty]
+        private bool _isEnabled = true;
+
+        [ObservableProperty]
+        private int _orderNumber;
+
+        [ObservableProperty]
+        private bool _canMoveUp;
+
+        [ObservableProperty]
+        private bool _canMoveDown;
+
+        public NavbarModuleItemViewModel(string id, string title, string description, string iconGlyph, bool isEnabled, Action onChanged)
+        {
+            Id = id;
+            _title = title;
+            _description = description;
+            _iconGlyph = iconGlyph;
+            _isEnabled = isEnabled;
+            _onChanged = onChanged;
+        }
+
+        partial void OnIsEnabledChanged(bool value)
+        {
+            if (string.Equals(Id, "home", StringComparison.OrdinalIgnoreCase) && !value)
+            {
+                _isEnabled = true;
+                OnPropertyChanged(nameof(IsEnabled));
+                return;
+            }
+            _onChanged?.Invoke();
+        }
     }
 
 }

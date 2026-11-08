@@ -127,6 +127,18 @@ namespace NotchWin.Services
             }
         }
 
+        public void StopPrayerCall()
+        {
+            try
+            {
+                _prayerPlayer?.Stop();
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to stop prayer call sound");
+            }
+        }
+
         public void PlayStartupSound()
         {
             try

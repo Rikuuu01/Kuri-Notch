@@ -538,6 +538,16 @@
                                 <TextBlock Text="{Binding L10n[Settings.CategoryWater]}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
+
+                        <!-- 6: Modul Navbar -->
+                        <RadioButton Style="{StaticResource SidebarNavRadioStyle}"
+                                     IsChecked="{Binding SelectedCategoryIndex, Converter={StaticResource EqToBool}, ConverterParameter=6, Mode=TwoWay}"
+                                     Command="{Binding SelectCategoryCommand}" CommandParameter="6">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="🧭" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding L10n[Settings.CategoryModules]}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
 
                     <!-- Sidebar Footer (Kembalikan Default) -->
@@ -624,6 +634,11 @@
                         <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=5}">
                             <TextBlock Text="{Binding L10n[Settings.CategoryWater]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
                             <TextBlock Text="Regular water drink reminders and daily hydration tracking" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <!-- Header Category 6 -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=6}">
+                            <TextBlock Text="{Binding L10n[Settings.CategoryModules]}" FontSize="17" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="{Binding L10n[Settings.DescModules]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
 
@@ -790,30 +805,42 @@
 
                                     <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
 
-                                    <!-- Accent Color Selection -->
-                                    <TextBlock Text="{Binding L10n[Settings.AccentColorTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
-                                    <TextBlock Text="{Binding L10n[Settings.AccentColorDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
-                                    <ComboBox ItemsSource="{Binding AvailableAccentColors}"
-                                              SelectedItem="{Binding SelectedAccentColor, Mode=TwoWay}"
-                                              Style="{StaticResource ModernComboBox}" />
+                                    <!-- Accent Color Enabled Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsAccentColorEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.AccentColorEnabledTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.AccentColorEnabledDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
 
-                                    <!-- Custom Hex Color Input (Visible when Custom (Hex) is selected) -->
-                                    <StackPanel Visibility="{Binding IsCustomAccentSelected, Converter={StaticResource BoolToVis}}" Margin="0,10,0,0">
-                                        <TextBlock Text="{Binding L10n[Settings.CustomHexTitle]}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" />
-                                        <TextBlock Text="{Binding L10n[Settings.CustomHexDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,6" />
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox Text="{Binding CustomAccentColorHex, UpdateSourceTrigger=PropertyChanged}"
-                                                     Background="#14141E" Foreground="#FFFFFF" CaretBrush="{DynamicResource AccentLightBrush}"
-                                                     BorderBrush="#38384A" BorderThickness="1" Padding="10,6"
-                                                     FontSize="13" FontFamily="Consolas, Segoe UI" VerticalAlignment="Center" />
-                                            <Border Grid.Column="1" Width="26" Height="26" CornerRadius="6" Margin="8,0,0,0"
-                                                    Background="{DynamicResource AccentPrimaryBrush}" BorderBrush="#555566" BorderThickness="1"
-                                                    VerticalAlignment="Center" ToolTip="Accent Color Preview" />
-                                        </Grid>
+                                    <!-- Accent Color Selection -->
+                                    <StackPanel IsEnabled="{Binding IsAccentColorEnabled}">
+                                        <TextBlock Text="{Binding L10n[Settings.AccentColorTitle]}" FontSize="14" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                        <TextBlock Text="{Binding L10n[Settings.AccentColorDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,8" />
+                                        <ComboBox ItemsSource="{Binding AvailableAccentColors}"
+                                                  SelectedItem="{Binding SelectedAccentColor, Mode=TwoWay}"
+                                                  Style="{StaticResource ModernComboBox}" />
+
+                                        <!-- Custom Hex Color Input (Visible when Custom (Hex) is selected) -->
+                                        <StackPanel Visibility="{Binding IsCustomAccentSelected, Converter={StaticResource BoolToVis}}" Margin="0,10,0,0">
+                                            <TextBlock Text="{Binding L10n[Settings.CustomHexTitle]}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.CustomHexDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,6" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox Text="{Binding CustomAccentColorHex, UpdateSourceTrigger=PropertyChanged}"
+                                                         Background="#14141E" Foreground="#FFFFFF" CaretBrush="{DynamicResource AccentLightBrush}"
+                                                         BorderBrush="#38384A" BorderThickness="1" Padding="10,6"
+                                                         FontSize="13" FontFamily="Consolas, Segoe UI" VerticalAlignment="Center" />
+                                                <Border Grid.Column="1" Width="26" Height="26" CornerRadius="6" Margin="8,0,0,0"
+                                                        Background="{DynamicResource AccentPrimaryBrush}" BorderBrush="#555566" BorderThickness="1"
+                                                        VerticalAlignment="Center" ToolTip="Accent Color Preview" />
+                                            </Grid>
+                                        </StackPanel>
                                     </StackPanel>
 
                                     <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
@@ -828,10 +855,32 @@
 
                                     <!-- Album Art Dynamic Accent Toggle -->
                                     <CheckBox Style="{StaticResource FluentToggleSwitch}"
-                                              IsChecked="{Binding IsAlbumArtAccentEnabled, Mode=TwoWay}">
+                                              IsChecked="{Binding IsAlbumArtAccentEnabled, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsAccentColorEnabled}">
                                         <StackPanel>
                                             <TextBlock Text="{Binding L10n[Settings.AlbumArtAccentTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
                                             <TextBlock Text="{Binding L10n[Settings.AlbumArtAccentDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
+
+                                    <!-- Notch Timer Glow Outline -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsNotchTimerGlowEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.NotchTimerGlowTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.NotchTimerGlowDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <!-- Notch Alert Glow Outline -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsNotchAlertGlowEnabled, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.NotchAlertGlowTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.NotchAlertGlowDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </CheckBox>
                                 </StackPanel>
@@ -928,6 +977,45 @@
 
                         <!-- ================= PANEL 2: WIDGET NOTCH ================= -->
                         <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=2}">
+                            <!-- Collapsed Notch Display Section -->
+                            <TextBlock Text="{Binding L10n[Settings.CollapsedSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <!-- Weather in Collapsed Notch Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding ShowWeatherInCollapsedNotch, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.ShowWeatherCollapsedTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.ShowWeatherCollapsedDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Battery in Collapsed Notch Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding ShowBatteryInCollapsedNotch, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.ShowBatteryCollapsedTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.ShowBatteryCollapsedDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Pet in Collapsed Notch Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding ShowPetInCollapsedNotch, Mode=TwoWay}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.ShowPetCollapsedTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.ShowPetCollapsedDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Border>
+
                             <TextBlock Text="{Binding L10n[Settings.WidgetsSection]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,6" />
                             <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
                                 <StackPanel>
@@ -940,6 +1028,87 @@
                                             <TextBlock Text="{Binding L10n[Settings.MediaDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Karaoke Lyrics Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsLyricsKaraokeEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.LyricsKaraokeTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.LyricsKaraokeDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Syllable Sync Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsSyllableSyncEnabled, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsLyricsKaraokeEnabled}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.SyllableSyncTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.SyllableSyncDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <!-- Optional Spicy Lyrics API Key -->
+                                    <StackPanel Margin="0,0,0,12" Visibility="{Binding IsSyllableSyncEnabled, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="{Binding L10n[Settings.SpicyLyricsApiKeyTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                        <TextBlock Text="{Binding L10n[Settings.SpicyLyricsApiKeyDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,6" TextWrapping="Wrap" />
+                                        <TextBox Text="{Binding SpicyLyricsApiKey, UpdateSourceTrigger=PropertyChanged}" 
+                                                 Background="#18181B" Foreground="#FFFFFF" BorderBrush="#27272A" BorderThickness="1" 
+                                                 Padding="8,6" MaxLength="128" FontSize="12" />
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- lrc.red Lyrics Provider Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsLrcRedEnabled, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsLyricsKaraokeEnabled}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.LrcRedTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.LrcRedDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Bold Lyrics Toggle -->
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding LyricsBold, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.LyricsBoldTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.LyricsBoldDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <!-- Lyrics Text Size -->
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.LyricsTextSizeTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.LyricsTextSizeDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="#27272A" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding LyricsTextSizeDisplay}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentLightBrush}" />
+                                        </Border>
+                                    </Grid>
+                                    <Slider Style="{StaticResource ModernSlider}"
+                                            Minimum="10" Maximum="14"
+                                            TickFrequency="1" IsSnapToTickEnabled="True"
+                                            Value="{Binding LyricsTextSize, Mode=TwoWay}"
+                                            Margin="0,0,0,12" />
 
                                     <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
 
@@ -1015,6 +1184,56 @@
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
                                     </StackPanel>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,12,0,12" />
+
+                                    <!-- Shelf & Phone Share Section -->
+                                    <TextBlock Text="{Binding L10n[Settings.ShelfSection]}" FontSize="11" FontWeight="Bold" Foreground="#A1A1AA" Margin="2,0,0,8" />
+
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding ShelfRemoveAfterDrag, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.ShelfRemoveAfterDragTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.ShelfRemoveAfterDragDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
+
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsPhoneShareEnabled, Mode=TwoWay}"
+                                              Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding L10n[Settings.PhoneShareTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.PhoneShareDesc]}" FontSize="12" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,10,0">
+                                            <TextBlock Text="{Binding L10n[Settings.PhoneFolderTitle]}" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding PhoneFolderDisplay}" FontSize="11" Foreground="#A1A1AA" Margin="0,2,0,0" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Command="{Binding BrowsePhoneFolderCommand}"
+                                                Content="{Binding L10n[Settings.BrowseButton]}" Padding="12,6" VerticalAlignment="Center"
+                                                Background="#27272A" Foreground="#F4F4F5"
+                                                FontWeight="SemiBold" FontSize="12" Cursor="Hand">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding L10n[Settings.PhoneShareHint]}" FontSize="11" Foreground="#71717A" TextWrapping="Wrap" Margin="0,2,0,0" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -1294,6 +1513,150 @@
                                         </StackPanel>
                                     </CheckBox>
                                 </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 6: MODUL NAVBAR ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=6}">
+                            <DockPanel Margin="4,0,0,10" LastChildFill="False">
+                                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding L10n[Settings.ModulesTitle]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" />
+                                    <TextBlock Text="{Binding L10n[Settings.ModulesDesc]}" FontSize="11" Foreground="#71717A" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding ResetNavbarModulesCommand}"
+                                        Style="{StaticResource StepperButtonStyle}"
+                                        Padding="10,5"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="↺" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#A1A1AA"/>
+                                        <TextBlock Text="{Binding L10n[Settings.ResetModules]}" FontSize="11" FontWeight="SemiBold" Foreground="#A1A1AA" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </DockPanel>
+
+                            <ItemsControl ItemsSource="{Binding NavbarModules}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="10,8" Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Tombol Geser Posisi (▲ / ▼) -->
+                                                <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                    <Button Style="{StaticResource StepperButtonStyle}"
+                                                            Height="16" Width="26" Padding="0" Margin="0,0,0,2"
+                                                            IsEnabled="{Binding CanMoveUp}"
+                                                            Command="{Binding DataContext.MoveModuleUpCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="Geser ke kiri / naik">
+                                                        <TextBlock Text="▲" FontSize="8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Button>
+                                                    <Button Style="{StaticResource StepperButtonStyle}"
+                                                            Height="16" Width="26" Padding="0"
+                                                            IsEnabled="{Binding CanMoveDown}"
+                                                            Command="{Binding DataContext.MoveModuleDownCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="Geser ke kanan / turun">
+                                                        <TextBlock Text="▼" FontSize="8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Button>
+                                                </StackPanel>
+
+                                                <!-- Nomor Urut -->
+                                                <Border Grid.Column="1" Background="#24242A" CornerRadius="6" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                    <TextBlock Text="{Binding OrderNumber}" FontSize="11" FontWeight="Bold" Foreground="#A1A1AA" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <!-- Icon Glyph -->
+                                                <Border Grid.Column="2" Width="32" Height="32" CornerRadius="8" Background="#202026" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding IconGlyph}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <!-- Title & Description -->
+                                                <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,0,14,0">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="#F4F4F5" FontSize="13" />
+                                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#A1A1AA" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+
+                                                <!-- Switch On / Off -->
+                                                <CheckBox Grid.Column="4"
+                                                          Style="{StaticResource FluentToggleSwitch}"
+                                                          IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                          IsEnabled="{Binding CanDisable}"
+                                                          VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- ================= PANEL 7: WAKTU LAYAR ================= -->
+                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=7}">
+                            <DockPanel Margin="4,0,0,10" LastChildFill="False">
+                                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding L10n[Settings.ScreenTimeTitle]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" />
+                                    <TextBlock Text="{Binding L10n[Settings.ScreenTimeDesc]}" FontSize="11" Foreground="#71717A" Margin="0,2,0,0" TextWrapping="Wrap" MaxWidth="440" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <!-- Toggle Screen Time -->
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,10">
+                                <DockPanel LastChildFill="False">
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding L10n[Settings.EnableScreenTime]}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                        <TextBlock Text="{Binding L10n[ScreenTime.IdleExcluded]}" FontSize="11" Foreground="#71717A" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <CheckBox DockPanel.Dock="Right"
+                                              Style="{StaticResource FluentToggleSwitch}"
+                                              IsChecked="{Binding IsScreenTimeEnabled, Mode=TwoWay}"
+                                              VerticalAlignment="Center"/>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Idle Threshold Slider -->
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <DockPanel LastChildFill="False" Margin="0,0,0,8">
+                                        <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding L10n[Settings.ScreenTimeIdleThreshold]}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                            <TextBlock Text="{Binding L10n[Settings.ScreenTimeIdleDesc]}" FontSize="11" Foreground="#71717A" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <Border DockPanel.Dock="Right" Background="#27272A" CornerRadius="5" Padding="8,2" VerticalAlignment="Center">
+                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}">
+                                                <Run Text="{Binding ScreenTimeIdleSeconds, Mode=OneWay}" /><Run Text=" s" />
+                                            </TextBlock>
+                                        </Border>
+                                    </DockPanel>
+                                    <Slider Minimum="30" Maximum="600" SmallChange="10" LargeChange="30"
+                                            TickFrequency="30" IsSnapToTickEnabled="True"
+                                            Value="{Binding ScreenTimeIdleSeconds, Mode=TwoWay}"
+                                            Foreground="{DynamicResource AccentPrimaryBrush}"
+                                            Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Clear History Button -->
+                            <Border Background="#18181B" BorderBrush="#27272A" BorderThickness="1" CornerRadius="10" Padding="14,12">
+                                <DockPanel LastChildFill="False">
+                                    <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding L10n[Settings.ClearScreenTimeHistory]}" FontSize="13" FontWeight="SemiBold" Foreground="#F4F4F5" />
+                                        <TextBlock Text="screentime.json (%APPDATA%\NotchWin)" FontSize="11" Foreground="#71717A" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <Button DockPanel.Dock="Right"
+                                            Command="{Binding ClearScreenTimeHistoryCommand}"
+                                            Style="{StaticResource StepperButtonStyle}"
+                                            Padding="14,6"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding L10n[Shelf.ClearButton]}" FontSize="11" FontWeight="SemiBold" Foreground="#F87171" />
+                                    </Button>
+                                </DockPanel>
                             </Border>
                         </StackPanel>
 

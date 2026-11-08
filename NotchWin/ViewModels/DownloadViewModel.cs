@@ -85,6 +85,9 @@ namespace NotchWin.ViewModels
         private string _pillDetail = string.Empty;
 
         [ObservableProperty]
+        private string _collapsedProgressText = string.Empty;
+
+        [ObservableProperty]
         private string _pillTooltip = string.Empty;
 
         [ObservableProperty]
@@ -131,6 +134,7 @@ namespace NotchWin.ViewModels
             {
                 PillFileName = string.Empty;
                 PillDetail = string.Empty;
+                CollapsedProgressText = string.Empty;
                 PillTooltip = string.Empty;
                 CardTitle = string.Empty;
                 CardDetail = string.Empty;
@@ -162,9 +166,11 @@ namespace NotchWin.ViewModels
 
             string downloadingLabel = LocalizationService.Instance["Download.Downloading"];
 
-            // Browser partial names ("Unconfirmed N") are not meaningful, so
-            // they keep the label until the final rename reveals the real name.
-            string primaryTitle = downloadingLabel;
+            string rawName = primary.FileName?.Trim() ?? string.Empty;
+            bool isGenericUnconfirmed = string.IsNullOrWhiteSpace(rawName) ||
+                rawName.StartsWith("Unconfirmed", StringComparison.OrdinalIgnoreCase);
+
+            string primaryTitle = isGenericUnconfirmed ? downloadingLabel : rawName;
 
             string sizePart = percent.HasValue
                 ? FormatPercent(percent.Value)
@@ -172,7 +178,7 @@ namespace NotchWin.ViewModels
 
             PrimaryDirectory = primary.DirectoryPath;
 
-            PillFileName = primaryTitle;
+            PillFileName = extra > 0 ? $"{primaryTitle} (+{extra})" : primaryTitle;
             PillDetail = extra > 0
                 ? $"+{extra} · {sizePart} | {status}"
                 : $"{sizePart} | {status}";
@@ -180,6 +186,12 @@ namespace NotchWin.ViewModels
 
             HasPillProgress = percent.HasValue;
             PillProgressPercent = percent ?? 0;
+
+            // Formatted for collapsed notch display:
+            // "Paling kiri icon download, disamping icon nama file, paling kanan persen download nya"
+            CollapsedProgressText = percent.HasValue
+                ? (anyDownloading && totalSpeed > 0 ? $"{FormatPercent(percent.Value)} · {status}" : FormatPercent(percent.Value))
+                : (anyDownloading && totalSpeed > 0 ? $"{FormatBytes(totalBytes)} · {status}" : FormatBytes(totalBytes));
 
             CardTitle = extra > 0 ? $"{primaryTitle} +{extra}" : primaryTitle;
             CardDetail = $"{sizePart} · {status}";

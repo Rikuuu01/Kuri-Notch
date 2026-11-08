@@ -106,6 +106,8 @@ namespace NotchWin.Services
 
             // Headers
 
+            ["Header.Home"] = "HOME",
+
             ["Header.SedangMemutar"] = "NOW PLAYING",
 
             ["Header.PusatKontrol"] = "CONTROL CENTER",
@@ -123,6 +125,8 @@ namespace NotchWin.Services
 
 
             // Top Navigation Tabs
+
+            ["Tab.Home"] = "Home",
 
             ["Tab.ControlCenter"] = "Control",
 
@@ -155,6 +159,8 @@ namespace NotchWin.Services
             ["Media.LyricsUnavailable"] = "Lyrics unavailable",
 
             ["Media.LyricsVersions"] = "LYRICS VERSIONS",
+            ["Media.LyricsPickerTitle"] = "Select Lyrics Version",
+            ["Media.LyricsBackToLyrics"] = "Lyrics",
 
             ["Media.LyricsVersionAuto"] = "Auto (best)",
 
@@ -467,6 +473,8 @@ namespace NotchWin.Services
 
             ["Settings.CategoryWater"] = "Water Reminder",
 
+            ["Settings.CategoryModules"] = "Navbar Modules",
+
             ["Settings.DescSystem"] = "Configure Windows autostart, fullscreen behavior, and privacy indicators",
 
             ["Settings.DescWidgets"] = "Customize active modules and widgets on the notch",
@@ -476,6 +484,56 @@ namespace NotchWin.Services
             ["Settings.DescPrayer"] = "Automatic 5 prayer times schedule and adhan audio alerts",
 
             ["Settings.DescWater"] = "Regular water drink reminders and daily hydration tracking",
+
+            ["Settings.DescModules"] = "Manage, reorder, and enable or disable slides/menus in the notch navbar",
+
+            ["Settings.ModulesTitle"] = "ACTIVE NAVBAR MODULES",
+            ["Settings.ModulesDesc"] = "Use arrow buttons to adjust order and switches to enable or disable modules.",
+            ["Settings.ResetModules"] = "Reset Order",
+            ["Settings.ModuleHome"] = "Home / Dashboard",
+            ["Settings.ModuleHomeDesc"] = "Clock, date, battery, system status, and companion pet",
+            ["Settings.ModuleControl"] = "Control Center",
+            ["Settings.ModuleControlDesc"] = "Volume, brightness, quick toggles, and system shortcuts",
+            ["Settings.ModuleMedia"] = "Media Player",
+            ["Settings.ModuleMediaDesc"] = "Playback controls, album art, and synchronized lyrics",
+            ["Settings.ModuleWeather"] = "Weather Forecast",
+            ["Settings.ModuleWeatherDesc"] = "Live temperature, weather condition, and city forecasts",
+            ["Settings.ModulePrayer"] = "Prayer Times",
+            ["Settings.ModulePrayerDesc"] = "Muslim daily prayer schedule countdown and reminders",
+            ["Settings.ModuleWater"] = "Water & Posture",
+            ["Settings.ModuleWaterDesc"] = "Hydration tracking, posture breaks, and daily targets",
+            ["Settings.ModuleNote"] = "Quick Notes",
+            ["Settings.ModuleNoteDesc"] = "Instant memo notes, scratchpad, and quick reminders",
+            ["Settings.ModuleClipboard"] = "Clipboard History",
+            ["Settings.ModuleClipboardDesc"] = "Recently copied snippets with 1-click clipboard paste",
+            ["Settings.ModuleTimer"] = "Timer & Stopwatch",
+            ["Settings.ModuleTimerDesc"] = "Focus timer presets, countdown, stopwatch, and laps",
+            ["Settings.ModuleShelf"] = "Drop Shelf & Phone Share",
+            ["Settings.ModuleShelfDesc"] = "File drop shelf, temporary storage, and QR phone sharing",
+            ["Settings.ModuleScreenTime"] = "Screen Time",
+            ["Settings.ModuleScreenTimeDesc"] = "App usage duration, foreground activity, and top apps",
+            ["Settings.CategoryScreenTime"] = "Screen Time",
+            ["Settings.ScreenTimeTitle"] = "SCREEN TIME SETTINGS",
+            ["Settings.ScreenTimeDesc"] = "Counts time in the foreground app (idle time excluded) and app switches. Stored locally in screentime.json (35 days).",
+            ["Settings.EnableScreenTime"] = "Track Screen Time",
+            ["Settings.ScreenTimeIdleThreshold"] = "Idle Detection Threshold",
+            ["Settings.ScreenTimeIdleDesc"] = "Pause counting after no mouse or keyboard input (seconds):",
+            ["Settings.ClearScreenTimeHistory"] = "Clear Screen Time History",
+            ["Settings.ScreenTimeCleared"] = "Screen Time history has been cleared.",
+            ["Header.ScreenTime"] = "SCREEN TIME",
+            ["Tab.ScreenTime"] = "Screen",
+            ["ScreenTime.Header"] = "SCREEN TIME",
+            ["ScreenTime.TotalToday"] = "Screen Time Today",
+            ["ScreenTime.AppSwitches"] = "switches",
+            ["ScreenTime.IdleExcluded"] = "Idle excluded",
+            ["ScreenTime.MostUsed"] = "MOST USED APPS",
+            ["ScreenTime.NoActivity"] = "Screen Time starts counting now.",
+            ["ScreenTime.CategoryBrowsing"] = "Browsing",
+            ["ScreenTime.CategoryDevelopment"] = "Development",
+            ["ScreenTime.CategoryEntertainment"] = "Entertainment",
+            ["ScreenTime.CategoryProductivity"] = "Productivity",
+            ["ScreenTime.CategorySystem"] = "System",
+            ["ScreenTime.CategoryOther"] = "Other",
 
             ["Settings.SelectMascotTitle"] = "CHOOSE COMPANION MASCOT (PURE VECTOR)",
 
@@ -528,6 +586,24 @@ namespace NotchWin.Services
 
             ["Settings.MonitorDesc"] = "Select the monitor where the Dynamic Notch is displayed",
 
+            ["Settings.AccentColorEnabledTitle"] = "Enable Accent Colors",
+
+            ["Settings.AccentColorEnabledDesc"] = "Enable vibrant accent colors for borders, buttons, and highlights. When turned off, a sleek neutral monochrome appearance is used.",
+
+            ["Settings.CollapsedSection"] = "COLLAPSED NOTCH (STATUS BAR)",
+
+            ["Settings.ShowWeatherCollapsedTitle"] = "Show Weather in Collapsed Notch",
+
+            ["Settings.ShowWeatherCollapsedDesc"] = "Display weather condition icon and temperature in the collapsed notch status bar.",
+
+            ["Settings.ShowBatteryCollapsedTitle"] = "Show Battery in Collapsed Notch",
+
+            ["Settings.ShowBatteryCollapsedDesc"] = "Display battery percentage and level indicator in the collapsed notch status bar.",
+
+            ["Settings.ShowPetCollapsedTitle"] = "Show Mascot in Collapsed Notch",
+
+            ["Settings.ShowPetCollapsedDesc"] = "Display active pet companion animation in the collapsed notch status bar.",
+
             ["Settings.AccentColorTitle"] = "Theme Accent Color",
 
             ["Settings.NotchMaterialTitle"] = "Notch Background Material",
@@ -550,11 +626,106 @@ namespace NotchWin.Services
 
             ["Tab.Shelf"] = "Shelf",
 
+            ["Shelf.EmptyTitle"] = "Drag & Drop Files / Images Here",
+            ["Shelf.EmptyDesc"] = "Store temporary files to copy or move between folders & apps (or click to select files)",
+            ["Shelf.Header"] = "TEMPORARY FILE SHELF",
+            ["Shelf.AddButton"] = "+ Add",
+            ["Shelf.CopyAllButton"] = "Copy All",
+            ["Shelf.ClearButton"] = "Clear",
+            ["Shelf.OpenButton"] = "Open",
+            ["Shelf.CopyButton"] = "Copy",
+            ["Shelf.RemoveTooltip"] = "Remove from Shelf",
+            ["Shelf.SelectFilesTitle"] = "Select files to temporarily store in Shelf",
+            ["Shelf.EmptyCount"] = "Empty Shelf",
+            ["Shelf.OneItem"] = "1 Item",
+            ["Shelf.ItemsCount"] = "{0} Items",
+            ["Shelf.FileNotFound"] = "File not found",
+            ["Shelf.DriveNotFound"] = "Drive not found",
+            ["Shelf.PhoneButton"] = "Phone",
+            ["Shelf.PhoneTooltip"] = "Share files with your phone over Wi-Fi",
+
+            ["DropAction.Title"] = "DROP CHOICE",
+            ["DropAction.Instruction"] = "Point and release the file on a destination below:",
+            ["DropAction.ShelfTitle"] = "Keep in Shelf",
+            ["DropAction.ShelfDesc"] = "Stash files or folders to copy or move them later",
+            ["DropAction.ShelfBadge"] = "📥 Drop to Shelf",
+            ["DropAction.ShelfBadgeActive"] = "✨ Drop to keep in Shelf!",
+            ["DropAction.ConvertTitle"] = "Convert Image",
+            ["DropAction.ConvertDesc"] = "JPG to PNG, PNG/BMP/GIF to JPG. Same folder.",
+            ["DropAction.ConvertBadge"] = "🔄 Drop to Convert",
+            ["DropAction.ConvertBadgeActive"] = "✨ Drop to convert now!",
+            ["DropAction.DockTitle"] = "Add to Dock",
+            ["DropAction.DockDesc"] = "Pin a shortcut in the bottom dock for quick access",
+            ["DropAction.DockBadge"] = "🚀 Drop to Dock",
+            ["DropAction.DockBadgeActive"] = "✨ Drop to add to Dock!",
+
+            ["Convert.SuccessTitle"] = "Converted",
+            ["Convert.SuccessMessage"] = "{0} file(s) converted",
+            ["Convert.NothingTitle"] = "Nothing to do",
+            ["Convert.NothingMessage"] = "No convertible images in the drop",
+            ["Convert.FailedTitle"] = "Conversion failed",
+            ["Convert.FailedMessage"] = "{0} file(s) could not be converted",
+
+            ["Phone.WindowTitle"] = "Phone Share",
+            ["Phone.ScanHint"] = "Scan with phone camera",
+            ["Phone.OpenHint"] = "Phone and PC must be on the same Wi-Fi network. Allow Kuri through Windows Firewall if prompted.",
+            ["Phone.CopyLink"] = "Copy Link",
+            ["Phone.LinkCopied"] = "Link copied",
+            ["Phone.Start"] = "Start",
+            ["Phone.Stop"] = "Stop",
+            ["Phone.StatusStopped"] = "Server stopped",
+            ["Phone.StatusRunning"] = "Waiting for phone...",
+            ["Phone.StatusConnected"] = "Phone connected",
+            ["Phone.Error"] = "Could not start the share server",
+            ["Phone.UploadNotificationTitle"] = "File from phone",
+            ["Phone.TextNotificationTitle"] = "Text from phone",
+            ["Phone.LinkNotificationTitle"] = "Link from phone",
+            ["Phone.UploadFolderUnavailable"] = "Upload folder is not available",
+
+            ["PhonePage.Title"] = "Kuri Phone Share",
+            ["PhonePage.Subtitle"] = "Send files and text to your PC",
+            ["PhonePage.UploadTitle"] = "Send files",
+            ["PhonePage.ChooseFile"] = "Choose files",
+            ["PhonePage.Uploading"] = "Uploading...",
+            ["PhonePage.Uploaded"] = "Sent",
+            ["PhonePage.UploadFailed"] = "Upload failed",
+            ["PhonePage.TooLarge"] = "File is too large",
+            ["PhonePage.TextTitle"] = "Send text or link",
+            ["PhonePage.TextPlaceholder"] = "Type or paste text or a link here...",
+            ["PhonePage.SendText"] = "Send to PC",
+            ["PhonePage.Sent"] = "Sent to PC clipboard",
+            ["PhonePage.FilesTitle"] = "Files on your PC",
+            ["PhonePage.NoFiles"] = "Shelf is empty",
+            ["PhonePage.Download"] = "Download",
+            ["PhonePage.Connected"] = "Connected",
+            ["PhonePage.Offline"] = "Offline",
+            ["PhonePage.EmptyText"] = "Text is empty",
+            ["PhonePage.TextTooLong"] = "Text is too long",
+            ["PhonePage.MaxFileSize"] = "Max file size: {0}",
+            ["PhonePage.MaxTextSize"] = "Max text length: {0} characters",
+
+            ["Settings.ShelfSection"] = "SHELF & PHONE",
+            ["Settings.ShelfRemoveAfterDragTitle"] = "Remove from Shelf after drag out",
+            ["Settings.ShelfRemoveAfterDragDesc"] = "Remove the shelf entry when you drag it to another app. The original file is never deleted.",
+            ["Settings.PhoneShareTitle"] = "Phone Share",
+            ["Settings.PhoneShareDesc"] = "Send files and text from your phone through a local Wi-Fi link",
+            ["Settings.PhoneFolderTitle"] = "Phone upload folder",
+            ["Settings.BrowseButton"] = "Browse",
+            ["Settings.PhoneShareHint"] = "Phone and PC must be connected to the same Wi-Fi network.",
+
             ["Settings.AccentColorDesc"] = "Select accent color for sliders, buttons, and glow highlights",
 
             ["Settings.AlbumArtAccentTitle"] = "Album Artwork Dynamic Accent",
 
             ["Settings.AlbumArtAccentDesc"] = "Automatically adapt notch accent color based on current song artwork",
+
+            ["Settings.NotchTimerGlowTitle"] = "Timer Glow Outline",
+
+            ["Settings.NotchTimerGlowDesc"] = "Trace a glowing line around the closed notch that shortens with the time left (green, amber, red) and blinks when it ends. The stopwatch traces a growing yellow line each minute.",
+
+            ["Settings.NotchAlertGlowTitle"] = "Alert Glow Outline",
+
+            ["Settings.NotchAlertGlowDesc"] = "A thin light runs round the closed notch when an alert shows — reminders, prayer times, downloads, charging — in its color, for the first 20 seconds.",
 
             ["Settings.SystemSection"] = "SYSTEM INTEGRATION",
 
@@ -585,6 +756,25 @@ namespace NotchWin.Services
             ["Settings.MediaTitle"] = "Music & Media Player Overlay",
 
             ["Settings.MediaDesc"] = "Show currently playing song, album cover, and playback controls",
+
+            ["Settings.LyricsKaraokeTitle"] = "Karaoke lyrics",
+            ["Settings.LyricsKaraokeDesc"] = "Fill the current line with color as the song plays (timed lyrics only)",
+            ["Settings.SyllableSyncTitle"] = "Spicy Lyrics (Word-by-word sync)",
+            ["Settings.LrcRedTitle"] = "lrc.red Lyrics Provider",
+            ["Settings.LrcRedDesc"] = "Fetch word-synced (TTML) and line-synced lyrics from lrc.red community database",
+            ["Settings.SyllableSyncDesc"] = "Accurate word-by-word karaoke timing via Spicy Lyrics & TTML syllable precision",
+            ["Settings.SpicyLyricsApiKeyTitle"] = "Spicy Lyrics API Key (Optional)",
+            ["Settings.SpicyLyricsApiKeyDesc"] = "Developer token from developers.spicylyrics.org for uncached tracks. Leave blank to use free public mirror.",
+
+
+
+            ["Settings.LyricsBoldTitle"] = "Bold lyrics",
+
+            ["Settings.LyricsBoldDesc"] = "Use bold text for the active lyric line",
+
+            ["Settings.LyricsTextSizeTitle"] = "Lyrics text size",
+
+            ["Settings.LyricsTextSizeDesc"] = "Adjust the size of lyrics in the player",
 
             ["Settings.PrivacyTitle"] = "Camera & Microphone Privacy Dots",
 
@@ -708,6 +898,8 @@ namespace NotchWin.Services
 
             // Headers
 
+            ["Header.Home"] = "BERANDA",
+
             ["Header.SedangMemutar"] = "SEDANG MEMUTAR",
 
             ["Header.PusatKontrol"] = "PUSAT KONTROL",
@@ -725,6 +917,8 @@ namespace NotchWin.Services
 
 
             // Top Navigation Tabs
+
+            ["Tab.Home"] = "Home",
 
             ["Tab.ControlCenter"] = "Kontrol",
 
@@ -757,6 +951,8 @@ namespace NotchWin.Services
             ["Media.LyricsUnavailable"] = "Lirik belum tersedia",
 
             ["Media.LyricsVersions"] = "VERSI LIRIK",
+            ["Media.LyricsPickerTitle"] = "Pilih Versi Lirik",
+            ["Media.LyricsBackToLyrics"] = "Lirik",
 
             ["Media.LyricsVersionAuto"] = "Auto (terbaik)",
 
@@ -1067,11 +1263,60 @@ namespace NotchWin.Services
 
             ["Settings.CategoryPrayer"] = "Jadwal Sholat",
             ["Settings.CategoryWater"] = "Pengingat Minum",
+            ["Settings.CategoryModules"] = "Modul Navbar",
             ["Settings.DescSystem"] = "Konfigurasi autostart Windows, perilaku fullscreen, dan sensor privasi",
             ["Settings.DescWidgets"] = "Kustomisasi modul dan widget yang aktif pada notch",
             ["Settings.DescWeather"] = "Prakiraan cuaca, suhu real-time, dan pengaturan lokasi kota",
             ["Settings.DescPrayer"] = "Jadwal sholat 5 waktu otomatis dan notifikasi adzan",
             ["Settings.DescWater"] = "Pengingat minum air teratur dan target hidrasi harian",
+            ["Settings.DescModules"] = "Atur posisi urutan dan aktifkan/nonaktifkan menu slide di navbar notch",
+            ["Settings.ModulesTitle"] = "MODUL NAVBAR NOTCH",
+            ["Settings.ModulesDesc"] = "Gunakan tombol panah untuk mengubah posisi urutan dan sakelar untuk mengaktifkan modul.",
+            ["Settings.ResetModules"] = "Pulihkan Urutan",
+            ["Settings.ModuleHome"] = "Beranda / Dashboard",
+            ["Settings.ModuleHomeDesc"] = "Jam, tanggal, status baterai, performa sistem, dan maskot",
+            ["Settings.ModuleControl"] = "Pusat Kontrol",
+            ["Settings.ModuleControlDesc"] = "Volume, kecerahan, toggle cepat, dan jalan pintas sistem",
+            ["Settings.ModuleMedia"] = "Pemutar Musik & Media",
+            ["Settings.ModuleMediaDesc"] = "Kendali pemutaran media dan sinkronisasi lirik real-time",
+            ["Settings.ModuleWeather"] = "Prakiraan Cuaca",
+            ["Settings.ModuleWeatherDesc"] = "Suhu udara, kondisi cuaca langsung, dan ramalan kota",
+            ["Settings.ModulePrayer"] = "Jadwal Sholat & Adzan",
+            ["Settings.ModulePrayerDesc"] = "Hitung mundur jadwal sholat 5 waktu dan notifikasi adzan",
+            ["Settings.ModuleWater"] = "Pengingat Minum & Postur",
+            ["Settings.ModuleWaterDesc"] = "Pelacak minum air teratur, peregangan postur, dan target harian",
+            ["Settings.ModuleNote"] = "Catatan Cepat",
+            ["Settings.ModuleNoteDesc"] = "Memo kilat, catatan ringkas, dan pengingat harian",
+            ["Settings.ModuleClipboard"] = "Riwayat Clipboard",
+            ["Settings.ModuleClipboardDesc"] = "Daftar teks yang baru disalin dan 1-klik salin ulang",
+            ["Settings.ModuleTimer"] = "Timer & Stopwatch",
+            ["Settings.ModuleTimerDesc"] = "Preset fokus Pomodoro, hitung mundur, stopwatch, dan lap",
+            ["Settings.ModuleShelf"] = "Drop Shelf & Berbagi HP",
+            ["Settings.ModuleShelfDesc"] = "Penampung berkas sementara dan berbagi nirkabel via QR HP",
+            ["Settings.ModuleScreenTime"] = "Waktu Layar",
+            ["Settings.ModuleScreenTimeDesc"] = "Pantau durasi aplikasi, aktivitas foreground, dan aplikasi teratas",
+            ["Settings.CategoryScreenTime"] = "Waktu Layar",
+            ["Settings.ScreenTimeTitle"] = "PENGATURAN WAKTU LAYAR",
+            ["Settings.ScreenTimeDesc"] = "Menghitung waktu di aplikasi yang sedang di depan (tanpa waktu diam) dan jumlah perpindahan aplikasi. Data tersimpan di screentime.json (35 hari).",
+            ["Settings.EnableScreenTime"] = "Pantau Waktu Layar",
+            ["Settings.ScreenTimeIdleThreshold"] = "Batas Deteksi Diam (Idle)",
+            ["Settings.ScreenTimeIdleDesc"] = "Hentikan hitungan jika tidak ada input mouse/keyboard selama (detik):",
+            ["Settings.ClearScreenTimeHistory"] = "Hapus Riwayat Waktu Layar",
+            ["Settings.ScreenTimeCleared"] = "Riwayat waktu layar telah dibersihkan.",
+            ["Header.ScreenTime"] = "WAKTU LAYAR",
+            ["Tab.ScreenTime"] = "Layar",
+            ["ScreenTime.Header"] = "WAKTU LAYAR",
+            ["ScreenTime.TotalToday"] = "Waktu Layar Hari Ini",
+            ["ScreenTime.AppSwitches"] = "kali ganti",
+            ["ScreenTime.IdleExcluded"] = "Tanpa waktu diam",
+            ["ScreenTime.MostUsed"] = "PALING SERING DIGUNAKAN",
+            ["ScreenTime.NoActivity"] = "Waktu layar mulai dihitung sekarang.",
+            ["ScreenTime.CategoryBrowsing"] = "Browsing",
+            ["ScreenTime.CategoryDevelopment"] = "Development",
+            ["ScreenTime.CategoryEntertainment"] = "Entertainment",
+            ["ScreenTime.CategoryProductivity"] = "Productivity",
+            ["ScreenTime.CategorySystem"] = "System",
+            ["ScreenTime.CategoryOther"] = "Lainnya",
             ["Settings.SelectMascotTitle"] = "PILIH MASKOT COMPANION (VEKTOR MURNI)",
             ["Settings.AccentPreviewTooltip"] = "Preview Warna Aksen",
 
@@ -1121,6 +1366,24 @@ namespace NotchWin.Services
 
             ["Settings.MonitorDesc"] = "Pilih monitor tempat Dynamic Notch akan ditampilkan",
 
+            ["Settings.AccentColorEnabledTitle"] = "Gunakan Warna Aksen",
+
+            ["Settings.AccentColorEnabledDesc"] = "Aktifkan warna aksen dinamis untuk border, tombol, dan highlight. Bila dimatikan, notch akan memakai tema monokrom/netral yang minimalis.",
+
+            ["Settings.CollapsedSection"] = "NOTCH TERTUTUP (STATUS BAR)",
+
+            ["Settings.ShowWeatherCollapsedTitle"] = "Tampilkan Cuaca di Notch Tertutup",
+
+            ["Settings.ShowWeatherCollapsedDesc"] = "Tampilkan ikon kondisi cuaca dan suhu di bilah notch saat tertutup.",
+
+            ["Settings.ShowBatteryCollapsedTitle"] = "Tampilkan Baterai di Notch Tertutup",
+
+            ["Settings.ShowBatteryCollapsedDesc"] = "Tampilkan persentase dan ikon baterai di bilah notch saat tertutup.",
+
+            ["Settings.ShowPetCollapsedTitle"] = "Tampilkan Maskot di Notch Tertutup",
+
+            ["Settings.ShowPetCollapsedDesc"] = "Tampilkan maskot pendamping di bilah notch saat tertutup jika maskot aktif.",
+
             ["Settings.AccentColorTitle"] = "Warna Aksen Tema",
 
             ["Settings.NotchMaterialTitle"] = "Material Latar Belakang Notch",
@@ -1137,17 +1400,112 @@ namespace NotchWin.Services
 
             ["Header.Clipboard"] = "RIWAYAT PAPAN KLIP",
 
-            ["Tab.Clipboard"] = "Papan Klip",
+            ["Tab.Clipboard"] = "Klip",
 
             ["Header.Shelf"] = "SHELF & BERKAS SEMENTARA",
 
             ["Tab.Shelf"] = "Shelf",
+
+            ["Shelf.EmptyTitle"] = "Seret & Lepas File / Gambar di Sini",
+            ["Shelf.EmptyDesc"] = "Simpan file sementara untuk disalin atau dipindahkan antar folder & aplikasi (atau klik untuk memilih file)",
+            ["Shelf.Header"] = "SHELF BERKAS SEMENTARA",
+            ["Shelf.AddButton"] = "+ Tambah",
+            ["Shelf.CopyAllButton"] = "Salin Semua",
+            ["Shelf.ClearButton"] = "Bersihkan",
+            ["Shelf.OpenButton"] = "Buka",
+            ["Shelf.CopyButton"] = "Salin",
+            ["Shelf.RemoveTooltip"] = "Hapus dari Shelf",
+            ["Shelf.SelectFilesTitle"] = "Pilih file untuk disimpan sementara di Shelf",
+            ["Shelf.EmptyCount"] = "Shelf Kosong",
+            ["Shelf.OneItem"] = "1 Item",
+            ["Shelf.ItemsCount"] = "{0} Item",
+            ["Shelf.FileNotFound"] = "File tidak ditemukan",
+            ["Shelf.DriveNotFound"] = "Drive tidak ditemukan",
+            ["Shelf.PhoneButton"] = "HP",
+            ["Shelf.PhoneTooltip"] = "Bagikan file dengan HP lewat Wi-Fi",
+
+            ["DropAction.Title"] = "PILIHAN DROP",
+            ["DropAction.Instruction"] = "Arahkan dan lepaskan file pada pilihan tujuan di bawah:",
+            ["DropAction.ShelfTitle"] = "Simpan di Shelf",
+            ["DropAction.ShelfDesc"] = "Simpan file/folder untuk disalin atau dipindah nanti",
+            ["DropAction.ShelfBadge"] = "📥 Lepaskan ke Shelf",
+            ["DropAction.ShelfBadgeActive"] = "✨ Lepaskan untuk Simpan ke Shelf!",
+            ["DropAction.ConvertTitle"] = "Konversi Gambar",
+            ["DropAction.ConvertDesc"] = "JPG ke PNG, PNG/BMP/GIF ke JPG. Folder sama.",
+            ["DropAction.ConvertBadge"] = "🔄 Lepaskan untuk Konversi",
+            ["DropAction.ConvertBadgeActive"] = "✨ Lepaskan untuk konversi sekarang!",
+            ["DropAction.DockTitle"] = "Tambahkan ke Dock",
+            ["DropAction.DockDesc"] = "Sematkan pintasan di dock bawah untuk akses cepat",
+            ["DropAction.DockBadge"] = "🚀 Lepaskan ke Dock",
+            ["DropAction.DockBadgeActive"] = "✨ Lepaskan untuk Tambah ke Dock!",
+
+            ["Convert.SuccessTitle"] = "Dikonversi",
+            ["Convert.SuccessMessage"] = "{0} file berhasil dikonversi",
+            ["Convert.NothingTitle"] = "Tidak ada yang dikonversi",
+            ["Convert.NothingMessage"] = "Tidak ada gambar yang bisa dikonversi",
+            ["Convert.FailedTitle"] = "Konversi gagal",
+            ["Convert.FailedMessage"] = "{0} file gagal dikonversi",
+
+            ["Phone.WindowTitle"] = "Berbagi ke HP",
+            ["Phone.ScanHint"] = "Pindai dengan kamera HP",
+            ["Phone.OpenHint"] = "HP dan PC harus berada di jaringan Wi-Fi yang sama. Izinkan Kuri di Windows Firewall jika diminta.",
+            ["Phone.CopyLink"] = "Salin Tautan",
+            ["Phone.LinkCopied"] = "Tautan disalin",
+            ["Phone.Start"] = "Mulai",
+            ["Phone.Stop"] = "Hentikan",
+            ["Phone.StatusStopped"] = "Server dihentikan",
+            ["Phone.StatusRunning"] = "Menunggu HP...",
+            ["Phone.StatusConnected"] = "HP terhubung",
+            ["Phone.Error"] = "Server berbagi tidak dapat dimulai",
+            ["Phone.UploadNotificationTitle"] = "File dari HP",
+            ["Phone.TextNotificationTitle"] = "Teks dari HP",
+            ["Phone.LinkNotificationTitle"] = "Tautan dari HP",
+            ["Phone.UploadFolderUnavailable"] = "Folder unggahan tidak tersedia",
+
+            ["PhonePage.Title"] = "Berbagi ke Kuri",
+            ["PhonePage.Subtitle"] = "Kirim file dan teks ke PC",
+            ["PhonePage.UploadTitle"] = "Kirim file",
+            ["PhonePage.ChooseFile"] = "Pilih file",
+            ["PhonePage.Uploading"] = "Mengunggah...",
+            ["PhonePage.Uploaded"] = "Terkirim",
+            ["PhonePage.UploadFailed"] = "Unggahan gagal",
+            ["PhonePage.TooLarge"] = "File terlalu besar",
+            ["PhonePage.TextTitle"] = "Kirim teks atau tautan",
+            ["PhonePage.TextPlaceholder"] = "Ketik atau tempel teks atau tautan di sini...",
+            ["PhonePage.SendText"] = "Kirim ke PC",
+            ["PhonePage.Sent"] = "Terkirim ke clipboard PC",
+            ["PhonePage.FilesTitle"] = "File di PC kamu",
+            ["PhonePage.NoFiles"] = "Shelf masih kosong",
+            ["PhonePage.Download"] = "Unduh",
+            ["PhonePage.Connected"] = "Terhubung",
+            ["PhonePage.Offline"] = "Terputus",
+            ["PhonePage.EmptyText"] = "Teks kosong",
+            ["PhonePage.TextTooLong"] = "Teks terlalu panjang",
+            ["PhonePage.MaxFileSize"] = "Ukuran file maksimal: {0}",
+            ["PhonePage.MaxTextSize"] = "Panjang teks maksimal: {0} karakter",
+
+            ["Settings.ShelfSection"] = "SHELF & HP",
+            ["Settings.ShelfRemoveAfterDragTitle"] = "Hapus dari Shelf setelah diseret keluar",
+            ["Settings.ShelfRemoveAfterDragDesc"] = "Hapus entri shelf saat kamu menyeretnya ke aplikasi lain. File asli tidak pernah dihapus.",
+            ["Settings.PhoneShareTitle"] = "Berbagi ke HP",
+            ["Settings.PhoneShareDesc"] = "Kirim file dan teks dari HP melalui tautan Wi-Fi lokal",
+            ["Settings.PhoneFolderTitle"] = "Folder unggahan HP",
+            ["Settings.BrowseButton"] = "Pilih",
+            ["Settings.PhoneShareHint"] = "HP dan PC harus terhubung ke jaringan Wi-Fi yang sama.",
 
             ["Settings.AccentColorDesc"] = "Pilih warna aksen untuk slider, tombol, dan indikator",
 
             ["Settings.AlbumArtAccentTitle"] = "Warna Aksen Dinamis Album",
 
             ["Settings.AlbumArtAccentDesc"] = "Otomatis menyelaraskan gradasi notch dengan warna cover album lagu yang sedang diputar",
+
+            ["Settings.NotchTimerGlowTitle"] = "Garis Cahaya Timer",
+
+            ["Settings.NotchTimerGlowDesc"] = "Menggambar garis cahaya di sekeliling notch tertutup yang memendek mengikuti sisa waktu (hijau, kuning, merah) dan berkedip saat selesai. Stopwatch menggambar garis kuning yang memanjang tiap menit.",
+
+            ["Settings.NotchAlertGlowTitle"] = "Garis Cahaya Alert",
+
+            ["Settings.NotchAlertGlowDesc"] = "Cahaya tipis berjalan keliling di notch tertutup saat alert tampil — pengingat, waktu sholat, unduhan, charging — sesuai warnanya, selama 20 detik pertama.",
 
             ["Settings.SystemSection"] = "INTEGRASI SISTEM",
 
@@ -1178,6 +1536,25 @@ namespace NotchWin.Services
             ["Settings.MediaTitle"] = "Pemutar Musik & Media",
 
             ["Settings.MediaDesc"] = "Tampilkan lagu yang sedang diputar, cover album, dan kontrol audio",
+
+            ["Settings.LyricsKaraokeTitle"] = "Lirik karaoke",
+            ["Settings.LyricsKaraokeDesc"] = "Baris yang sedang dinyanyikan terisi warna seiring lagu berjalan (hanya lirik berwaktu)",
+            ["Settings.SyllableSyncTitle"] = "Spicy Lyrics (Sinkronisasi suku kata)",
+            ["Settings.LrcRedTitle"] = "Penyedia Lirik lrc.red",
+            ["Settings.LrcRedDesc"] = "Ambil lirik tersinkronisasi suku kata (TTML) dan baris dari database komunitas lrc.red",
+            ["Settings.SyllableSyncDesc"] = "Sapuan karaoke presisi kata-demi-kata via Spicy Lyrics & TTML suku kata",
+            ["Settings.SpicyLyricsApiKeyTitle"] = "Spicy Lyrics API Key (Opsional)",
+            ["Settings.SpicyLyricsApiKeyDesc"] = "Token developer dari developers.spicylyrics.org untuk lagu yang belum tercache. Kosongkan untuk memakai mirror publik gratis.",
+
+
+
+            ["Settings.LyricsBoldTitle"] = "Lirik tebal",
+
+            ["Settings.LyricsBoldDesc"] = "Gunakan teks tebal untuk baris lirik yang aktif",
+
+            ["Settings.LyricsTextSizeTitle"] = "Ukuran teks lirik",
+
+            ["Settings.LyricsTextSizeDesc"] = "Atur ukuran lirik di pemutar",
 
             ["Settings.PrivacyTitle"] = "Indikator Privasi Kamera & Mikrofon",
 

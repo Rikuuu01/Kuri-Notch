@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 
 
@@ -206,10 +207,14 @@ namespace NotchWin.ViewModels
 
 
         [ObservableProperty]
-
-
-
+        [NotifyPropertyChangedFor(nameof(HasThumbnail))]
         private ImageSource? _thumbnail;
+
+        public bool HasThumbnail => Thumbnail != null;
+
+        public IAsyncRelayCommand PreviousCommand => SkipPreviousCommand;
+        public IAsyncRelayCommand NextCommand => SkipNextCommand;
+        public IAsyncRelayCommand PlayPauseCommand => TogglePlayPauseCommand;
 
 
 
@@ -474,6 +479,7 @@ namespace NotchWin.ViewModels
 
 
                 UpdateLyricsPosition(value);
+                UpdateKaraokeProgress(CurrentLyricIndex, value.Add(TimeSpan.FromMilliseconds(TotalLyricOffsetMs)));
 
 
 
@@ -778,6 +784,7 @@ namespace NotchWin.ViewModels
 
 
         [NotifyPropertyChangedFor(nameof(IsCollapsedLyricsActive))]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedKaraokeActive))]
 
         private bool _isLyricsExpanded;
 
@@ -804,6 +811,7 @@ namespace NotchWin.ViewModels
 
 
         [NotifyPropertyChangedFor(nameof(IsCollapsedLyricsActive))]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedKaraokeActive))]
 
 
 
@@ -824,6 +832,7 @@ namespace NotchWin.ViewModels
 
 
         [NotifyPropertyChangedFor(nameof(IsCollapsedLyricsActive))]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedKaraokeActive))]
 
 
 
@@ -912,6 +921,7 @@ namespace NotchWin.ViewModels
 
 
         [NotifyPropertyChangedFor(nameof(CollapsedDisplayLyricText))]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedKaraokeActive))]
 
 
 
@@ -943,9 +953,33 @@ namespace NotchWin.ViewModels
 
 
 
+        [ObservableProperty]
+        private double _activeLyricProgress;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedKaraokeActive))]
+        private bool _isCurrentLyricsUntimed;
 
 
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedKaraokeActive))]
+        private bool _lyricsKaraokeEnabled = true;
+
+        [ObservableProperty]
+        private bool _isSyllableSyncEnabled = true;
+
+        [ObservableProperty]
+        private bool _lyricsBold = true;
+
+        [ObservableProperty]
+        private double _lyricsTextSize = 12.0;
+
+        public bool IsCollapsedKaraokeActive => IsCollapsedLyricsActive
+            && !IsActiveLyricInterlude
+            && !string.IsNullOrWhiteSpace(ActiveLyricText)
+            && LyricsKaraokeEnabled
+            && !IsCurrentLyricsUntimed;
 
         public LyricsLineViewModel? CurrentLyricLine => (CurrentLyricIndex >= 0 && CurrentLyricIndex < LyricsLines.Count)
 
@@ -1037,11 +1071,8 @@ namespace NotchWin.ViewModels
 
 
 
-        // Display pre-roll: render lyric lines slightly ahead of their LRC timestamp for readability
-
-
-
-        public const int DefaultAutoLatencyCompensationMs = 200;
+        // Display pre-roll: render lyric lines slightly ahead of their LRC timestamp for readability (Poni +300ms lead time)
+        public const int DefaultAutoLatencyCompensationMs = 300;
 
 
 
@@ -1189,7 +1220,7 @@ namespace NotchWin.ViewModels
 
 
 
-            _timelineTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+            _timelineTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
 
 
 
@@ -1247,7 +1278,8 @@ namespace NotchWin.ViewModels
 
                 _isLyricsExpanded = _settingsService.CurrentSettings.IsLyricsEnabled;
 
-
+                _settingsService.SettingsChanged += OnSettingsChanged;
+                ApplyLyricsSettings(_settingsService.CurrentSettings);
 
             }
 
@@ -1270,6 +1302,33 @@ namespace NotchWin.ViewModels
 
 
 
+
+        private void OnSettingsChanged(object? sender, AppSettings settings)
+        {
+            Application.Current?.Dispatcher.Invoke(() => ApplyLyricsSettings(settings));
+        }
+
+        private void ApplyLyricsSettings(AppSettings? settings)
+        {
+            if (settings == null) return;
+
+            LyricsKaraokeEnabled = settings.IsLyricsKaraokeEnabled;
+            IsSyllableSyncEnabled = settings.IsSyllableSyncEnabled;
+            LyricsBold = settings.LyricsBold;
+            LyricsTextSize = Math.Clamp(settings.LyricsTextSize > 0 ? settings.LyricsTextSize : 12.0, 10.0, 14.0);
+            ApplyLyricsAppearance();
+        }
+
+        private void ApplyLyricsAppearance()
+        {
+            bool karaokeFill = LyricsKaraokeEnabled && !IsCurrentLyricsUntimed && HasLyrics;
+            for (int i = 0; i < LyricsLines.Count; i++)
+            {
+                LyricsLines[i].Configure(LyricsTextSize, LyricsBold);
+                LyricsLines[i].SetActive(i == CurrentLyricIndex, karaokeFill);
+            }
+
+        }
 
         private void OnMediaTrackChanged(object? sender, MediaTrackInfo track)
 
@@ -1343,9 +1402,15 @@ namespace NotchWin.ViewModels
                     }
                     else
                     {
-                        Position = track.Position;
-                        _baseTrackPosition = track.Position;
-                        _playbackStopwatch.Restart();
+                        var currentEst = _baseTrackPosition + _playbackStopwatch.Elapsed;
+                        var drift = Math.Abs((currentEst - track.Position).TotalSeconds);
+                        // Only snap if there is a real jump (seek or major drift > 1.2s)
+                        if (drift > 1.2)
+                        {
+                            _baseTrackPosition = track.Position;
+                            _playbackStopwatch.Restart();
+                            Position = track.Position;
+                        }
                     }
                     
 
@@ -1425,7 +1490,8 @@ namespace NotchWin.ViewModels
 
                     LyricsLines.Clear();
 
-
+                    ActiveLyricProgress = 0;
+                    IsCurrentLyricsUntimed = false;
 
                     HasLyrics = false;
 
@@ -1462,10 +1528,12 @@ namespace NotchWin.ViewModels
 
 
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
 
 
 
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
 
 
 
@@ -1761,46 +1829,27 @@ namespace NotchWin.ViewModels
 
 
 
-            // Expanded notch needs smooth progress; collapsed shows only lyrics, 500ms is plenty
-            double targetIntervalMs = PetCompanionService.Instance.IsNotchExpanded ? 100.0 : 150.0;
+            // Rock-solid 60 FPS (16ms) timer when karaoke is active or notch is playing
+            double targetIntervalMs = PetCompanionService.Instance.IsNotchExpanded ? 66.0 : 100.0;
+            bool isKaraokeActivelyRendering = LyricsKaraokeEnabled && HasLyrics && IsPlaying && !IsCurrentLyricsUntimed;
+            if (isKaraokeActivelyRendering)
+            {
+                targetIntervalMs = 16.0;
+            }
             if (Math.Abs(_timelineTimer.Interval.TotalMilliseconds - targetIntervalMs) > 1.0)
             {
                 _timelineTimer.Interval = TimeSpan.FromMilliseconds(targetIntervalMs);
             }
 
-
-
             if (!IsSeeking && IsPlaying && HasMedia && Duration > TimeSpan.Zero)
-
-
-
             {
-
-
-
                 if (Position < Duration)
-
-
-
                 {
-
-
-
                     var exactPosition = _baseTrackPosition + _playbackStopwatch.Elapsed;
                     if (exactPosition > Duration) exactPosition = Duration;
                     if (exactPosition < TimeSpan.Zero) exactPosition = TimeSpan.Zero;
                     Position = exactPosition;
-
-
-
-                    UpdateLyricsPosition(Position);
-
-
-
                 }
-
-
-
             }
 
 
@@ -2105,11 +2154,15 @@ namespace NotchWin.ViewModels
                 PreviousLyricText = string.Empty;
                 ActiveLyricText = string.Empty;
                 UpcomingLyricText = string.Empty;
+                ActiveLyricProgress = 0;
+                IsCurrentLyricsUntimed = false;
                 CurrentLyricIndex = -1;
                 ResetLyricsCandidates();
                 OnPropertyChanged(nameof(CurrentLyricLine));
                 OnPropertyChanged(nameof(IsActiveLyricInterlude));
+                OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                 OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+                OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                 OnPropertyChanged(nameof(CollapsedDisplayLyricText));
             });
 
@@ -2122,7 +2175,9 @@ namespace NotchWin.ViewModels
                     LyricsSourceInfo = string.Empty;
                     OnPropertyChanged(nameof(CurrentLyricLine));
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(CollapsedDisplayLyricText));
                 });
                 return;
@@ -2159,7 +2214,9 @@ namespace NotchWin.ViewModels
 
                     OnPropertyChanged(nameof(CurrentLyricLine));
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(CollapsedDisplayLyricText));
                 });
             }
@@ -2176,9 +2233,112 @@ namespace NotchWin.ViewModels
                     ResetLyricsCandidates();
                     OnPropertyChanged(nameof(CurrentLyricLine));
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(CollapsedDisplayLyricText));
                 });
+            }
+        }
+
+        private void UpdateKaraokeProgress(int bestIdx, TimeSpan effectivePos)
+        {
+            if (!HasLyrics || IsCurrentLyricsUntimed || bestIdx < 0 || bestIdx >= LyricsLines.Count)
+            {
+                if (ActiveLyricProgress != 0.0) ActiveLyricProgress = 0.0;
+                return;
+            }
+
+            var line = LyricsLines[bestIdx];
+            if (line.IsInterlude)
+            {
+                if (ActiveLyricProgress != 0.0) ActiveLyricProgress = 0.0;
+                return;
+            }
+
+            double progress;
+
+            // 1. Syllable-synced mode (True Syllable Timing)
+            if (IsSyllableSyncEnabled && line.HasSyllables && line.Syllables.Count > 0)
+            {
+                var syllables = line.Syllables;
+                double totalChars = Math.Max(1, line.Text?.Length ?? 1);
+
+                if (effectivePos < syllables[0].StartTime)
+                {
+                    progress = 0.0;
+                }
+                else if (effectivePos >= syllables[^1].EndTime)
+                {
+                    progress = 1.0;
+                }
+                else
+                {
+                    double charPos = 0;
+                    bool found = false;
+
+                    for (int i = 0; i < syllables.Count; i++)
+                    {
+                        var s = syllables[i];
+                        if (effectivePos >= s.StartTime && effectivePos <= s.EndTime)
+                        {
+                            double dur = (s.EndTime - s.StartTime).TotalSeconds;
+                            double sylProgress = dur > 0.001
+                                ? Math.Clamp((effectivePos - s.StartTime).TotalSeconds / dur, 0.0, 1.0)
+                                : 1.0;
+                            charPos = s.CharStartIndex + (sylProgress * s.CharLength);
+                            found = true;
+                            break;
+                        }
+                        else if (i + 1 < syllables.Count && effectivePos > s.EndTime && effectivePos < syllables[i + 1].StartTime)
+                        {
+                            // In inter-word pause: freeze at the end of the current syllable
+                            charPos = s.CharStartIndex + s.CharLength;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        charPos = effectivePos >= syllables[^1].EndTime ? totalChars : 0;
+                    }
+
+                    progress = Math.Clamp(charPos / totalChars, 0.0, 1.0);
+                }
+            }
+            else
+            {
+                // 2. Line-synced mode (Poni karSpan natural duration algorithm)
+                TimeSpan start = line.Time;
+                TimeSpan next = bestIdx + 1 < LyricsLines.Count
+                    ? LyricsLines[bestIdx + 1].Time
+                    : (Duration > TimeSpan.Zero ? Duration : start + TimeSpan.FromSeconds(4));
+
+                double intervalSec = (next - start).TotalSeconds;
+                if (intervalSec <= 0.05)
+                {
+                    if (ActiveLyricProgress != 1.0) ActiveLyricProgress = 1.0;
+                    return;
+                }
+
+                string text = line.Text?.Trim() ?? string.Empty;
+                bool isCjk = Regex.IsMatch(text, @"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7a3]");
+                double beats = isCjk
+                    ? Regex.Replace(text, @"\s+", "").Length * 0.6
+                    : text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+
+                double naturalDurSec = Math.Max(4.0, 1.0 + beats * 0.45);
+                // Rule 90%: sapuan karaoke selesai pada 90% waktu jeda sebelum baris berikutnya agar ada jeda napas alami
+                double activeSpanSec = Math.Max(0.3, Math.Min(intervalSec * 0.9, naturalDurSec));
+
+                double elapsedSec = (effectivePos - start).TotalSeconds;
+                progress = Math.Clamp(elapsedSec / activeSpanSec, 0.0, 1.0);
+            }
+
+            if (Math.Abs(ActiveLyricProgress - progress) > 0.0005 || progress == 0.0 || progress == 1.0)
+            {
+                ActiveLyricProgress = progress;
             }
         }
 
@@ -2219,7 +2379,9 @@ namespace NotchWin.ViewModels
                     ArtistName = candidate.ArtistName,
                     AlbumName = candidate.AlbumName,
                     DurationText = durationText,
-                    TypeLabel = candidate.IsInstrumental ? "INSTRUMENTAL" : (candidate.IsSynced ? "SYNCED" : "PLAIN")
+                    Provider = candidate.Provider,
+                    IsSyllableSynced = candidate.IsSyllableSynced,
+                    TypeLabel = candidate.IsInstrumental ? "INSTRUMENTAL" : (candidate.IsSyllableSynced ? "SYLLABLE" : (candidate.IsSynced ? "SYNCED" : "PLAIN"))
                 });
             }
 
@@ -2286,19 +2448,24 @@ namespace NotchWin.ViewModels
             PreviousLyricText = string.Empty;
             ActiveLyricText = string.Empty;
             UpcomingLyricText = string.Empty;
+            ActiveLyricProgress = 0;
+            IsCurrentLyricsUntimed = false;
             _baseLrcOffsetMs = result.IsSynced ? result.BaseOffsetMs : 0;
 
             if (result.IsInstrumental)
             {
                 HasLyrics = false;
                 LyricsStatusMessage = LocalizationService.Instance["Media.Instrumental"];
-                LyricsSourceInfo = "lrclib.net · INSTRUMENTAL";
+                LyricsSourceInfo = $"{result.Provider} · INSTRUMENTAL";
             }
             else if (result.Found && result.Lines.Count > 0)
             {
                 HasLyrics = true;
                 LyricsStatusMessage = string.Empty;
-                LyricsSourceInfo = result.IsSynced ? "lrclib.net · SYNCED" : "lrclib.net · PLAIN";
+                LyricsSourceInfo = result.IsSyllableSynced
+                    ? $"{result.Provider} · SYLLABLE"
+                    : (result.IsSynced ? $"{result.Provider} · SYNCED" : $"{result.Provider} · NOT TIMED");
+                IsCurrentLyricsUntimed = !result.IsSynced;
 
                 if (result.IsSynced)
                 {
@@ -2316,7 +2483,12 @@ namespace NotchWin.ViewModels
                         }
                         else
                         {
-                            LyricsLines.Add(new LyricsLineViewModel(current.Time, current.Text));
+                            var vm = new LyricsLineViewModel(current.Time, current.Text)
+                            {
+                                EndTime = current.EndTime,
+                                Syllables = current.Syllables
+                            };
+                            LyricsLines.Add(vm);
                         }
                     }
                 }
@@ -2330,6 +2502,11 @@ namespace NotchWin.ViewModels
                     {
                         LyricsLines.Add(new LyricsLineViewModel(TimeSpan.FromSeconds(i * stepSeconds), result.Lines[i].Text));
                     }
+                }
+
+                foreach (var line in LyricsLines)
+                {
+                    line.Configure(LyricsTextSize, LyricsBold);
                 }
 
                 UpdateLyricsPosition(Position);
@@ -2348,7 +2525,9 @@ namespace NotchWin.ViewModels
 
             OnPropertyChanged(nameof(CurrentLyricLine));
             OnPropertyChanged(nameof(IsActiveLyricInterlude));
+            OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
             OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+            OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
             OnPropertyChanged(nameof(CollapsedDisplayLyricText));
         }
 
@@ -2522,6 +2701,8 @@ namespace NotchWin.ViewModels
 
                 : currentPos;
 
+            bool karaokeFill = LyricsKaraokeEnabled && !IsCurrentLyricsUntimed && HasLyrics;
+
 
 
 
@@ -2636,7 +2817,7 @@ namespace NotchWin.ViewModels
 
 
 
-                        LyricsLines[i].SetActive(i == bestIdx);
+                        LyricsLines[i].SetActive(i == bestIdx, karaokeFill);
 
 
 
@@ -2664,7 +2845,7 @@ namespace NotchWin.ViewModels
 
 
 
-                        LyricsLines[oldIdx].SetActive(false);
+                        LyricsLines[oldIdx].SetActive(false, karaokeFill);
 
 
 
@@ -2680,7 +2861,7 @@ namespace NotchWin.ViewModels
 
 
 
-                        LyricsLines[bestIdx].SetActive(true);
+                        LyricsLines[bestIdx].SetActive(true, karaokeFill);
 
 
 
@@ -2712,6 +2893,7 @@ namespace NotchWin.ViewModels
 
 
 
+
                 OnPropertyChanged(nameof(CurrentLyricLine));
 
 
@@ -2725,10 +2907,12 @@ namespace NotchWin.ViewModels
 
 
                 OnPropertyChanged(nameof(IsActiveLyricInterlude));
+                OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
 
 
 
                 OnPropertyChanged(nameof(CollapsedDisplayLyricText));
+
 
 
 
@@ -2786,10 +2970,13 @@ namespace NotchWin.ViewModels
 
 
             OnPropertyChanged(nameof(IsCollapsedLyricsActive));
+            OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
 
 
 
             OnPropertyChanged(nameof(CollapsedDisplayLyricText));
+
+
 
 
 
@@ -3153,70 +3340,23 @@ namespace NotchWin.ViewModels
 
 
 
-        [RelayCommand]
-
-
-
+        [RelayCommand(AllowConcurrentExecutions = true)]
         public async Task TogglePlayPauseAsync()
-
-
-
         {
-
-
-
+            IsPlaying = !IsPlaying;
             await _mediaService.TogglePlayPauseAsync();
-
-
-
         }
 
-
-
-
-
-
-
-        [RelayCommand]
-
-
-
+        [RelayCommand(AllowConcurrentExecutions = true)]
         public async Task SkipNextAsync()
-
-
-
         {
-
-
-
             await _mediaService.SkipNextAsync();
-
-
-
         }
 
-
-
-
-
-
-
-        [RelayCommand]
-
-
-
+        [RelayCommand(AllowConcurrentExecutions = true)]
         public async Task SkipPreviousAsync()
-
-
-
         {
-
-
-
             await _mediaService.SkipPreviousAsync();
-
-
-
         }
 
 

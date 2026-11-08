@@ -188,6 +188,32 @@ namespace NotchWin.Services
             return Task.CompletedTask;
         }
 
+        public async Task<bool> ToggleBluetoothRadioAsync()
+        {
+            try
+            {
+                var radios = await Windows.Devices.Radios.Radio.GetRadiosAsync();
+                foreach (var radio in radios)
+                {
+                    if (radio.Kind == Windows.Devices.Radios.RadioKind.Bluetooth)
+                    {
+                        var targetState = radio.State == Windows.Devices.Radios.RadioState.On
+                            ? Windows.Devices.Radios.RadioState.Off
+                            : Windows.Devices.Radios.RadioState.On;
+                        await radio.SetStateAsync(targetState);
+                        _isBluetoothRadioOn = (targetState == Windows.Devices.Radios.RadioState.On);
+                        RefreshBluetoothRadioState();
+                        return _isBluetoothRadioOn;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "VolumeService: Failed to toggle Bluetooth radio");
+            }
+            return false;
+        }
+
         public void RefreshBluetoothRadioState()
         {
             if (_btRadioRefreshInFlight) return;
@@ -615,18 +641,22 @@ namespace NotchWin.Services
 
         public Task SetVolumeAsync(float volumeScalar)
         {
+            float clamped = Math.Clamp(volumeScalar, 0f, 1f);
+            _masterVolume = clamped;
+
             if (_endpointVolume != null)
             {
-                try
+                Task.Run(() =>
                 {
-                    float clamped = Math.Clamp(volumeScalar, 0f, 1f);
-                    _endpointVolume.MasterVolumeLevelScalar = clamped;
-                    _masterVolume = clamped;
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "VolumeService: Failed to set master volume");
-                }
+                    try
+                    {
+                        _endpointVolume.MasterVolumeLevelScalar = clamped;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "VolumeService: Failed to set master volume");
+                    }
+                });
             }
             return Task.CompletedTask;
         }

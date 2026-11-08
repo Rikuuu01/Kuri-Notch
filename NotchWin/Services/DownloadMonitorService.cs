@@ -570,39 +570,51 @@ namespace NotchWin.Services
         {
             if (_historyDatabases.Count == 0) return;
 
-            bool needsTotals = false;
+            bool needsUpdate = false;
             foreach (var item in _items.Values)
             {
-                if ((item.Source == DownloadSource.Chromium || item.Source == DownloadSource.Opera)
-                    && item.TotalBytes == null)
+                if (item.Source == DownloadSource.Chromium || item.Source == DownloadSource.Opera)
                 {
-                    needsTotals = true;
-                    break;
+                    if (item.TotalBytes == null || item.FileName.StartsWith("Unconfirmed", StringComparison.OrdinalIgnoreCase))
+                    {
+                        needsUpdate = true;
+                        break;
+                    }
                 }
             }
 
-            if (!needsTotals) return;
+            if (!needsUpdate) return;
 
-            var totals = ChromiumDownloadProgressReader.ReadTotals(_historyDatabases);
-            if (totals.Count == 0) return;
+            var (totals, targetNames) = ChromiumDownloadProgressReader.ReadProgress(_historyDatabases);
+            if (totals.Count == 0 && targetNames.Count == 0) return;
 
             foreach (var item in _items.Values)
             {
-                if (item.TotalBytes != null) continue;
                 if (item.Source != DownloadSource.Chromium && item.Source != DownloadSource.Opera) continue;
 
                 string partialKey = ChromiumDownloadProgressReader.NormalizePath(item.PartialPath);
                 string finalKey = ChromiumDownloadProgressReader.NormalizePath(
                     Path.Combine(item.DirectoryPath, item.FileName));
 
-                long total = 0;
-                bool found = (partialKey.Length > 0 && totals.TryGetValue(partialKey, out total))
-                             || (finalKey.Length > 0 && totals.TryGetValue(finalKey, out total));
-
-                if (found && total > 0)
+                if (item.FileName.StartsWith("Unconfirmed", StringComparison.OrdinalIgnoreCase))
                 {
-                    item.TotalBytes = total;
-                    Log.Debug("DownloadMonitor: total size for {File} = {Total} bytes", item.FileName, total);
+                    if (targetNames.TryGetValue(partialKey, out string? realName) && !string.IsNullOrWhiteSpace(realName))
+                    {
+                        item.FileName = realName;
+                    }
+                }
+
+                if (item.TotalBytes == null)
+                {
+                    long total = 0;
+                    bool found = (partialKey.Length > 0 && totals.TryGetValue(partialKey, out total))
+                                 || (finalKey.Length > 0 && totals.TryGetValue(finalKey, out total));
+
+                    if (found && total > 0)
+                    {
+                        item.TotalBytes = total;
+                        Log.Debug("DownloadMonitor: total size for {File} = {Total} bytes", item.FileName, total);
+                    }
                 }
             }
         }

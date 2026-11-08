@@ -16,6 +16,9 @@ namespace NotchWin.Services
 {
     public class LyricsService : ILyricsService, IDisposable
     {
+        private readonly ITtmlLyricsService _ttmlService = new TtmlLyricsService();
+        private readonly ILrcRedLyricsService _lrcRedService = new LrcRedLyricsService();
+
         private static readonly HttpClient _httpClient = new HttpClient
         {
             Timeout = TimeSpan.FromSeconds(5)
@@ -35,8 +38,9 @@ namespace NotchWin.Services
             using var sha256 = SHA256.Create();
             var bytes = System.Text.Encoding.UTF8.GetBytes(cacheKey);
             var hash = Convert.ToHexString(sha256.ComputeHash(bytes)).ToLowerInvariant();
-            // v2: cache menyimpan daftar kandidat, bukan satu LyricsResult (cache v1 diabaikan).
-            return Path.Combine(_cacheDirectory, $"v2-{hash}.json");
+            // v4: cache menyimpan daftar kandidat termasuk syllable sync dengan preserving whitespace (spasi antar kata utuh).
+            // v5: cache menyimpan daftar kandidat termasuk penyedia lrc.red.
+            return Path.Combine(_cacheDirectory, $"v5-{hash}.json");
         }
 
         static LyricsService()
@@ -119,17 +123,30 @@ namespace NotchWin.Services
                         ArtistName = dto.ArtistName ?? string.Empty,
                         AlbumName = dto.AlbumName,
                         Duration = dto.Duration,
+                        Provider = "LRCLIB",
                         IsInstrumental = parsed.IsInstrumental,
                         IsSynced = parsed.IsSynced,
+                        IsSyllableSynced = parsed.IsSyllableSynced,
                         Score = score,
                         Result = parsed
                     };
                 }
 
-                // Exact /api/get dan search #1 berjalan paralel. Search #1 tetap dijalankan
-                // walau exact sudah synced agar pemilih versi punya alternatif.
+                // TTML Syllable query + lrc.red + Exact LRCLIB + Search LRCLIB berjalan paralel.
+                Task<LyricsCandidate?> ttmlTask = Task.FromResult<LyricsCandidate?>(null);
+                Task<List<LyricsCandidate>> lrcRedTask = Task.FromResult(new List<LyricsCandidate>());
                 Task<LrcLibDto?> exactTask = Task.FromResult<LrcLibDto?>(null);
                 Task<List<(LrcLibDto Dto, double Score)>> searchTask = Task.FromResult(new List<(LrcLibDto, double)>());
+
+                if (!string.IsNullOrWhiteSpace(cleanTitle))
+                {
+                    ttmlTask = _ttmlService.GetSyllableLyricsAsync(cleanTitle, primaryArtist, duration, ct);
+                    if (AppSettings.Current?.IsLrcRedEnabled != false)
+                    {
+                        lrcRedTask = _lrcRedService.GetCandidatesAsync(cleanTitle, primaryArtist, duration, ct);
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(primaryArtist) && duration.TotalSeconds > 10)
                 {
                     exactTask = GetExactLrcLibAsync(cleanTitle, primaryArtist, duration, ct);
@@ -137,10 +154,28 @@ namespace NotchWin.Services
                     searchTask = QueryLrcLibCandidatesAsync(url1, cleanTitle, primaryArtist, duration, ct);
                 }
 
-                await Task.WhenAll(exactTask, searchTask);
+                await Task.WhenAll(ttmlTask, lrcRedTask, exactTask, searchTask);
 
+                var ttmlCandidate = ttmlTask.Result;
+                var lrcRedCandidates = lrcRedTask.Result;
                 var exact = exactTask.Result;
                 var search1 = searchTask.Result;
+
+                if (ttmlCandidate != null && ttmlCandidate.Result.Found)
+                {
+                    merged["syllable:spicylyrics"] = ttmlCandidate;
+                }
+
+                if (lrcRedCandidates != null)
+                {
+                    foreach (var lrcRedItem in lrcRedCandidates)
+                    {
+                        if (lrcRedItem != null && lrcRedItem.Result.Found)
+                        {
+                            merged[$"lrcred:{lrcRedItem.Id}"] = lrcRedItem;
+                        }
+                    }
+                }
 
                 if (exact != null)
                 {
@@ -183,12 +218,47 @@ namespace NotchWin.Services
                     }
                 }
 
-                // Presedensi Auto sama seperti sebelumnya: exact synced/instrumental menang,
-                // lalu hasil search terbaik, dan exact plain hanya sebagai upaya terakhir.
-                LrcLibDto? autoDto = exactIsAuto ? exact
-                    : search1Best ?? search2Best ?? search3Best ?? exact;
+                // Presedensi Auto:
+                // 1. Kandidat Syllable-synced terbaik (Spicy Lyrics vs lrc.red).
+                // 2. Kandidat Synced terbaik (lrc.red atau LRCLIB).
+                // 3. Search best LRCLIB, dan exact plain sebagai upaya terakhir.
+                LyricsCandidate? autoCandidate = null;
+                var bestSyllable = merged.Values
+                    .Where(c => c.IsSyllableSynced && c.Result.Found)
+                    .OrderByDescending(c => c.Score)
+                    .FirstOrDefault();
 
-                if (merged.Count == 0 || autoDto == null)
+                if (bestSyllable != null)
+                {
+                    autoCandidate = bestSyllable;
+                }
+                else
+                {
+                    var bestSynced = merged.Values
+                        .Where(c => c.IsSynced && c.Result.Found)
+                        .OrderByDescending(c => c.Score)
+                        .FirstOrDefault();
+
+                    if (bestSynced != null)
+                    {
+                        autoCandidate = bestSynced;
+                    }
+                    else
+                    {
+                        LrcLibDto? autoDto = exactIsAuto ? exact
+                            : search1Best ?? search2Best ?? search3Best ?? exact;
+                        if (autoDto != null)
+                        {
+                            string autoKey = GetCandidateKey(autoDto);
+                            if (merged.TryGetValue(autoKey, out var resolvedAuto))
+                            {
+                                autoCandidate = resolvedAuto;
+                            }
+                        }
+                    }
+                }
+
+                if (merged.Count == 0 || autoCandidate == null)
                 {
                     Log.Information("Lyrics not found for '{Title}' by '{Artist}'", cleanTitle, cleanArtist);
                     if (_cache.Count > 20) _cache.Clear();
@@ -198,12 +268,12 @@ namespace NotchWin.Services
 
                 var ordered = merged.Values
                     .OrderByDescending(c => c.Score)
+                    .ThenByDescending(c => c.IsSyllableSynced)
                     .ThenByDescending(c => c.IsSynced)
                     .ThenBy(c => c.Id)
                     .ToList();
 
-                string autoKey = GetCandidateKey(autoDto);
-                var autoCandidate = merged.TryGetValue(autoKey, out var resolvedAuto) ? resolvedAuto : ordered[0];
+                autoCandidate ??= ordered[0];
 
                 const int maxCandidates = 20;
                 var selected = ordered.Take(maxCandidates).ToList();
@@ -466,8 +536,11 @@ namespace NotchWin.Services
             string title = rawTitle.Trim();
             string artist = rawArtist?.Trim() ?? string.Empty;
 
-            // Remove YouTube brackets/metadata e.g. "(Official Music Video)", "[Official Lyric Video]", "(MV)", etc.
-            title = Regex.Replace(title, @"\s*(\(|\[)(?i:official|lyric|video|mv|audio|remix|full|visualizer|hd|4k|clip)[^\)\]]*(\)|\])", "", RegexOptions.Compiled);
+            // Strip YouTube Topic suffix if present (e.g. "Artist - Topic")
+            artist = Regex.Replace(artist, @"\s*-\s*Topic\b", "", RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
+
+            // Remove YouTube brackets/metadata e.g. "(Official Music Video)", "[Official Lyric Video]", "(MV)", "[4K]", etc.
+            title = Regex.Replace(title, @"\s*(\(|\[)(?i:official|lyric|video|mv|m/v|audio|remix|full|visualizer|visualiser|hd|hq|4k|clip|vevo)[^\)\]]*(\)|\])", "", RegexOptions.Compiled);
 
             // Strip trailing pipe comments e.g. "Song Title | prod. by ..." or "Song Title | Album"
             int pipeIdx = title.IndexOf('|');
@@ -485,6 +558,7 @@ namespace NotchWin.Services
 
                 if (!string.IsNullOrWhiteSpace(possibleArtist) && !string.IsNullOrWhiteSpace(possibleTitle))
                 {
+                    possibleArtist = Regex.Replace(possibleArtist, @"\s*-\s*Topic\b", "", RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
                     // Clean possibleTitle from trailing features
                     possibleTitle = Regex.Replace(possibleTitle, @"\s*(\(|\[)?(?i:ft\.|feat\.|featuring)[^\)\]]*(\)|\])?", "", RegexOptions.Compiled);
                     return (possibleTitle.Trim(), possibleArtist);

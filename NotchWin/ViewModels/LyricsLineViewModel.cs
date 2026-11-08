@@ -7,9 +7,19 @@ namespace NotchWin.ViewModels
 {
     public partial class LyricsLineViewModel : ObservableObject
     {
+        private static readonly Brush InactiveBrush = CreateFrozenBrush(Color.FromRgb(161, 161, 170));
+        private static readonly Brush KaraokeBaseBrush = CreateFrozenBrush(Color.FromRgb(148, 148, 158));
+
+        private double _baseFontSize = 12.0;
+        private double _activeFontSize = 14.5;
+        private bool _useBold = true;
+
         public TimeSpan Time { get; set; }
+        public TimeSpan? EndTime { get; set; }
         public string Text { get; set; } = string.Empty;
         public bool IsInterlude { get; set; }
+        public System.Collections.Generic.List<NotchWin.Models.SyllableItem> Syllables { get; set; } = new();
+        public bool HasSyllables => Syllables != null && Syllables.Count > 0;
 
         [ObservableProperty]
         private bool _isActive;
@@ -21,7 +31,7 @@ namespace NotchWin.ViewModels
         private FontWeight _fontWeight = FontWeights.Normal;
 
         [ObservableProperty]
-        private Brush _foregroundBrush = new SolidColorBrush(Color.FromRgb(161, 161, 170)); // #A1A1AA
+        private Brush _foregroundBrush = InactiveBrush;
 
         [ObservableProperty]
         private double _opacity = 0.55;
@@ -39,21 +49,38 @@ namespace NotchWin.ViewModels
             IsInterlude = isInterlude;
         }
 
-        public void SetActive(bool active)
+        private static Brush CreateFrozenBrush(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        public void Configure(double baseFontSize, bool useBold)
+        {
+            _baseFontSize = Math.Clamp(baseFontSize, 10.0, 14.0);
+            _activeFontSize = _baseFontSize + 2.5;
+            _useBold = useBold;
+
+            FontSize = IsActive ? _activeFontSize : _baseFontSize;
+            FontWeight = IsActive && _useBold ? FontWeights.Bold : FontWeights.Normal;
+        }
+
+        public void SetActive(bool active, bool karaokeFill = false)
         {
             IsActive = active;
             if (active)
             {
-                FontSize = 14.5;
-                FontWeight = FontWeights.Bold;
-                ForegroundBrush = Brushes.White;
+                FontSize = _activeFontSize;
+                FontWeight = _useBold ? FontWeights.Bold : FontWeights.Normal;
+                ForegroundBrush = karaokeFill ? KaraokeBaseBrush : Brushes.White;
                 Opacity = 1.0;
             }
             else
             {
-                FontSize = 12.0;
+                FontSize = _baseFontSize;
                 FontWeight = FontWeights.Normal;
-                ForegroundBrush = new SolidColorBrush(Color.FromRgb(161, 161, 170));
+                ForegroundBrush = InactiveBrush;
                 Opacity = 0.50;
             }
         }
