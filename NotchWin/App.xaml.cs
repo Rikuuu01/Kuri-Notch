@@ -58,6 +58,17 @@ namespace NotchWin
                 return;
             }
 
+            if (e.Args.Length > 0 && e.Args[0] == "--export-snapshots")
+            {
+                string targetDir = e.Args.Length > 1 ? e.Args[1] : Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\docs\assets"));
+                Log.Information("Running snapshot export to {TargetDir}...", targetDir);
+                Services.SnapshotExporter.ExportSnapshots(targetDir);
+                Log.Information("Snapshot export finished successfully.");
+                Log.CloseAndFlush();
+                Environment.Exit(0);
+                return;
+            }
+
             // Enforce single instance application lifecycle
             try
             {

@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kuri: A Living Notch for Windows 11 & 10</title>
-  <meta name="description" content="Kuri turns the top edge of your Windows screen into a sleek, living notch for music, syllable lyrics, BMKG weather, in-notch Control Center, and a file shelf.">
+  <meta name="description" content="Kuri turns the top edge of your Windows screen into a sleek, living notch for music, syllable lyrics, BMKG weather, in-notch Control Center, and file shelf.">
   <meta property="og:title" content="Kuri: A Living Notch for Windows">
-  <meta property="og:description" content="Music, syllable lyrics, BMKG weather, in-notch Wi-Fi & Bluetooth, focus timer, and file shelf on Windows.">
+  <meta property="og:description" content="Music, syllable lyrics, BMKG weather, in-notch Control Center, and file shelf for Windows 11 & 10.">
   <meta property="og:image" content="assets/kuri-banner.svg">
   <meta property="og:url" content="https://rikuuu01.github.io/Kuri-Notch/">
   <meta name="twitter:card" content="summary_large_image">
@@ -23,18 +23,16 @@
       --ink: #eceff7;
       --mist: #8c94a8;
       --line: rgba(236, 239, 247, 0.10);
-      --cyan: #19b8ff;
-      --indigo: #2d5bff;
-      --violet: #7b4bff;
+      --cyan: #38bdf8;
+      --indigo: #6366f1;
+      --violet: #a855f7;
       --emerald: #10b981;
       --amber: #f59e0b;
-      --glow: linear-gradient(90deg, var(--cyan), var(--indigo) 55%, var(--violet));
-      --glow-subtle: linear-gradient(135deg, rgba(25, 184, 255, 0.15), rgba(123, 75, 255, 0.15));
+      --glow: linear-gradient(90deg, #38bdf8, #6366f1 55%, #a855f7);
       --font-display: "Bricolage Grotesque", system-ui, sans-serif;
       --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
       --ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
       --spring: cubic-bezier(0.34, 1.32, 0.5, 1);
-      --u: 1.25;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,7 +46,7 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Ambient background grid & glow */
+    /* Ambient background glow */
     body::before {
       content: "";
       position: fixed;
@@ -57,7 +55,7 @@
       transform: translateX(-50%);
       width: 1200px;
       height: 700px;
-      background: radial-gradient(circle at 50% 30%, rgba(45, 91, 255, 0.15) 0%, rgba(123, 75, 255, 0.08) 45%, transparent 70%);
+      background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.12) 0%, rgba(99, 102, 241, 0.08) 45%, transparent 70%);
       z-index: -1;
       pointer-events: none;
     }
@@ -69,7 +67,7 @@
       z-index: 100;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      background: rgba(3, 4, 10, 0.75);
+      background: rgba(3, 4, 10, 0.8);
       border-bottom: 1px solid var(--line);
       padding: 14px 24px;
     }
@@ -101,9 +99,9 @@
       font-weight: 600;
       padding: 2px 8px;
       border-radius: 999px;
-      background: rgba(25, 184, 255, 0.15);
+      background: rgba(56, 189, 248, 0.15);
       color: var(--cyan);
-      border: 1px solid rgba(25, 184, 255, 0.3);
+      border: 1px solid rgba(56, 189, 248, 0.3);
     }
     .nav-links {
       display: flex;
@@ -147,7 +145,7 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 9px 18px;
+      padding: 9px 20px;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
@@ -173,8 +171,8 @@
     /* Hero */
     .hero {
       text-align: center;
-      padding: 90px 20px 40px;
-      max-width: 900px;
+      padding: 80px 20px 40px;
+      max-width: 960px;
       margin: 0 auto;
     }
     .hero-badge {
@@ -183,8 +181,8 @@
       gap: 8px;
       padding: 6px 14px;
       border-radius: 999px;
-      background: rgba(45, 91, 255, 0.12);
-      border: 1px solid rgba(45, 91, 255, 0.3);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
       color: var(--cyan);
       font-size: 13px;
       font-weight: 600;
@@ -213,7 +211,7 @@
     .hero p {
       color: var(--mist);
       font-size: clamp(16px, 2vw, 19px);
-      max-width: 680px;
+      max-width: 700px;
       margin: 0 auto 36px;
       line-height: 1.55;
     }
@@ -238,368 +236,142 @@
       color: var(--mist);
     }
 
-    /* ===== LAPTOP PREVIEW SECTION ===== */
+    /* ===== REAL KURI LAPTOP PREVIEW ===== */
     .preview {
       position: relative;
       max-width: 1040px;
       margin: 0 auto;
-      padding: 20px 16px 80px;
+      padding: 20px 16px 70px;
     }
-    .laptop {
+    .laptop-frame {
       position: relative;
       margin-inline: auto;
-      overflow: hidden;
-      height: calc(var(--u) * 260px + 34px);
-      border-radius: calc(var(--u) * 20px) calc(var(--u) * 20px) 0 0;
+      border-radius: 24px 24px 0 0;
       background: #11131a;
-      border: 1px solid rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.14);
       border-bottom: none;
-      box-shadow: 0 30px 100px -20px rgba(0,0,0,0.8), 0 0 60px -10px rgba(45,91,255,0.25);
-      -webkit-mask: linear-gradient(#000 82%, transparent);
-      mask: linear-gradient(#000 82%, transparent);
+      box-shadow: 0 30px 100px -20px rgba(0,0,0,0.8), 0 0 70px -10px rgba(56,189,248,0.25);
+      padding: 10px 10px 0;
     }
-    .bezel {
+    .laptop-cam {
       position: absolute;
-      inset: 2px;
-      border-radius: inherit;
-      background: #050506;
-      padding: calc(var(--u) * 8px);
-    }
-    .cam {
-      position: absolute;
-      top: calc(var(--u) * 3px);
+      top: 5px;
       left: 50%;
       transform: translateX(-50%);
       width: 5px;
       height: 5px;
       border-radius: 50%;
-      background: #151822;
-      border: 1px solid rgba(255,255,255,0.2);
+      background: #1e2230;
+      border: 1px solid rgba(255,255,255,0.25);
     }
-    .screen {
-      position: absolute;
-      inset: calc(var(--u) * 8px);
-      bottom: 0;
-      overflow: hidden;
-      border-radius: calc(var(--u) * 12px) calc(var(--u) * 12px) 0 0;
-      background: #1b2a6b;
-    }
-
-    /* Windows 11 Bloom Wall */
-    .wall {
-      position: absolute;
-      left: 0; right: 0; top: 0;
-      height: calc(var(--u) * 320px);
-      overflow: hidden;
-      background:
-        radial-gradient(70% 60% at 50% -12%, #ffffff 0%, rgba(255,255,255,0.65) 30%, transparent 62%),
-        linear-gradient(180deg, #dbe7ff 0%, #b7cdff 30%, #7e95ff 62%, #4b3fd0 100%);
-    }
-    .petal {
-      position: absolute;
-      left: 50%;
-      top: calc(var(--u) * 430px);
-      width: calc(var(--u) * 175px);
-      height: calc(var(--u) * 420px);
-      margin-left: calc(var(--u) * -87.5px);
-      transform-origin: 50% 0;
-      transform: rotate(calc(var(--r) + 180deg));
-      border-radius: 50% 50% 46% 46% / 64% 64% 36% 36%;
-      background: radial-gradient(40% 70% at 50% 12%, rgba(255,255,255,0.92) 0%, rgba(215,230,255,0.7) 45%, rgba(90,120,255,0.3) 80%, transparent 100%);
-      box-shadow: inset 0 0 calc(var(--u) * 30px) rgba(255,255,255,0.6);
-      filter: blur(1.5px);
-    }
-    .petal.back {
-      opacity: 0.6;
-      filter: blur(3px);
-    }
-    .shine {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.4) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    /* Notch Holder & Notch Container */
-    .mn-holder {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      transform: translateX(-50%);
-      z-index: 20;
-    }
-    .mn {
-      --w: 160px;
-      --h: 30px;
-      --r: 15px;
-      --e: 10px;
+    .laptop-screen {
       position: relative;
-      width: var(--w);
-      height: var(--h);
-      transform-origin: 50% 0;
-      background: #000000;
-      border-radius: 0 0 var(--r) var(--r);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
-      transition: width 0.62s var(--spring), height 0.62s var(--spring), border-radius 0.45s ease;
-      font-family: var(--ui);
-      color: #fff;
-      user-select: none;
-      cursor: pointer;
-    }
-
-    /* Notch State Dimensions */
-    .mn[data-s="pet"], .mn[data-s="idle"] { --w: 160px; --h: 30px; --r: 15px; }
-    .mn[data-s="music"], .mn[data-s="pomo"], .mn[data-s="water"], .mn[data-s="shelf"],
-    .mn[data-s="todo"], .mn[data-s="prayer"], .mn[data-s="clip"], .mn[data-s="widgets"] {
-      --w: 420px; --h: 140px; --r: 28px;
-    }
-    .mn[data-s="lyrics"] { --w: 520px; --h: 140px; --r: 28px; }
-    .mn[data-s="control"] { --w: 460px; --h: 150px; --r: 28px; }
-    .mn[data-s="bt"], .mn[data-s="charge"], .mn[data-s="notif"] { --w: 310px; --h: 56px; --r: 18px; }
-
-    /* Notch Layers */
-    .ly {
-      position: absolute;
-      inset: 0;
       overflow: hidden;
-      border-radius: inherit;
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(0.9, 0.9);
-      transform-origin: 50% 0;
-      transition: opacity 0.18s ease, transform 0.22s ease;
-    }
-    .mn[data-s="pet"] .l-pet,
-    .mn[data-s="idle"] .l-idle,
-    .mn[data-s="music"] .l-music,
-    .mn[data-s="lyrics"] .l-lyrics,
-    .mn[data-s="control"] .l-control,
-    .mn[data-s="pomo"] .l-pomo,
-    .mn[data-s="water"] .l-water,
-    .mn[data-s="shelf"] .l-shelf,
-    .mn[data-s="todo"] .l-todo,
-    .mn[data-s="bt"] .l-bt,
-    .mn[data-s="charge"] .l-charge,
-    .mn[data-s="prayer"] .l-prayer,
-    .mn[data-s="notif"] .l-notif,
-    .mn[data-s="widgets"] .l-widgets,
-    .mn[data-s="clip"] .l-clip {
-      opacity: 1;
-      pointer-events: auto;
-      transform: none;
-      transition: opacity 0.45s ease 0.08s, transform 0.45s var(--spring) 0.04s;
+      border-radius: 16px 16px 0 0;
+      min-height: 480px;
+      background: linear-gradient(180deg, #090d16 0%, #0d1222 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    /* Common layout helpers inside notch */
-    .a { position: absolute; }
-    .vc { transform: translateY(-50%); }
-    .hc { transform: translateX(-50%); }
-    .c { transform: translate(-50%, -50%); }
-    .dim { color: rgba(255,255,255,0.5); }
-    .sb { font-weight: 600; }
-    .b { font-weight: 700; }
-
-    /* Mascot Eyes */
-    .eyes {
+    /* Desktop Wallpaper Texture */
+    .desktop-bg {
       position: absolute;
       inset: 0;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.22) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
+        linear-gradient(180deg, #0a0f1d 0%, #060913 100%);
+      z-index: 1;
+    }
+
+    /* Notch Display Area inside laptop */
+    .notch-stage {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 0;
+    }
+
+    /* Real Notch Screenshot Container */
+    .kuri-notch-container {
+      position: relative;
+      max-width: 680px;
+      width: 90%;
       display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 14px;
+      transition: all 0.4s var(--spring);
+      cursor: pointer;
     }
-    .eye {
-      width: 9px;
-      height: 14px;
+    .kuri-notch-container img {
+      width: 100%;
+      height: auto;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
+      display: none;
+      transition: opacity 0.3s ease, transform 0.3s var(--spring);
+    }
+    .kuri-notch-container img.active {
+      display: block;
+      animation: popIn 0.35s var(--spring);
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.96) translateY(-8px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Collapsed Pill Simulation */
+    .collapsed-pill {
+      background: #000000;
+      border-radius: 0 0 16px 16px;
+      padding: 6px 20px;
+      display: none;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.12);
+      border-top: none;
+    }
+    .collapsed-pill.active {
+      display: flex;
+      animation: popIn 0.35s var(--spring);
+    }
+    .pill-mascot {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .pill-eye {
+      width: 7.5px;
+      height: 12px;
       border-radius: 999px;
       background: #ffffff;
-      box-shadow: 0 0 8px 1px rgba(120, 190, 255, 0.7), 0 0 16px 4px rgba(80, 140, 255, 0.3);
-      animation: blink 4.2s infinite;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+      animation: blink 4s infinite;
     }
     @keyframes blink {
       0%, 92%, 100% { transform: scaleY(1); }
       95% { transform: scaleY(0.12); }
     }
 
-    /* Idle / Closed bar */
-    .l-idle .ring {
-      width: 14px; height: 14px; border-radius: 50%;
-      background: conic-gradient(#33e07a 0 98%, rgba(51,224,122,0.28) 0);
-      -webkit-mask: radial-gradient(circle, transparent 4px, #000 4.5px);
-      mask: radial-gradient(circle, transparent 4px, #000 4.5px);
-    }
-    .bars { display: flex; gap: 2.2px; align-items: center; height: 14px; }
-    .bars i { width: 2.2px; border-radius: 2px; background: #fff; height: 35%; animation: eq 0.8s ease-in-out infinite alternate; }
-    .bars i:nth-child(2) { animation-delay: -0.25s; }
-    .bars i:nth-child(3) { animation-delay: -0.55s; }
-    .bars i:nth-child(4) { animation-delay: -0.15s; }
-    .bars i:nth-child(5) { animation-delay: -0.4s; }
-    @keyframes eq { to { height: 100%; } }
-
-    /* Music Player Layer */
-    .art {
-      border-radius: 10px;
-      background: linear-gradient(135deg, #1e3a8a, #701a75);
-      background-size: cover;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    .prog {
-      height: 3px;
-      border-radius: 2px;
-      background: rgba(255,255,255,0.2);
-      overflow: hidden;
-    }
-    .prog i {
-      display: block;
-      height: 100%;
-      width: 65%;
-      background: #fff;
-      border-radius: 2px;
-    }
-    .ctl { width: 14px; height: 14px; fill: #fff; opacity: 0.9; cursor: pointer; }
-
-    /* Lyrics Layer */
-    .lyr {
-      left: 240px; top: 22px; right: 20px; bottom: 20px;
-      overflow: hidden;
-      display: flex; flex-direction: column; justify-content: center;
-      mask-image: linear-gradient(180deg, transparent 0%, #000 25%, #000 75%, transparent 100%);
-      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 25%, #000 75%, transparent 100%);
-    }
-    .lyr-line {
-      font-size: 13.5px;
-      line-height: 1.6;
-      color: rgba(255,255,255,0.4);
-      transition: color 0.3s, transform 0.3s;
-      white-space: nowrap;
-    }
-    .lyr-line.active {
-      font-size: 15px;
-      font-weight: 700;
-      color: #ffffff;
-      transform: scale(1.03);
-    }
-    .lyr-line.active .word-glow {
-      color: var(--cyan);
-      text-shadow: 0 0 10px rgba(25, 184, 255, 0.8);
-    }
-
-    /* In-Notch Control Center Layer */
-    .cc-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      padding: 14px 18px;
-      height: 100%;
-    }
-    .cc-col {
-      background: rgba(255,255,255,0.06);
-      border-radius: 12px;
-      padding: 10px;
-      border: 1px solid rgba(255,255,255,0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .cc-col-hdr {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--cyan);
-    }
-    .cc-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      background: rgba(255,255,255,0.04);
-      padding: 5px 8px;
-      border-radius: 6px;
-    }
-    .cc-item.active {
-      background: rgba(25, 184, 255, 0.15);
-      border: 1px solid rgba(25, 184, 255, 0.3);
-    }
-    .cc-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--emerald);
-      font-weight: 600;
-    }
-
-    /* Shelf Drop Zone Layer */
-    .sh-drop {
-      position: absolute;
-      inset: 16px;
-      border: 1.5px dashed rgba(255,255,255,0.25);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+    /* Stage Hint */
+    .stage-hint {
+      margin-top: 140px;
       text-align: center;
-      transition: border-color 0.3s, background 0.3s;
-    }
-    .l-shelf.hover .sh-drop {
-      border-color: var(--cyan);
-      background: rgba(25, 184, 255, 0.08);
-    }
-    .sh-cards {
+      z-index: 10;
+      color: var(--mist);
+      font-size: 13px;
       display: flex;
-      gap: 10px;
-      margin-top: 4px;
-    }
-    .sh-item {
-      width: 44px; height: 44px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.15);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 600;
-    }
-
-    /* BMKG Weather Widget Layer */
-    .wt-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      padding: 16px 20px;
-      height: 100%;
       align-items: center;
-    }
-
-    /* Ghost Cursor for Drag Demo */
-    .ghost {
-      position: absolute;
-      z-index: 50;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-      transform: translate(-10px, -10px);
-    }
-    .ghost.in { opacity: 1; }
-    .g-thumb {
-      width: 42px; height: 42px;
-      border-radius: 8px;
-      background: #1e293b;
-      border: 1px solid rgba(255,255,255,0.3);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px;
-    }
-    .g-cur { width: 14px; height: 20px; position: absolute; left: 34px; top: 34px; }
-    .g-badge {
-      position: absolute; left: 48px; top: 22px;
-      background: var(--indigo); color: #fff;
-      font-size: 10px; font-weight: 700;
-      padding: 2px 6px; border-radius: 4px;
-      white-space: nowrap;
+      gap: 8px;
+      background: rgba(0,0,0,0.4);
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(8px);
     }
 
     /* Switcher Chips under laptop */
@@ -612,17 +384,17 @@
     }
     .sw-label {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--mist);
+      color: var(--cyan);
     }
     .sw {
       display: flex;
       gap: 8px;
       overflow-x: auto;
       max-width: 100%;
-      padding: 6px 12px;
+      padding: 8px 14px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--line);
@@ -635,25 +407,25 @@
       background: transparent;
       color: var(--mist);
       font-family: var(--font-body);
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 600;
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 999px;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s;
     }
-    .chip:hover { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+    .chip:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); }
     .chip[aria-pressed="true"] {
       background: var(--ink);
       color: var(--void);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
     }
 
     /* ===== BENTO FEATURES GRID ===== */
     .section-title {
       text-align: center;
-      max-width: 650px;
+      max-width: 680px;
       margin: 0 auto 50px;
     }
     .section-title h2 {
@@ -711,8 +483,8 @@
       border-radius: 6px;
       margin-bottom: 18px;
     }
-    .badge-cyan { background: rgba(25, 184, 255, 0.15); color: var(--cyan); }
-    .badge-violet { background: rgba(123, 75, 255, 0.15); color: var(--violet); }
+    .badge-cyan { background: rgba(56, 189, 248, 0.15); color: var(--cyan); }
+    .badge-violet { background: rgba(168, 85, 247, 0.15); color: var(--violet); }
     .badge-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
     .badge-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); }
 
@@ -728,6 +500,17 @@
       font-size: 15px;
       line-height: 1.6;
     }
+    .card-img {
+      width: 100%;
+      border-radius: 14px;
+      margin-top: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transition: transform 0.3s ease;
+    }
+    .card:hover .card-img {
+      transform: scale(1.02);
+    }
 
     /* Bento Spans */
     .col-7 { grid-column: span 7; }
@@ -735,15 +518,6 @@
     .col-6 { grid-column: span 6; }
     .col-4 { grid-column: span 4; }
     .col-12 { grid-column: span 12; }
-
-    /* Bento Mini Previews */
-    .mini-box {
-      margin-top: 24px;
-      border-radius: 16px;
-      background: rgba(3, 4, 10, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 18px;
-    }
 
     /* ===== MASCOT SHOWCASE ===== */
     .mascots-section {
@@ -793,7 +567,7 @@
       align-items: center;
       height: 260px;
       border-radius: 20px;
-      background: radial-gradient(circle, rgba(45, 91, 255, 0.2) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, transparent 70%);
       position: relative;
     }
     .mascot-img-preview {
@@ -813,7 +587,7 @@
     }
     .trust-card {
       background: linear-gradient(135deg, rgba(20, 26, 48, 0.8), rgba(10, 13, 24, 0.9));
-      border: 1px solid rgba(25, 184, 255, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.2);
       border-radius: 24px;
       padding: 40px;
     }
@@ -851,7 +625,7 @@
       max-width: 760px;
       margin: 110px auto;
       padding: 60px 24px;
-      background: radial-gradient(circle at 50% 50%, rgba(45, 91, 255, 0.15), transparent 70%);
+      background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.15), transparent 70%);
       border: 1px solid var(--line);
       border-radius: 32px;
     }
@@ -976,187 +750,41 @@
     </div>
   </header>
 
-  <!-- Laptop Preview & Simulator -->
+  <!-- Real Kuri Laptop Preview Section -->
   <section id="preview" class="preview">
-    <div class="laptop" id="laptop">
-      <div class="bezel">
-        <span class="cam"></span>
-        <div class="screen">
-          <!-- Windows 11 Bloom Wallpaper -->
-          <div class="wall" aria-hidden="true">
-            <i class="petal back" style="--r:-76deg"></i><i class="petal back" style="--r:76deg"></i>
-            <i class="petal back" style="--r:-48deg"></i><i class="petal back" style="--r:48deg"></i>
-            <i class="petal back" style="--r:-22deg"></i><i class="petal back" style="--r:22deg"></i>
-            <i class="petal" style="--r:-60deg"></i><i class="petal" style="--r:60deg"></i>
-            <i class="petal" style="--r:-36deg"></i><i class="petal" style="--r:36deg"></i>
-            <i class="petal" style="--r:-14deg"></i><i class="petal" style="--r:14deg"></i>
-            <i class="petal" style="--r:0deg"></i>
-            <span class="shine"></span>
-          </div>
+    <div class="laptop-frame">
+      <span class="laptop-cam"></span>
+      <div class="laptop-screen">
+        <div class="desktop-bg"></div>
 
-          <!-- Ghost Cursor Demo -->
-          <div class="ghost" id="ghost" aria-hidden="true">
-            <div class="g-thumb">📄 photo.jpg</div>
-            <svg class="g-cur" viewBox="0 0 15 22"><path d="M1 1v17l4.4-4.2 3 6.8 3-1.3-3-6.6H14z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>
-            <span class="g-badge">+ Shelf</span>
-          </div>
-
-          <!-- Virtual Dynamic Notch -->
-          <div class="mn-holder" id="mnHolder">
-            <div class="mn" id="mn" data-s="pet" role="img" aria-label="Kuri Notch Simulator">
-              
-              <!-- 1. Resting / Mascot Eyes -->
-              <div class="ly l-pet">
-                <div class="eyes" id="notchEyes">
-                  <i class="eye"></i>
-                  <i class="eye"></i>
-                </div>
+        <div class="notch-stage">
+          <!-- Real Kuri Notch Images -->
+          <div class="kuri-notch-container" id="kuriNotch">
+            <!-- 1. Real Control Center with Wi-Fi List -->
+            <img src="assets/kuri_real_control_center.png" id="img-control" class="active" alt="Kuri Control Center">
+            <!-- 2. Real Home & Weather -->
+            <img src="assets/kuri_real_home_weather.png" id="img-home" alt="Kuri Home & Weather">
+            <!-- 3. Real Media Player -->
+            <img src="assets/kuri_real_music_player.png" id="img-music" alt="Kuri Music Player">
+            <!-- 4. Real Syllable Lyrics -->
+            <img src="assets/kuri_real_media_lyrics.png" id="img-lyrics" alt="Kuri Lyrics">
+            <!-- 5. Real Centered Shelf -->
+            <img src="assets/kuri_real_shelf_centered.png" id="img-shelf" alt="Kuri Shelf">
+            <!-- 6. Real PhoneShare with QR -->
+            <img src="assets/kuri_real_shelf_phoneshare.png" id="img-phoneshare" alt="Kuri PhoneShare">
+            <!-- 7. Real Collapsed Notch Pill -->
+            <div class="collapsed-pill" id="pill-collapsed">
+              <span style="font-size:12px;font-weight:700;color:var(--mist)">13:45</span>
+              <div class="pill-mascot">
+                <div class="pill-eye"></div>
+                <div class="pill-eye"></div>
               </div>
-
-              <!-- 2. Idle / Closed Minimal -->
-              <div class="ly l-idle">
-                <span class="a ring c" style="left:22px;top:15px"></span>
-                <span class="a b c js-time" style="left:78px;top:15px;font-size:15px">13:45</span>
-                <span class="a bars c" style="left:134px;top:15px"><i></i><i></i><i></i><i></i><i></i></span>
-              </div>
-
-              <!-- 3. Music Player -->
-              <div class="ly l-music">
-                <span class="a art" style="left:20px;top:18px;width:60px;height:60px;background:#1e1b4b url('assets/kuri-logo.svg') center/cover;"></span>
-                <span class="a vc sb" style="left:94px;top:38px;font-size:15px">Kangen</span>
-                <span class="a vc dim" style="left:94px;top:56px;font-size:12px">Dewa 19 • Terbaik Terbaik</span>
-                <span class="a vc dim" style="left:22px;top:92px;font-size:11px">03:22</span>
-                <span class="a prog vc" style="left:64px;top:92px;width:280px"><i></i></span>
-                <span class="a vc dim" style="right:22px;top:92px;font-size:11px">-01:38</span>
-                <div class="a" style="left:160px;top:118px;display:flex;gap:24px;align-items:center;">
-                  <svg class="ctl" viewBox="0 0 24 24"><path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z"/></svg>
-                  <svg class="ctl" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
-                  <svg class="ctl" viewBox="0 0 24 24"><path d="m13 6 8 6-8 6zM3 6l8 6-8 6z"/></svg>
-                </div>
-              </div>
-
-              <!-- 4. Syllable Karaoke Lyrics -->
-              <div class="ly l-lyrics">
-                <span class="a art" style="left:20px;top:20px;width:54px;height:54px;background:#1e1b4b url('assets/kuri-logo.svg') center/cover;"></span>
-                <span class="a vc sb" style="left:86px;top:38px;font-size:14px">Waktu Yang Salah</span>
-                <span class="a vc dim" style="left:86px;top:54px;font-size:11px">Fiersa Besari (feat. Thantri)</span>
-                <span class="a" style="left:225px;top:18px;width:1px;height:104px;background:rgba(255,255,255,0.12)"></span>
-                <div class="lyr">
-                  <div class="lyr-line dim">Bukan mawar penghias angkasa</div>
-                  <div class="lyr-line active">
-                    <span class="word-glow">Semua kata</span> rindumu semakin membuatku
-                  </div>
-                  <div class="lyr-line dim">Tak berdaya menahan rasa inginku</div>
-                </div>
-              </div>
-
-              <!-- 5. In-Notch Control Center -->
-              <div class="ly l-control">
-                <div class="cc-grid">
-                  <div class="cc-col">
-                    <div class="cc-col-hdr">
-                      <span>📶 Wi-Fi</span>
-                      <span style="font-size:9px;color:var(--emerald);">Scanning</span>
-                    </div>
-                    <div class="cc-item active">
-                      <span>WiFi | RikuuXMail</span>
-                      <span class="cc-badge">Connected</span>
-                    </div>
-                    <div class="cc-item">
-                      <span class="dim">By.Mikrotik</span>
-                      <span style="font-size:10px;color:var(--mist)">Connect</span>
-                    </div>
-                  </div>
-                  <div class="cc-col">
-                    <div class="cc-col-hdr">
-                      <span>🎧 Audio & Bluetooth</span>
-                    </div>
-                    <div class="cc-item active">
-                      <span>FxSound Speakers</span>
-                      <span class="cc-badge">100%</span>
-                    </div>
-                    <div class="cc-item">
-                      <span class="dim">WH-1000XM5</span>
-                      <span style="font-size:10px;color:var(--mist)">Paired</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 6. File Shelf & PhoneShare -->
-              <div class="ly l-shelf" id="shelfLayer">
-                <div class="sh-drop">
-                  <span class="sb" style="font-size:13px">Drag & Drop Files Here</span>
-                  <span class="dim" style="font-size:11px">Hold files temporarily or share with PhoneShare</span>
-                  <div class="sh-cards">
-                    <div class="sh-item">📸 IMG_1</div>
-                    <div class="sh-item">📄 Note</div>
-                    <div class="sh-item">📁 Zip</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 7. BMKG Indonesian Weather & Widgets -->
-              <div class="ly l-widgets">
-                <div class="wt-grid">
-                  <div>
-                    <div style="font-size:11px;color:var(--cyan);font-weight:700;text-transform:uppercase;">BMKG Indonesia</div>
-                    <div style="font-size:26px;font-weight:800;margin:2px 0;">29°C</div>
-                    <div style="font-size:12px;color:var(--mist);">Duri, Riau • Partly Cloudy</div>
-                  </div>
-                  <div style="border-left:1px solid rgba(255,255,255,0.1);padding-left:16px;">
-                    <div style="font-size:11px;color:var(--emerald);font-weight:700;">BATTERY: 98%</div>
-                    <div style="font-size:12px;margin:4px 0;">Plugged In (AC)</div>
-                    <div style="font-size:11px;color:var(--mist);">CPU: 0.3% • RAM: 74MB</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 8. Focus Timer (Pomodoro) -->
-              <div class="ly l-pomo">
-                <div style="display:flex;align-items:center;justify-content:center;height:100%;gap:24px;">
-                  <div style="text-align:center;">
-                    <div class="dim" style="font-size:11px;text-transform:uppercase;">Focus Round 2/4</div>
-                    <div style="font-size:32px;font-weight:800;letter-spacing:-0.03em;">21:45</div>
-                  </div>
-                  <div style="width:1px;height:70px;background:rgba(255,255,255,0.1)"></div>
-                  <div style="font-size:12px;">
-                    <div style="color:var(--violet);font-weight:700;">DEEP WORK</div>
-                    <div class="dim" style="margin-top:2px;">Break in 21 mins</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 9. Water Reminder -->
-              <div class="ly l-water">
-                <div style="display:flex;align-items:center;justify-content:center;height:100%;gap:20px;">
-                  <div style="font-size:34px;">💧</div>
-                  <div>
-                    <div style="font-size:16px;font-weight:700;">Stay Hydrated!</div>
-                    <div class="dim" style="font-size:12px;">5 of 8 glasses drank today (1,250 ml)</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 10. Headphones Connected -->
-              <div class="ly l-bt">
-                <div style="display:flex;align-items:center;justify-content:center;height:100%;gap:12px;">
-                  <span style="font-size:18px;">🎧</span>
-                  <div style="font-size:13px;font-weight:600;">WH-1000XM5 Connected</div>
-                  <span class="cc-badge">85%</span>
-                </div>
-              </div>
-
-              <!-- 11. Charging -->
-              <div class="ly l-charge">
-                <div style="display:flex;align-items:center;justify-content:center;height:100%;gap:12px;">
-                  <span style="font-size:18px;color:#facc15;">⚡</span>
-                  <div style="font-size:13px;font-weight:600;">Fast Charging: 98%</div>
-                  <span class="dim" style="font-size:11px;">10m until full</span>
-                </div>
-              </div>
-
+              <span style="font-size:12px;color:var(--emerald);font-weight:600">98% ⚡</span>
             </div>
+          </div>
+
+          <div class="stage-hint">
+            <span>✨ Click on the notch or select modes below to explore the real Kuri interface</span>
           </div>
         </div>
       </div>
@@ -1164,19 +792,15 @@
 
     <!-- Mode Switcher Chips -->
     <div class="sw-container">
-      <div class="sw-label">Interactive Notch Simulator</div>
+      <div class="sw-label">Real Kuri Modules Showcase</div>
       <div class="sw" id="sw">
-        <button class="chip" data-s="pet" aria-pressed="true">😴 Mascot Eyes</button>
-        <button class="chip" data-s="idle">🔒 Closed Notch</button>
-        <button class="chip" data-s="music">🎵 Music Player</button>
-        <button class="chip" data-s="lyrics">🎤 Syllable Lyrics</button>
-        <button class="chip" data-s="control">📶 Control Center</button>
-        <button class="chip" data-s="shelf">📁 File Shelf</button>
-        <button class="chip" data-s="widgets">🌦️ BMKG Weather</button>
-        <button class="chip" data-s="pomo">⏱️ Focus Timer</button>
-        <button class="chip" data-s="water">💧 Water Tracker</button>
-        <button class="chip" data-s="bt">🎧 Headphones</button>
-        <button class="chip" data-s="charge">⚡ Charging</button>
+        <button class="chip" data-target="control" aria-pressed="true">📶 Control Center</button>
+        <button class="chip" data-target="home">🏠 Home & Weather</button>
+        <button class="chip" data-target="music">🎵 Music Player</button>
+        <button class="chip" data-target="lyrics">🎤 Syllable Lyrics</button>
+        <button class="chip" data-target="shelf">📁 Centered Shelf</button>
+        <button class="chip" data-target="phoneshare">📱 PhoneShare QR</button>
+        <button class="chip" data-target="collapsed">🔒 Collapsed Notch</button>
       </div>
     </div>
   </section>
@@ -1185,7 +809,7 @@
   <section id="mascots" class="mascots-section">
     <div class="section-title">
       <h2>Living Companions in Your Notch</h2>
-      <p>Give your desktop a charming soul. Switch anytime between four unique mascots.</p>
+      <p>Give your desktop a charming soul. Switch anytime between four unique companions.</p>
     </div>
 
     <div class="mascot-tabs" id="mascotTabs">
@@ -1216,13 +840,13 @@
         <h3 id="mascotTitle">Notch Eyes</h3>
         <p id="mascotDesc" style="margin-bottom:24px;">Minimalist, highly expressive twin pill eyes that live directly inside the notch contour. Automatically centers when your notch is idle, blinks with lifelike micro-physics, and shifts smoothly when media plays.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="mini-box" style="margin-top:0;">
-            <div style="font-size:11px;color:var(--mist);">REACTION SPEED</div>
-            <div style="font-size:16px;font-weight:700;margin-top:4px;">120 FPS Easing</div>
+          <div style="background:rgba(3,4,10,0.6);border:1px solid rgba(255,255,255,0.08);padding:14px;border-radius:12px;">
+            <div style="font-size:11px;color:var(--mist);">ANIMATION ENGINE</div>
+            <div style="font-size:15px;font-weight:700;margin-top:4px;">DirectComposition Easing</div>
           </div>
-          <div class="mini-box" style="margin-top:0;">
+          <div style="background:rgba(3,4,10,0.6);border:1px solid rgba(255,255,255,0.08);padding:14px;border-radius:12px;">
             <div style="font-size:11px;color:var(--mist);">PLACEMENT</div>
-            <div style="font-size:16px;font-weight:700;margin-top:4px;">Auto-Centered</div>
+            <div style="font-size:15px;font-weight:700;margin-top:4px;">Auto-Centered on Idle</div>
           </div>
         </div>
       </div>
@@ -1233,63 +857,41 @@
   <section id="features" style="padding-top:120px;">
     <div class="section-title">
       <h2>Everything You Need, One Glance Away</h2>
-      <p>Engineered for Windows 11 & 10 to turn wasted bezel space into high-velocity productivity.</p>
+      <p>Engineered in .NET 8 WPF to turn wasted bezel space into high-velocity productivity.</p>
     </div>
 
     <div class="bento-grid">
       
-      <!-- Syllable Lyrics -->
-      <article class="card col-7">
-        <span class="card-badge badge-cyan">Syllable Karaoke Sync</span>
-        <h3>Real-time Syllable-Level Lyrics</h3>
-        <p>Integrates directly with <b>lrc.red</b> and Spotify TTML streams to highlight lyrics word-by-word with smooth karaoke gradient glow. Never lose track of your favorite song again.</p>
-        <div class="mini-box">
-          <div style="font-size:12px;color:var(--cyan);font-weight:600;margin-bottom:6px;">LIVE PREVIEW • TTML / LRC.RED</div>
-          <div style="font-size:16px;font-weight:700;">
-            <span style="color:var(--cyan);text-shadow:0 0 10px rgba(25,184,255,0.7);">Semua kata</span> rindumu semakin membuatku...
-          </div>
-        </div>
-      </article>
-
       <!-- In-Notch Control Center -->
-      <article class="card col-5" id="control-center">
+      <article class="card col-7" id="control-center">
         <span class="card-badge badge-violet">Fixed-Height In-Notch</span>
         <h3>Direct Control Center</h3>
-        <p>Manage Wi-Fi networks, Bluetooth devices, and audio outputs directly inside the notch with zero oversized popups or clipped buttons.</p>
-        <div class="mini-box" style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;">
-            <span>📶 WiFi | RikuuXMail</span>
-            <span style="color:var(--emerald);">✓ Connected</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--mist);">
-            <span>🎧 FxSound Speakers</span>
-            <span>100% Volume</span>
-          </div>
-        </div>
+        <p>Manage Wi-Fi networks, Bluetooth devices, and audio outputs directly inside the notch with fixed 128px scrollable lists and zero oversized popups or clipped buttons.</p>
+        <img src="assets/kuri_real_control_center.png" class="card-img" alt="Kuri Real Control Center">
+      </article>
+
+      <!-- Syllable Lyrics -->
+      <article class="card col-5">
+        <span class="card-badge badge-cyan">Syllable Karaoke Sync</span>
+        <h3>Real-time Syllable-Level Lyrics</h3>
+        <p>Integrates directly with <b>lrc.red</b> and Spotify TTML streams to highlight lyrics word-by-word with smooth karaoke gradient glow.</p>
+        <img src="assets/kuri_real_media_lyrics.png" class="card-img" alt="Kuri Real Lyrics">
       </article>
 
       <!-- File Shelf & PhoneShare -->
-      <article class="card col-5">
+      <article class="card col-6">
         <span class="card-badge badge-emerald">Drag & Drop Staging</span>
         <h3>Centered File Shelf & PhoneShare</h3>
-        <p>Drag any image, document, or code snippet up to the notch to hold it temporarily. Send it directly to your Android or iPhone over local Wi-Fi without cables.</p>
+        <p>Drag any image, document, or code snippet up to the notch to hold it temporarily. Send it directly to your phone via local QR Wi-Fi without cables.</p>
+        <img src="assets/kuri_real_shelf_centered.png" class="card-img" alt="Kuri Real Centered Shelf">
       </article>
 
-      <!-- BMKG Weather -->
-      <article class="card col-7">
+      <!-- BMKG Weather & Home -->
+      <article class="card col-6">
         <span class="card-badge badge-amber">Indonesian Meteorological Data</span>
         <h3>Real-Time BMKG Weather Integration</h3>
-        <p>Live forecasts directly from Badan Meteorologi, Klimatologi, dan Geofisika (BMKG). Displays localized temperature, precipitation probability, and weather conditions for hundreds of Indonesian districts.</p>
-        <div class="mini-box" style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-size:12px;color:var(--mist);">Duri, Mandau, Bengkalis, Riau</div>
-            <div style="font-size:22px;font-weight:800;margin-top:2px;">29°C • Cerah Berawan</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:11px;color:var(--cyan);font-weight:700;">BMKG API</div>
-            <div style="font-size:12px;color:var(--mist);">0 mm Rain</div>
-          </div>
-        </div>
+        <p>Live forecasts directly from BMKG. Displays localized temperature, precipitation probability, and weather conditions for hundreds of Indonesian districts.</p>
+        <img src="assets/kuri_real_home_weather.png" class="card-img" alt="Kuri Real Home Weather">
       </article>
 
       <!-- Performance Stats -->
@@ -1308,8 +910,8 @@
             <div style="color:var(--mist);font-size:13px;margin-top:4px;">Offline & Private</div>
           </div>
           <div>
-            <div style="font-size:36px;font-weight:800;color:var(--violet);">0 ms</div>
-            <div style="color:var(--mist);font-size:13px;margin-top:4px;">Input Latency</div>
+            <div style="font-size:36px;font-weight:800;color:var(--violet);">11 Tabs</div>
+            <div style="color:var(--mist);font-size:13px;margin-top:4px;">Unified Quick Dock</div>
           </div>
         </div>
       </article>
@@ -1432,105 +1034,59 @@
 
   <!-- Scripts -->
   <script>
-    // 1. Dynamic Responsive Scaling (--u)
-    function fit() {
-      const lap = document.getElementById("laptop");
-      if (!lap) return;
-      const w = lap.getBoundingClientRect().width;
-      const u = Math.max(0.68, Math.min(1.35, w / 640));
-      document.documentElement.style.setProperty("--u", u.toFixed(3));
-    }
-    window.addEventListener("resize", fit);
-    fit();
-
-    // 2. Virtual Notch State Switcher
-    const mn = document.getElementById("mn");
+    // 1. Real Kuri Notch Switcher
     const chips = document.querySelectorAll(".sw .chip");
-    let shelfTimer = 0;
+    const notchImages = document.querySelectorAll(".kuri-notch-container img");
+    const collapsedPill = document.getElementById("pill-collapsed");
+    let currentMode = "control";
 
-    function showState(state) {
-      if (!mn) return;
-      mn.dataset.s = state;
-      chips.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === state)));
+    function setNotchMode(target) {
+      currentMode = target;
+      chips.forEach(c => c.setAttribute("aria-pressed", String(c.dataset.target === target)));
 
-      // Trigger Shelf Drag Demo if Shelf selected
-      if (state === "shelf") {
-        runShelfDemo();
+      notchImages.forEach(img => img.classList.remove("active"));
+      if (collapsedPill) collapsedPill.classList.remove("active");
+
+      if (target === "collapsed") {
+        if (collapsedPill) collapsedPill.classList.add("active");
       } else {
-        clearTimeout(shelfTimer);
-        const ghost = document.getElementById("ghost");
-        if (ghost) ghost.classList.remove("in");
-        const shelfLy = document.getElementById("shelfLayer");
-        if (shelfLy) shelfLy.classList.remove("hover");
+        const el = document.getElementById("img-" + target);
+        if (el) el.classList.add("active");
       }
     }
 
-    chips.forEach(b => {
-      b.addEventListener("click", () => showState(b.dataset.s));
+    chips.forEach(btn => {
+      btn.addEventListener("click", () => setNotchMode(btn.dataset.target));
     });
 
-    // Clicking the notch cycles or expands it
-    mn.addEventListener("click", () => {
-      if (mn.dataset.s === "idle" || mn.dataset.s === "pet") {
-        showState("music");
-      } else {
-        showState("pet");
-      }
-    });
-
-    // 3. Shelf Drag & Drop Simulation
-    function runShelfDemo() {
-      const ghost = document.getElementById("ghost");
-      const shelfLy = document.getElementById("shelfLayer");
-      if (!ghost || !shelfLy) return;
-
-      const u = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--u")) || 1;
-      ghost.classList.remove("in");
-      ghost.style.left = "28%";
-      ghost.style.top = (190 * u) + "px";
-
-      shelfTimer = setTimeout(() => {
-        if (mn.dataset.s !== "shelf") return;
-        ghost.classList.add("in");
-
-        shelfTimer = setTimeout(() => {
-          if (mn.dataset.s !== "shelf") return;
-          ghost.style.transition = "all 0.9s cubic-bezier(0.2, 0.85, 0.25, 1)";
-          ghost.style.left = "50%";
-          ghost.style.top = (60 * u) + "px";
-
-          shelfTimer = setTimeout(() => {
-            if (mn.dataset.s !== "shelf") return;
-            shelfLy.classList.add("hover");
-
-            shelfTimer = setTimeout(() => {
-              if (mn.dataset.s !== "shelf") return;
-              ghost.classList.remove("in");
-              shelfLy.classList.remove("hover");
-              // Loop demo after 3s
-              shelfTimer = setTimeout(runShelfDemo, 3500);
-            }, 600);
-          }, 950);
-        }, 300);
-      }, 400);
+    // Clicking notch toggles between collapsed and expanded
+    const notchCont = document.getElementById("kuriNotch");
+    if (notchCont) {
+      notchCont.addEventListener("click", () => {
+        if (currentMode === "collapsed") {
+          setNotchMode("control");
+        } else {
+          setNotchMode("collapsed");
+        }
+      });
     }
 
-    // 4. Mascot Showcase Switcher
+    // 2. Mascot Showcase Switcher
     const mascotData = {
       eyes: {
         img: "assets/notch_eyes.png",
         tag: "Dynamic Pill Eyes",
         title: "Notch Eyes",
         desc: "Minimalist, highly expressive twin pill eyes that live directly inside the notch contour. Automatically centers when your notch is idle, blinks with lifelike micro-physics, and shifts smoothly when media plays.",
-        speed: "120 FPS Easing",
-        placement: "Auto-Centered"
+        engine: "DirectComposition Easing",
+        placement: "Auto-Centered on Idle"
       },
       mochi: {
         img: "assets/pastel_mochi.png",
         tag: "Bouncy Companion",
         title: "Pastel Mochi",
         desc: "Soft pastel-toned bouncy creature that squishes when files drop onto the notch. Reacts happily to music tempo and yawns gently when you take a work break.",
-        speed: "Squish & Stretch",
+        engine: "Squish & Stretch Physics",
         placement: "Dynamic Floating"
       },
       astro: {
@@ -1538,7 +1094,7 @@
         tag: "Space Explorer",
         title: "Astro Mascot",
         desc: "Equipped with a tiny helmet reflection and starpack thrusters. Scans your desktop for downloads and cheers when you finish a Pomodoro round.",
-        speed: "Zero-G Drift",
+        engine: "Zero-G Drift Motion",
         placement: "Orbit Mode"
       },
       egg: {
@@ -1546,7 +1102,7 @@
         tag: "Cozy Companion",
         title: "Egg Mascot",
         desc: "Warm golden egg with tiny expressions. A serene, calming presence designed for focus sessions and late-night coding.",
-        speed: "Wobble Physics",
+        engine: "Wobble Physics",
         placement: "Nestled Center"
       }
     };
@@ -1566,17 +1122,7 @@
       });
     });
 
-    // 5. Live Clock Update
-    function updateClock() {
-      const now = new Date();
-      const h = String(now.getHours()).padStart(2, "0");
-      const m = String(now.getMinutes()).padStart(2, "0");
-      document.querySelectorAll(".js-time").forEach(el => el.textContent = `${h}:${m}`);
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // 6. RAM Count-up on scroll
+    // 3. RAM Count-up on scroll
     (() => {
       const el = document.querySelector(".js-ram");
       if (!el || !("IntersectionObserver" in window)) return;
@@ -1595,7 +1141,7 @@
       io.observe(el);
     })();
 
-    // 7. FAQ Accordion Toggle
+    // 4. FAQ Accordion Toggle
     document.querySelectorAll(".faq-q").forEach(btn => {
       btn.addEventListener("click", () => {
         const item = btn.closest(".faq-item");
