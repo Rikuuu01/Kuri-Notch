@@ -145,15 +145,30 @@ namespace NotchWin.Controls
             IsVisibleChanged += OnIsVisibleChanged;
         }
 
+        private void SubscribeServiceEvents()
+        {
+            PetCompanionService.Instance.MascotAlertTriggered -= OnServiceMascotAlert;
+            PetCompanionService.Instance.MascotAlertTriggered += OnServiceMascotAlert;
+            PetCompanionService.Instance.MascotAlertCleared -= OnServiceMascotAlertCleared;
+            PetCompanionService.Instance.MascotAlertCleared += OnServiceMascotAlertCleared;
+            PetCompanionService.Instance.MusicStateChanged -= OnServiceMusicChanged;
+            PetCompanionService.Instance.MusicStateChanged += OnServiceMusicChanged;
+            PetCompanionService.Instance.StateChanged -= OnServiceStateChanged;
+            PetCompanionService.Instance.StateChanged += OnServiceStateChanged;
+        }
+
+        private void UnsubscribeServiceEvents()
+        {
+            PetCompanionService.Instance.MascotAlertTriggered -= OnServiceMascotAlert;
+            PetCompanionService.Instance.MascotAlertCleared -= OnServiceMascotAlertCleared;
+            PetCompanionService.Instance.MusicStateChanged -= OnServiceMusicChanged;
+            PetCompanionService.Instance.StateChanged -= OnServiceStateChanged;
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             ApplyCompactMode();
-
-            // Connect to global PetCompanionService
-            PetCompanionService.Instance.MascotAlertTriggered += OnServiceMascotAlert;
-            PetCompanionService.Instance.MascotAlertCleared += OnServiceMascotAlertCleared;
-            PetCompanionService.Instance.MusicStateChanged += OnServiceMusicChanged;
-            PetCompanionService.Instance.StateChanged += OnServiceStateChanged;
+            SubscribeServiceEvents();
 
             _musicOn = PetCompanionService.Instance.IsMusicPlaying;
             _asleep = PetCompanionService.Instance.State == PetState.Sleeping;
@@ -166,16 +181,12 @@ namespace NotchWin.Controls
             {
                 EnterBaseline();
             }
-            _sleepTimer.Start();
+            if (!_sleepTimer.IsEnabled) _sleepTimer.Start();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            PetCompanionService.Instance.MascotAlertTriggered -= OnServiceMascotAlert;
-            PetCompanionService.Instance.MascotAlertCleared -= OnServiceMascotAlertCleared;
-            PetCompanionService.Instance.MusicStateChanged -= OnServiceMusicChanged;
-            PetCompanionService.Instance.StateChanged -= OnServiceStateChanged;
-
+            UnsubscribeServiceEvents();
             StopAll();
             _sleepTimer.Stop();
         }
@@ -184,6 +195,7 @@ namespace NotchWin.Controls
         {
             if (IsVisible)
             {
+                SubscribeServiceEvents();
                 ApplyCompactMode();
                 _musicOn = PetCompanionService.Instance.IsMusicPlaying;
                 _asleep = PetCompanionService.Instance.State == PetState.Sleeping;
@@ -196,10 +208,13 @@ namespace NotchWin.Controls
                 {
                     EnterBaseline();
                 }
+                if (!_sleepTimer.IsEnabled) _sleepTimer.Start();
             }
             else
             {
                 StopAll();
+                _sleepTimer.Stop();
+                UnsubscribeServiceEvents();
             }
         }
 

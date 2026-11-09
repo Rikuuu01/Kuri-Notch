@@ -19,6 +19,11 @@ namespace NotchWin.Controls
         {
             InitializeComponent();
 
+            // Subscribe ke perubahan gaya maskot sejak inisialisasi agar instance di container
+            // collapsed selalu terbarui secara konsisten saat gaya diganti di Settings.
+            _pet.StyleChanged += Pet_StyleChanged;
+            UpdateStyleVisibility();
+
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             IsVisibleChanged += OnIsVisibleChanged;
@@ -26,6 +31,7 @@ namespace NotchWin.Controls
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            _pet.StyleChanged -= Pet_StyleChanged;
             _pet.StyleChanged += Pet_StyleChanged;
 
             UpdateStyleVisibility();
@@ -33,13 +39,17 @@ namespace NotchWin.Controls
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            _pet.StyleChanged -= Pet_StyleChanged;
+            // Jangan unsubscribe _pet.StyleChanged di sini karena control ini menetap di NotchWindow.
+            // Saat ExpandedContentGrid collapse, WPF memanggil Unloaded pada child. Jika di-unhook di sini,
+            // maskot di header expand tidak akan menerima event StyleChanged ketika user mengganti maskot di Settings.
         }
 
         private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (IsVisible)
             {
+                _pet.StyleChanged -= Pet_StyleChanged;
+                _pet.StyleChanged += Pet_StyleChanged;
                 UpdateStyleVisibility();
             }
         }
@@ -49,8 +59,13 @@ namespace NotchWin.Controls
             Dispatcher.InvokeAsync(UpdateStyleVisibility);
         }
 
-        private void UpdateStyleVisibility()
+        public void UpdateStyleVisibility()
         {
+            if (PastelMascot == null || AstroMascot == null || EggMascot == null || NotchEyes == null)
+            {
+                return;
+            }
+
             PastelMascot.Visibility = (_pet.Style == PetStyle.PastelMochi) ? Visibility.Visible : Visibility.Collapsed;
             AstroMascot.Visibility = (_pet.Style == PetStyle.AstroMascot) ? Visibility.Visible : Visibility.Collapsed;
             EggMascot.Visibility = (_pet.Style == PetStyle.EggMascot) ? Visibility.Visible : Visibility.Collapsed;

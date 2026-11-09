@@ -1400,7 +1400,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" VerticalAlignment="Center" Margin="2,0,10,0" Foreground="#A1A1AA" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="11" FontWeight="SemiBold" Text="{Binding Clock.FullDate}" />
             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-              <controls:MochiPetControl Width="34" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" ToolTip="Pet Companion" Visibility="{Binding IsPetEnabled, Converter={StaticResource BoolToVis}}" />
+              <controls:MochiPetControl x:Name="ExpandedHeaderPet" Width="34" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" ToolTip="Pet Companion" Visibility="{Binding IsPetEnabled, Converter={StaticResource BoolToVis}}" />
               <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" Margin="0,0,4,0" Padding="2" VerticalAlignment="Center" Command="{Binding OpenSettingsCommand}" FocusVisualStyle="{x:Null}" ToolTip="{Binding L10n[Tab.Settings]}" Click="SettingsButton_Click">
                 <Control.Template>
                   <ControlTemplate TargetType="{x:Type Button}">

@@ -3271,7 +3271,7 @@ public partial class NotchWindow : Window
 	/// <summary>Sembunyikan pet collapsed selama sapaan agar tidak muncul di posisi tujuan sebelum overlay tiba.</summary>
 	private void HideGreetingTargetPets()
 	{
-		foreach (FrameworkElement? pet in new FrameworkElement?[] { ClockCollapsedPet, MediaCollapsedPet, NotificationCollapsedPet })
+		foreach (FrameworkElement? pet in new FrameworkElement?[] { ClockCollapsedPet, MediaCollapsedPet, TimerCollapsedPet, NotificationCollapsedPet })
 		{
 			if (pet == null) continue;
 			pet.BeginAnimation(UIElement.OpacityProperty, null);
@@ -3282,7 +3282,7 @@ public partial class NotchWindow : Window
 
 	private void RestoreGreetingTargetPets()
 	{
-		foreach (FrameworkElement? pet in new FrameworkElement?[] { ClockCollapsedPet, MediaCollapsedPet, NotificationCollapsedPet })
+		foreach (FrameworkElement? pet in new FrameworkElement?[] { ClockCollapsedPet, MediaCollapsedPet, TimerCollapsedPet, NotificationCollapsedPet })
 		{
 			if (pet == null) continue;
 			pet.BeginAnimation(UIElement.OpacityProperty, null);
@@ -8501,6 +8501,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 			ExpandedContentGrid.IsHitTestVisible = true;
 
 			ExpandedContentGrid.Visibility = Visibility.Visible;
+			ExpandedHeaderPet?.UpdateStyleVisibility();
 
 
 

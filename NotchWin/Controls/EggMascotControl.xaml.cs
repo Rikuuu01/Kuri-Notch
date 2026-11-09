@@ -184,13 +184,32 @@ namespace NotchWin.Controls
             MouseLeftButtonUp += OnPetted;
         }
 
+        private void SubscribeServiceEvents()
+        {
+            PetCompanionService.Instance.MascotAlertTriggered -= OnServiceMascotAlert;
+            PetCompanionService.Instance.MascotAlertTriggered += OnServiceMascotAlert;
+            PetCompanionService.Instance.MascotAlertCleared -= OnServiceMascotAlertCleared;
+            PetCompanionService.Instance.MascotAlertCleared += OnServiceMascotAlertCleared;
+            PetCompanionService.Instance.MusicStateChanged -= OnServiceMusicChanged;
+            PetCompanionService.Instance.MusicStateChanged += OnServiceMusicChanged;
+            PetCompanionService.Instance.StateChanged -= OnServiceStateChanged;
+            PetCompanionService.Instance.StateChanged += OnServiceStateChanged;
+            PetCompanionService.Instance.NotchExpandedChanged -= OnServiceNotchExpandedChanged;
+            PetCompanionService.Instance.NotchExpandedChanged += OnServiceNotchExpandedChanged;
+        }
+
+        private void UnsubscribeServiceEvents()
+        {
+            PetCompanionService.Instance.MascotAlertTriggered -= OnServiceMascotAlert;
+            PetCompanionService.Instance.MascotAlertCleared -= OnServiceMascotAlertCleared;
+            PetCompanionService.Instance.MusicStateChanged -= OnServiceMusicChanged;
+            PetCompanionService.Instance.StateChanged -= OnServiceStateChanged;
+            PetCompanionService.Instance.NotchExpandedChanged -= OnServiceNotchExpandedChanged;
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            PetCompanionService.Instance.MascotAlertTriggered += OnServiceMascotAlert;
-            PetCompanionService.Instance.MascotAlertCleared += OnServiceMascotAlertCleared;
-            PetCompanionService.Instance.MusicStateChanged += OnServiceMusicChanged;
-            PetCompanionService.Instance.StateChanged += OnServiceStateChanged;
-            PetCompanionService.Instance.NotchExpandedChanged += OnServiceNotchExpandedChanged;
+            SubscribeServiceEvents();
             _music = PetCompanionService.Instance.IsMusicPlaying;
             _sleeping = PetCompanionService.Instance.State == PetState.Sleeping;
 
@@ -221,6 +240,7 @@ namespace NotchWin.Controls
         {
             if (IsVisible)
             {
+                SubscribeServiceEvents();
                 _music = PetCompanionService.Instance.IsMusicPlaying;
                 _sleeping = PetCompanionService.Instance.State == PetState.Sleeping;
 
@@ -249,11 +269,7 @@ namespace NotchWin.Controls
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            PetCompanionService.Instance.MascotAlertTriggered -= OnServiceMascotAlert;
-            PetCompanionService.Instance.MascotAlertCleared -= OnServiceMascotAlertCleared;
-            PetCompanionService.Instance.MusicStateChanged -= OnServiceMusicChanged;
-            PetCompanionService.Instance.StateChanged -= OnServiceStateChanged;
-            PetCompanionService.Instance.NotchExpandedChanged -= OnServiceNotchExpandedChanged;
+            UnsubscribeServiceEvents();
 
             _pupilTimer.Stop();
             _blinkTimer.Stop();
