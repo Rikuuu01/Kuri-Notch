@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Rikuuu01/Kuri-Notch/releases/latest"><img src="https://img.shields.io/badge/Release-v1.1-38BDF8?style=for-the-badge&logo=windows&logoColor=white" alt="Release v1.1"></a>
+  <a href="https://github.com/Rikuuu01/Kuri-Notch/releases/latest"><img src="https://img.shields.io/badge/Release-v1.2-38BDF8?style=for-the-badge&logo=windows&logoColor=white" alt="Release v1.2"></a>
   <a href="https://dotnet.microsoft.com/download/dotnet/8.0"><img src="https://img.shields.io/badge/.NET-8.0%20WPF-818CF8?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 8.0 WPF"></a>
   <a href="#"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-34D399?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 10/11"></a>
   <a href="#"><img src="https://img.shields.io/badge/Arch-x64%20%7C%20x86-F472B6?style=for-the-badge" alt="x64 / x86"></a>
@@ -35,10 +35,10 @@
 
 | Package Type | Architecture | Download Link | Description |
 | :--- | :---: | :--- | :--- |
-| **Setup Installer** *(Recommended)* | **x64 (64-bit)** | [⬇️ **Kuri-v1.1-Setup-x64.exe**](release/Kuri-v1.1-win-x64.zip) | Full wizard installer with autostart and Start Menu shortcuts |
-| **Setup Installer** | **x86 (32-bit)** | [⬇️ **Kuri-v1.1-Setup-x86.exe**](release/Kuri-v1.1-win-x86.zip) | For 32-bit Windows devices and lightweight tablets |
-| **Portable ZIP** | **x64 (64-bit)** | [⬇️ **Kuri-v1.1-win-x64.zip**](release/Kuri-v1.1-win-x64.zip) | Standalone portable executable. Extract and run `NotchWin.exe` |
-| **Portable ZIP** | **x86 (32-bit)** | [⬇️ **Kuri-v1.1-win-x86.zip**](release/Kuri-v1.1-win-x86.zip) | Standalone portable 32-bit executable |
+| **Setup Installer** *(Recommended)* | **x64 (64-bit)** | [⬇️ **Kuri-v1.2-Setup-x64.exe**](release/Kuri-v1.2-win-x64.zip) | Full wizard installer with autostart and Start Menu shortcuts |
+| **Setup Installer** | **x86 (32-bit)** | [⬇️ **Kuri-v1.2-Setup-x86.exe**](release/Kuri-v1.2-win-x86.zip) | For 32-bit Windows devices and lightweight tablets |
+| **Portable ZIP** | **x64 (64-bit)** | [⬇️ **Kuri-v1.2-win-x64.zip**](release/Kuri-v1.2-win-x64.zip) | Standalone portable executable. Extract and run `NotchWin.exe` |
+| **Portable ZIP** | **x86 (32-bit)** | [⬇️ **Kuri-v1.2-win-x86.zip**](release/Kuri-v1.2-win-x86.zip) | Standalone portable 32-bit executable |
 
 ---
 
@@ -114,13 +114,13 @@ Access your PC essentials directly inside the Notch without opening the Windows 
 ## 📦 Installation Guide
 
 ### Option A: Setup Installer (Recommended)
-1. Download **`Kuri-v1.1-Setup-x64.exe`** from the [Releases](release/) directory.
+1. Download **`Kuri-v1.2-Setup-x64.exe`** from the [Releases](release/) directory.
 2. Run the installer wizard.
 3. Choose whether to launch Kuri on Windows startup.
 4. Enjoy! Kuri will appear gracefully at the top of your primary display.
 
 ### Option B: Portable Mode
-1. Download **`Kuri-v1.1-win-x64.zip`**.
+1. Download **`Kuri-v1.2-win-x64.zip`**.
 2. Extract the archive into any preferred folder (e.g. `C:\Program Files\Kuri` or `D:\Tools\Kuri`).
 3. Double click **`NotchWin.exe`** to run.
 

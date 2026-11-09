@@ -2,8 +2,8 @@
 ; Supports Windows 10 and Windows 11 (Both 64-bit and 32-bit architectures)
 
 #define MyAppName "Kuri"
-#define MyAppVersion "1.1"
-#define MyAppVersionInfo "1.1.0.0"
+#define MyAppVersion "1.2"
+#define MyAppVersionInfo "1.2.0.0"
 #define MyAppPublisher "Dynamic Notch Project"
 #define MyAppURL "https://github.com/notchwin"
 #define MyAppExeName "NotchWin.exe"
@@ -20,7 +20,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=..\release\installer
-OutputBaseFilename=Kuri-Setup-v1.1-Universal
+OutputBaseFilename=Kuri-Setup-v1.2-Universal
 SetupIconFile=..\NotchWin\app.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
