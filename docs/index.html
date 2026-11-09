@@ -236,192 +236,6 @@
       color: var(--mist);
     }
 
-    /* ===== REAL KURI LAPTOP PREVIEW ===== */
-    .preview {
-      position: relative;
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 20px 16px 70px;
-    }
-    .laptop-frame {
-      position: relative;
-      margin-inline: auto;
-      border-radius: 24px 24px 0 0;
-      background: #11131a;
-      border: 1px solid rgba(255,255,255,0.14);
-      border-bottom: none;
-      box-shadow: 0 30px 100px -20px rgba(0,0,0,0.8), 0 0 70px -10px rgba(56,189,248,0.25);
-      padding: 10px 10px 0;
-    }
-    .laptop-cam {
-      position: absolute;
-      top: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #1e2230;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
-    .laptop-screen {
-      position: relative;
-      overflow: hidden;
-      border-radius: 16px 16px 0 0;
-      min-height: 480px;
-      background: linear-gradient(180deg, #090d16 0%, #0d1222 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* Desktop Wallpaper Texture */
-    .desktop-bg {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 50% 15%, rgba(56, 189, 248, 0.22) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
-        linear-gradient(180deg, #0a0f1d 0%, #060913 100%);
-      z-index: 1;
-    }
-
-    /* Notch Display Area inside laptop */
-    .notch-stage {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 0;
-    }
-
-    /* Real Notch Screenshot Container */
-    .kuri-notch-container {
-      position: relative;
-      max-width: 680px;
-      width: 90%;
-      display: flex;
-      justify-content: center;
-      transition: all 0.4s var(--spring);
-      cursor: pointer;
-    }
-    .kuri-notch-container img {
-      width: 100%;
-      height: auto;
-      border-radius: 0 0 20px 20px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
-      display: none;
-      transition: opacity 0.3s ease, transform 0.3s var(--spring);
-    }
-    .kuri-notch-container img.active {
-      display: block;
-      animation: popIn 0.35s var(--spring);
-    }
-    @keyframes popIn {
-      0% { opacity: 0; transform: scale(0.96) translateY(-8px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    /* Collapsed Pill Simulation */
-    .collapsed-pill {
-      background: #000000;
-      border-radius: 0 0 16px 16px;
-      padding: 6px 20px;
-      display: none;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.12);
-      border-top: none;
-    }
-    .collapsed-pill.active {
-      display: flex;
-      animation: popIn 0.35s var(--spring);
-    }
-    .pill-mascot {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .pill-eye {
-      width: 7.5px;
-      height: 12px;
-      border-radius: 999px;
-      background: #ffffff;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
-      animation: blink 4s infinite;
-    }
-    @keyframes blink {
-      0%, 92%, 100% { transform: scaleY(1); }
-      95% { transform: scaleY(0.12); }
-    }
-
-    /* Stage Hint */
-    .stage-hint {
-      margin-top: 140px;
-      text-align: center;
-      z-index: 10;
-      color: var(--mist);
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0,0,0,0.4);
-      padding: 6px 16px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(8px);
-    }
-
-    /* Switcher Chips under laptop */
-    .sw-container {
-      margin-top: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-    .sw-label {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--cyan);
-    }
-    .sw {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      max-width: 100%;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--line);
-      scrollbar-width: none;
-    }
-    .sw::-webkit-scrollbar { display: none; }
-    .chip {
-      appearance: none;
-      border: none;
-      background: transparent;
-      color: var(--mist);
-      font-family: var(--font-body);
-      font-size: 13.5px;
-      font-weight: 600;
-      padding: 8px 18px;
-      border-radius: 999px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-    .chip:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); }
-    .chip[aria-pressed="true"] {
-      background: var(--ink);
-      color: var(--void);
-      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-    }
-
     /* ===== BENTO FEATURES GRID ===== */
     .section-title {
       text-align: center;
@@ -522,7 +336,7 @@
     /* ===== MASCOT SHOWCASE ===== */
     .mascots-section {
       max-width: 1160px;
-      margin: 100px auto 0;
+      margin: 60px auto 0;
       padding: 0 20px;
     }
     .mascot-tabs {
@@ -711,7 +525,6 @@
         <span class="brand-tag">v1.2</span>
       </a>
       <ul class="nav-links">
-        <li><a href="#preview">Preview</a></li>
         <li><a href="#features">Features</a></li>
         <li><a href="#mascots">Mascots</a></li>
         <li><a href="#control-center">Control Center</a></li>
@@ -750,62 +563,7 @@
     </div>
   </header>
 
-  <!-- Real Kuri Laptop Preview Section -->
-  <section id="preview" class="preview">
-    <div class="laptop-frame">
-      <span class="laptop-cam"></span>
-      <div class="laptop-screen">
-        <div class="desktop-bg"></div>
-
-        <div class="notch-stage">
-          <!-- Real Kuri Notch Images -->
-          <div class="kuri-notch-container" id="kuriNotch">
-            <!-- 1. Real Control Center with Wi-Fi List -->
-            <img src="assets/kuri_real_control_center.png" id="img-control" class="active" alt="Kuri Control Center">
-            <!-- 2. Real Home & Weather -->
-            <img src="assets/kuri_real_home_weather.png" id="img-home" alt="Kuri Home & Weather">
-            <!-- 3. Real Media Player -->
-            <img src="assets/kuri_real_music_player.png" id="img-music" alt="Kuri Music Player">
-            <!-- 4. Real Syllable Lyrics -->
-            <img src="assets/kuri_real_media_lyrics.png" id="img-lyrics" alt="Kuri Lyrics">
-            <!-- 5. Real Centered Shelf -->
-            <img src="assets/kuri_real_shelf_centered.png" id="img-shelf" alt="Kuri Shelf">
-            <!-- 6. Real PhoneShare with QR -->
-            <img src="assets/kuri_real_shelf_phoneshare.png" id="img-phoneshare" alt="Kuri PhoneShare">
-            <!-- 7. Real Collapsed Notch Pill -->
-            <div class="collapsed-pill" id="pill-collapsed">
-              <span style="font-size:12px;font-weight:700;color:var(--mist)">13:45</span>
-              <div class="pill-mascot">
-                <div class="pill-eye"></div>
-                <div class="pill-eye"></div>
-              </div>
-              <span style="font-size:12px;color:var(--emerald);font-weight:600">98% ⚡</span>
-            </div>
-          </div>
-
-          <div class="stage-hint">
-            <span>✨ Click on the notch or select modes below to explore the real Kuri interface</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mode Switcher Chips -->
-    <div class="sw-container">
-      <div class="sw-label">Real Kuri Modules Showcase</div>
-      <div class="sw" id="sw">
-        <button class="chip" data-target="control" aria-pressed="true">📶 Control Center</button>
-        <button class="chip" data-target="home">🏠 Home & Weather</button>
-        <button class="chip" data-target="music">🎵 Music Player</button>
-        <button class="chip" data-target="lyrics">🎤 Syllable Lyrics</button>
-        <button class="chip" data-target="shelf">📁 Centered Shelf</button>
-        <button class="chip" data-target="phoneshare">📱 PhoneShare QR</button>
-        <button class="chip" data-target="collapsed">🔒 Collapsed Notch</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Interactive Mascots Showcase -->
+<!-- Interactive Mascots Showcase -->
   <section id="mascots" class="mascots-section">
     <div class="section-title">
       <h2>Living Companions in Your Notch</h2>
@@ -1034,44 +792,10 @@
 
   <!-- Scripts -->
   <script>
-    // 1. Real Kuri Notch Switcher
-    const chips = document.querySelectorAll(".sw .chip");
-    const notchImages = document.querySelectorAll(".kuri-notch-container img");
-    const collapsedPill = document.getElementById("pill-collapsed");
-    let currentMode = "control";
 
-    function setNotchMode(target) {
-      currentMode = target;
-      chips.forEach(c => c.setAttribute("aria-pressed", String(c.dataset.target === target)));
+    
 
-      notchImages.forEach(img => img.classList.remove("active"));
-      if (collapsedPill) collapsedPill.classList.remove("active");
-
-      if (target === "collapsed") {
-        if (collapsedPill) collapsedPill.classList.add("active");
-      } else {
-        const el = document.getElementById("img-" + target);
-        if (el) el.classList.add("active");
-      }
-    }
-
-    chips.forEach(btn => {
-      btn.addEventListener("click", () => setNotchMode(btn.dataset.target));
-    });
-
-    // Clicking notch toggles between collapsed and expanded
-    const notchCont = document.getElementById("kuriNotch");
-    if (notchCont) {
-      notchCont.addEventListener("click", () => {
-        if (currentMode === "collapsed") {
-          setNotchMode("control");
-        } else {
-          setNotchMode("collapsed");
-        }
-      });
-    }
-
-    // 2. Mascot Showcase Switcher
+    // 1. Mascot Showcase Switcher
     const mascotData = {
       eyes: {
         img: "assets/notch_eyes.png",
@@ -1122,7 +846,7 @@
       });
     });
 
-    // 3. RAM Count-up on scroll
+    // 2. RAM Count-up on scroll
     (() => {
       const el = document.querySelector(".js-ram");
       if (!el || !("IntersectionObserver" in window)) return;
@@ -1141,7 +865,7 @@
       io.observe(el);
     })();
 
-    // 4. FAQ Accordion Toggle
+    // 3. FAQ Accordion Toggle
     document.querySelectorAll(".faq-q").forEach(btn => {
       btn.addEventListener("click", () => {
         const item = btn.closest(".faq-item");
