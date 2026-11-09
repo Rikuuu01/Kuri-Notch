@@ -13,14 +13,14 @@ Modul ini menyediakan sistem karakter animasi interaktif (**Pet Companion**) unt
   - [`MascotControl.xaml`](../NotchWin/Controls/MascotControl.xaml) & [`MascotControl.xaml.cs`](../NotchWin/Controls/MascotControl.xaml.cs):
     Kontrol independen maskot *Pastel Mochi (V2)* berukuran 28×20 px dengan deformasi badan elastis (*squash & stretch*), 3 set mata ekspresi, partikel melayang (not musik, huruf Z tidur, kilau bintang), blitz kilat kamera, serta **8 badge notifikasi dinamis**.
   - [`MochiPetControl.xaml`](../NotchWin/Controls/MochiPetControl.xaml) & [`MochiPetControl.xaml.cs`](../NotchWin/Controls/MochiPetControl.xaml.cs):
-    Kontainer adaptif tingkat atas yang menaungi ketiga gaya maskot (*PastelMochi*, *AstroMascot*, *EggMascot*) dengan penanganan klik sentuh elastis (*CubicEase* bounce) dan API `PlayWelcome(...)` / `HideGreeting()` untuk sapaan startup.
+    Kontainer adaptif tingkat atas yang menaungi keempat gaya maskot (*PastelMochi*, *AstroMascot*, *EggMascot*, *NotchEyes*) dengan penanganan klik sentuh elastis (*CubicEase* bounce) dan API `PlayWelcome(...)` / `HideGreeting()` untuk sapaan startup.
   - [`AstroMascotControl.xaml`](../NotchWin/Controls/AstroMascotControl.xaml) & [`AstroMascotControl.xaml.cs`](../NotchWin/Controls/AstroMascotControl.xaml.cs):
     Kontrol independen maskot *Astro Mascot* berukuran 28×20 px: astronot berhelm putih dengan visor gelap bermata amber menyala, headphone groove reaktif, partikel not/Z/kilau, flash kamera, serta 8 badge notifikasi dinamis yang mengikuti event bus yang sama.
   - [`EggMascotControl.xaml`](../NotchWin/Controls/EggMascotControl.xaml) & [`EggMascotControl.xaml.cs`](../NotchWin/Controls/EggMascotControl.xaml.cs):
     Kontrol independen maskot *Egg Mascot* berukuran 28×20 px: telur putih minimalis dengan pipi merona, lengan lambai (`ArmWave`) untuk reaksi `Welcome`, 3 set mata, headphone, partikel not/Z/kilau, flash kamera, dan 8 badge notifikasi pada event bus yang sama.
 - **Data Models**:
   - [`PetStyle.cs`](../NotchWin/Models/PetStyle.cs):
-    Enum 3 gaya maskot murni vektor: `PastelMochi` (Pastel Mochi), `AstroMascot` (Astro Mascot), dan `EggMascot` (Egg Mascot).
+    Enum 4 gaya maskot murni vektor: `PastelMochi`, `AstroMascot`, `EggMascot`, dan `NotchEyes`.
   - [`MascotState.cs`](../NotchWin/Models/MascotState.cs):
     Enum status maskot: dasar (`Idle`, `Music`, `Sleep`) dan alert reaktif (`Happy`, `Notification`, `Alarm`, `Drink`, `Timer`, `Adzan`, `Bluetooth`, `Copied`, `Screenshot`, `Welcome`).
   - [`AppSettings.cs`](../NotchWin/Models/AppSettings.cs):
@@ -67,6 +67,22 @@ Pengguna dapat memilih maskot aktif melalui menu **Pengaturan $\rightarrow$ Pet 
 * **Lengan Lambai (`ArmWave`)**: Lengan vektor berporos bahu (`ArmRotate`, `ArmScale`) yang tersembunyi di balik badan saat istirahat, lalu muncul dan melambai 4× pada reaksi `Welcome`.
 * **Mata Ekspresif**: `EyesOpen` dengan pupil mengikuti kursor (pusat wajah `(14, 9.3)`), `EyesHappy`, dan `EyesSleep`, lengkap dengan blush, headphone, flash kamera, dan partikel yang sama.
 * Mendukung seluruh 13 state, termasuk sapaan startup, lewat API `PlayWelcome(...)` yang dipanggil overlay sapaan.
+
+---
+
+### 4. Notch Eyes (`PetStyle.NotchEyes` / `NotchEyesControl`)
+* Karakter maskot sepasang mata minimalis dinamis di dalam pil hitam notch dengan animasi transisi keyframe halus (`BeginAnimation`).
+* **Mode Adaptif (`IsCompact`)**: Mendukung mode compact (skala 28×20 px di slot pet notch standar) dan native pill (236×45 px).
+* **Animasi & Reaktivitas Lengkap**:
+  - **Idle**: Mata berkedip, melirik ke kiri-kanan secara alami, dan bernapas perlahan.
+  - **Music**: Mengangguk mengikuti ketukan tempo musik (BPM), mata berkedip bergantian, dan 4 bar equalizer audio bergerak acak.
+  - **Sleep / WakeUp**: Mata mengantuk menyipit tipis dengan huruf 'z' & 'Z' melayang ke atas.
+  - **Welcome**: Mata membesar riang, bentuk melengkung senang (^ ^), dan tangan vektor melambai 3 kali.
+  - **Alarm & Timer**: Mata terkejut melotot, pil bergetar, dan ikon jam alarm bergoyang.
+  - **Adzan / Salat**: Mata terpejam damai (‿ ‿) dengan aksen mint, glow lembut, dan ikon bulan sabit bernapas.
+  - **Notification & Bluetooth**: Mata melompat kecil dan melirik ke ikon pesan.
+  - **Drink**: Ikon tetes air bergoyang, mata mengikuti tetes air, dan terisi penuh saat dikonfirmasi.
+  - **Clipboard & Screenshot**: Ikon clipboard dengan tanda centang, serta kilatan flash ring dan kamera saat screenshot diambil.
 
 ---
 

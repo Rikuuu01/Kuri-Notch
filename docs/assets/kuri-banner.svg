@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#080811"/>
+      <stop offset="0.5" stop-color="#0E0E1B"/>
+      <stop offset="1" stop-color="#05050A"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="400" y1="0" x2="800" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="0.5" stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+    <radialGradient id="centerGlow" cx="600" cy="110" r="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8" stop-opacity="0.18"/>
+      <stop offset="0.6" stop-color="#818CF8" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#080811" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="notchShadow" x="-10%" y="-20%" width="120%" height="160%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.75"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#38BDF8" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="420" rx="20" fill="url(#bgGrad)"/>
+  <circle cx="600" cy="110" r="350" fill="url(#centerGlow)"/>
+
+  <!-- Top Display Screen Simulation Bar -->
+  <rect x="150" y="0" width="900" height="4" fill="#202035" opacity="0.6"/>
+
+  <!-- Dynamic Notch Island (Floating at Top Center) -->
+  <g filter="url(#notchShadow)">
+    <rect x="420" y="0" width="360" height="58" rx="28" fill="#0A0A12" stroke="#25253A" stroke-width="1.5"/>
+    
+    <!-- Left Widget in Notch: BMKG Weather & Date -->
+    <text x="444" y="34" fill="#38BDF8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="bold">☀️ 29°C</text>
+    <line x1="494" y1="23" x2="494" y2="35" stroke="#33334A" stroke-width="1.2"/>
+    <text x="504" y="34" fill="#A1A1AA" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600">Mon, 9 Nov</text>
+
+    <!-- Center Pet Slot: Notch Eyes -->
+    <g transform="translate(586, 21)">
+      <!-- Left Eye -->
+      <rect x="0" y="0" width="10" height="16" rx="5" fill="#F4F4F5"/>
+      <circle cx="3" cy="5" r="1.5" fill="#181824"/>
+      <!-- Right Eye -->
+      <rect x="16" y="0" width="10" height="16" rx="5" fill="#F4F4F5"/>
+      <circle cx="19" cy="5" r="1.5" fill="#181824"/>
+    </g>
+
+    <!-- Right Widget in Notch: Time & Battery -->
+    <text x="668" y="34" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="bold">12:50</text>
+    <rect x="714" y="24" width="22" height="12" rx="3.5" fill="#141420" stroke="#34D399" stroke-width="1.2"/>
+    <rect x="716" y="26" width="16" height="8" rx="2" fill="#34D399"/>
+    <rect x="736.5" y="27.5" width="2" height="5" rx="1" fill="#34D399"/>
+  </g>
+
+  <!-- Main Headline Typography -->
+  <text x="600" y="180" text-anchor="middle" fill="url(#accentGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="52" font-weight="900" letter-spacing="-1.5">KURI NOTCH</text>
+  
+  <text x="600" y="225" text-anchor="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600" letter-spacing="-0.3">
+    The Elegant Dynamic Island &amp; Interactive Pet Companion for Windows
+  </text>
+  
+  <text x="600" y="260" text-anchor="middle" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="400">
+    Fluid Animations • Expanded Control Center • Syllable Karaoke Lyrics • Local Phone Share • Health &amp; Daily Utilities
+  </text>
+
+  <!-- Tag Pills Row -->
+  <g transform="translate(300, 310)">
+    <!-- Pill 1: .NET 8 WPF -->
+    <rect x="0" y="0" width="120" height="34" rx="17" fill="#161626" stroke="#282842" stroke-width="1"/>
+    <text x="60" y="22" text-anchor="middle" fill="#38BDF8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">⚡ .NET 8 WPF</text>
+
+    <!-- Pill 2: Hardware Accelerated -->
+    <rect x="135" y="0" width="160" height="34" rx="17" fill="#161626" stroke="#282842" stroke-width="1"/>
+    <text x="215" y="22" text-anchor="middle" fill="#A78BFA" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">🚀 GPU Accelerated</text>
+
+    <!-- Pill 3: 4 Pet Personalities -->
+    <rect x="310" y="0" width="145" height="34" rx="17" fill="#161626" stroke="#282842" stroke-width="1"/>
+    <text x="382" y="22" text-anchor="middle" fill="#F472B6" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">🐱 4 Mascot Styles</text>
+
+    <!-- Pill 4: Zero Cable Share -->
+    <rect x="470" y="0" width="130" height="34" rx="17" fill="#161626" stroke="#282842" stroke-width="1"/>
+    <text x="535" y="22" text-anchor="middle" fill="#34D399" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">📱 QR Phone Share</text>
+  </g>
+</svg>

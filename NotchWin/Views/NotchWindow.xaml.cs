@@ -2201,6 +2201,13 @@ public partial class NotchWindow : Window
 
 
 
+			else if (e.PropertyName == nameof(MediaViewModel.IsLyricsVersionPickerOpen))
+			{
+				Dispatcher.Invoke(() =>
+				{
+					AnimateLyricsVersionPicker(ViewModel.Media.IsLyricsVersionPickerOpen);
+				});
+			}
 			else if (e.PropertyName == "IsActiveLyricInterlude" && ViewModel.Media.IsActiveLyricInterlude)
 
 
@@ -11608,6 +11615,11 @@ public void ApplyNotchScale(double scale, bool animate = true)
 			if (!isLyricsExpanded)
 			{
 				ViewModel.Media.IsLyricsVersionPickerOpen = false;
+				if (LyricsContainer != null)
+				{
+					LyricsContainer.BeginAnimation(FrameworkElement.HeightProperty, null);
+					LyricsContainer.Height = 150.0;
+				}
 		if (ViewModel?.Volume != null)
 		{
 			ViewModel.Volume.IsDevicePickerOpen = false;
@@ -17134,6 +17146,21 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		double chrome = Math.Max(dynamicChrome, measuredChrome);
 		double targetWidth = chrome + Math.Max(MinCollapsedLyricTextWidth, mainWidth) + 14.0;
 		ViewModel.SetCollapsedLyricsWidthOverride(targetWidth);
+	}
+
+	private void AnimateLyricsVersionPicker(bool isOpen)
+	{
+		if (LyricsContainer == null) return;
+
+		double targetHeight = isOpen ? 222.0 : 150.0;
+		TimeSpan duration = TimeSpan.FromMilliseconds(isOpen ? 360 : 280);
+		IEasingFunction easing = new QuarticEase { EasingMode = EasingMode.EaseOut };
+
+		DoubleAnimation heightAnim = new DoubleAnimation(targetHeight, duration)
+		{
+			EasingFunction = easing
+		};
+		LyricsContainer.BeginAnimation(FrameworkElement.HeightProperty, heightAnim);
 	}
 
 	private void AnimateLyricsExpansion(bool isExpanded)

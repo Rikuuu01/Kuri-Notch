@@ -271,14 +271,16 @@ namespace NotchWin.Services
             if (expectedDuration.TotalSeconds > 10 && hit.Duration.HasValue)
             {
                 double diff = Math.Abs(hit.Duration.Value - expectedDuration.TotalSeconds);
-                if (diff <= 1.5) bonus += 50;
-                else if (diff <= 3.0) bonus += 25;
-                else bonus -= Math.Min(diff * 5, 100);
+                if (diff <= 1.5) bonus += 350;
+                else if (diff <= 3.0) bonus += 200;
+                else if (diff <= 5.0) bonus += 50;
+                else if (diff <= 10.0) bonus -= (diff * 30);
+                else bonus -= (diff * 60 + 500); // Drastically penalize mismatching edits!
             }
 
             if (string.Equals((hit.Title ?? "").Trim(), expectedTitle.Trim(), StringComparison.OrdinalIgnoreCase))
             {
-                bonus += 50;
+                bonus += 150;
             }
 
             return bonus;

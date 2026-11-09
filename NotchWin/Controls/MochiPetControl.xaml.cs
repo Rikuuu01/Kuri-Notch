@@ -54,6 +54,7 @@ namespace NotchWin.Controls
             PastelMascot.Visibility = (_pet.Style == PetStyle.PastelMochi) ? Visibility.Visible : Visibility.Collapsed;
             AstroMascot.Visibility = (_pet.Style == PetStyle.AstroMascot) ? Visibility.Visible : Visibility.Collapsed;
             EggMascot.Visibility = (_pet.Style == PetStyle.EggMascot) ? Visibility.Visible : Visibility.Collapsed;
+            NotchEyes.Visibility = (_pet.Style == PetStyle.NotchEyes) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>Sapaan startup untuk gaya aktif; gaya tanpa animasi khusus memakai reaksi Happy.</summary>
@@ -71,6 +72,9 @@ namespace NotchWin.Controls
                 case PetStyle.PastelMochi when PastelMascot != null:
                     PastelMascot.ShowAlert(MascotState.Welcome, d);
                     break;
+                case PetStyle.NotchEyes when NotchEyes != null:
+                    NotchEyes.PlayWelcome();
+                    break;
             }
         }
 
@@ -80,6 +84,7 @@ namespace NotchWin.Controls
             PastelMascot?.DismissAlert();
             AstroMascot?.DismissAlert();
             EggMascot?.DismissAlert();
+            NotchEyes?.DismissAlert();
         }
 
         private void Control_MouseEnter(object sender, MouseEventArgs e)
@@ -126,6 +131,10 @@ namespace NotchWin.Controls
                 else if (_pet.Style == PetStyle.EggMascot && EggMascot != null)
                 {
                     EggMascot.ShowAlert(MascotState.Happy);
+                }
+                else if (_pet.Style == PetStyle.NotchEyes && NotchEyes != null)
+                {
+                    NotchEyes.ShowAlert(MascotState.Happy);
                 }
                 e.Handled = true;
             }

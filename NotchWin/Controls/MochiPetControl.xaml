@@ -50,6 +50,11 @@
                 <!-- ========================================== -->
                 <local:EggMascotControl x:Name="EggMascot" Visibility="Collapsed" Width="28" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
+                <!-- ========================================== -->
+                <!-- STYLE 4: NOTCH EYES (NotchEyesControl)     -->
+                <!-- ========================================== -->
+                <local:NotchEyesControl x:Name="NotchEyes" IsCompact="True" Visibility="Collapsed" Width="28" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
             </Grid>
         </Grid>
     </Viewbox>

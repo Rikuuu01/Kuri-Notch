@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuri — Dynamic Notch & Island Companion for Windows 10 & 11</title>
+  <meta name="description" content="The elegant Dynamic Island and interactive mascot companion for Windows with fluid animations, expandable control center, syllable karaoke lyrics, and local phone sharing.">
+  <link rel="icon" type="image/svg+xml" href="assets/kuri-logo.svg">
+  
+  <!-- OpenGraph / Social Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kuri — Dynamic Notch for Windows">
+  <meta property="og:description" content="Fluid Dynamic Island, expanded Wi-Fi/Bluetooth controls, syllable karaoke lyrics, and cute reactive pets for Windows.">
+  <meta property="og:image" content="assets/kuri-banner.svg">
+  <meta name="theme-color" content="#07070F">
+
+  <style>
+    :root {
+      --bg: #07070F;
+      --bg-card: rgba(18, 18, 30, 0.75);
+      --bg-card-hover: rgba(28, 28, 45, 0.85);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --accent: #38BDF8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --purple: #818CF8;
+      --pink: #F472B6;
+      --green: #34D399;
+      --text: #F4F4F5;
+      --text-muted: #94A3B8;
+      --text-sub: #64748B;
+      --radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+      line-height: 1.6;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
+        radial-gradient(circle at 10% 30%, rgba(129, 140, 248, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 70%, rgba(244, 114, 182, 0.06) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Top Floating Virtual Notch on the Website! */
+    .top-notch-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      padding: 0 16px;
+      pointer-events: none;
+    }
+
+    .virtual-notch {
+      pointer-events: auto;
+      background: #000000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-top: none;
+      border-radius: 0 0 20px 20px;
+      padding: 6px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.15);
+      transition: var(--transition);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .virtual-notch:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.3);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .virtual-notch-weather {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .virtual-notch-date {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .virtual-notch-pet {
+      width: 28px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .virtual-notch:hover .virtual-notch-pet {
+      transform: scale(1.15);
+    }
+
+    .virtual-notch-time {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    .virtual-notch-battery {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .battery-icon {
+      width: 18px;
+      height: 10px;
+      border: 1px solid var(--green);
+      border-radius: 3px;
+      padding: 1px;
+      position: relative;
+    }
+
+    .battery-icon::after {
+      content: '';
+      position: absolute;
+      right: -3px;
+      top: 2px;
+      width: 2px;
+      height: 4px;
+      background: var(--green);
+      border-radius: 0 1px 1px 0;
+    }
+
+    .battery-fill {
+      width: 100%;
+      height: 100%;
+      background: var(--green);
+      border-radius: 1px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navbar */
+    header.site-header {
+      padding: 24px 0 16px;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-img {
+      width: 36px;
+      height: 36px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: var(--transition);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #38BDF8, #818CF8);
+      color: #07070F;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(56, 189, 248, 0.45);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 70px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 30px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .hero-title {
+      font-size: clamp(40px, 6vw, 68px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -1.8px;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #FFFFFF 0%, #94A3B8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #F472B6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      max-width: 680px;
+      margin: 0 auto 36px;
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 50px;
+    }
+
+    /* Live Interactive Notch Simulator Card */
+    .simulator-container {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #05050A;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.1);
+      position: relative;
+    }
+
+    .sim-header {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .sim-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .sim-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .sim-dot.red { background: #EF4444; }
+    .sim-dot.yellow { background: #F59E0B; }
+    .sim-dot.green { background: #10B981; }
+
+    .sim-body {
+      padding: 40px 24px;
+      background: radial-gradient(circle at 50% 20%, #151525 0%, #06060C 100%);
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Simulated Interactive Notch Island */
+    .sim-notch-island {
+      background: #000000;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 28px;
+      padding: 8px 24px;
+      min-width: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(56, 189, 248, 0.2);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sim-notch-island.expanded {
+      min-width: 540px;
+      border-radius: 24px;
+      padding: 16px 20px;
+      flex-direction: column;
+      align-items: stretch;
+      background: #090912;
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .sim-notch-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .sim-pet-avatar {
+      width: 32px;
+      height: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .sim-pet-avatar:hover {
+      transform: scale(1.2);
+    }
+
+    /* Expanded Content in Simulator */
+    .sim-expanded-view {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .sim-notch-island.expanded .sim-expanded-view {
+      display: block;
+    }
+
+    .sim-tabs-row {
+      display: flex;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      justify-content: center;
+    }
+
+    .sim-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .sim-tab-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: #FFFFFF;
+    }
+
+    .sim-card-panel {
+      background: #12121E;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 12px;
+    }
+
+    /* Mascot Selector Bar */
+    .sim-controls-bar {
+      margin-top: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 8px 16px;
+      border-radius: 40px;
+      border: 1px solid var(--border);
+    }
+
+    .sim-ctrl-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .sim-mascot-pill {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .sim-mascot-pill.active, .sim-mascot-pill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+    }
+
+    /* Bento Grid Features */
+    .section-title-wrap {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-tag {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 80px;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-accent);
+      background: var(--bg-card-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(56, 189, 248, 0.12);
+    }
+
+    .bento-card.col-2 {
+      grid-column: span 2;
+    }
+
+    .bento-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 18px;
+      color: var(--accent);
+    }
+
+    .bento-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #FFFFFF;
+    }
+
+    .bento-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Mascot Gallery */
+    .mascot-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 80px;
+    }
+
+    .mascot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .mascot-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(129, 140, 248, 0.15);
+    }
+
+    .mascot-img-wrap {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .mascot-img-wrap img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .mascot-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+    }
+
+    .mascot-type {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .mascot-bio {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Download Box */
+    .download-section {
+      background: linear-gradient(180deg, rgba(18, 18, 30, 0.8) 0%, rgba(10, 10, 18, 0.95) 100%);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 50px 40px;
+      text-align: center;
+      margin-bottom: 80px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    }
+
+    .dl-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 680px;
+      margin: 32px auto 0;
+      text-align: left;
+    }
+
+    .dl-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .dl-card:hover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .dl-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    .dl-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 4px;
+    }
+
+    .dl-card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* Footer */
+    footer.site-footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    footer.site-footer a {
+      color: var(--text-muted);
+    }
+
+    footer.site-footer a:hover {
+      color: var(--accent);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .bento-grid { grid-template-columns: 1fr; }
+      .bento-card.col-2 { grid-column: span 1; }
+      .mascot-grid { grid-template-columns: repeat(2, 1fr); }
+      .dl-cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Sticky Virtual Notch on Top of Screen -->
+  <div class="top-notch-bar">
+    <div class="virtual-notch" id="topVirtualNotch" title="Click to test notch expand animation!">
+      <div class="virtual-notch-weather">
+        <span>☀️</span> 29°C
+        <span style="color: #4B5563;">|</span>
+        <span class="virtual-notch-date">Mon, 9 Nov</span>
+      </div>
+
+      <!-- Mascot Sitting Right in the Center at Idle! -->
+      <div class="virtual-notch-pet" id="topVirtualPet">
+        <svg width="24" height="16" viewBox="0 0 28 20" fill="none">
+          <rect x="2" y="2" width="10" height="15" rx="5" fill="#F4F4F5"/>
+          <circle cx="5" cy="7" r="1.5" fill="#181824"/>
+          <rect x="16" y="2" width="10" height="15" rx="5" fill="#F4F4F5"/>
+          <circle cx="19" cy="7" r="1.5" fill="#181824"/>
+        </svg>
+      </div>
+
+      <div class="virtual-notch-time">12:50</div>
+      <div class="virtual-notch-battery">
+        99%
+        <div class="battery-icon"><div class="battery-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="site-header">
+      <div class="nav-inner">
+        <a href="#" class="logo">
+          <img src="assets/kuri-logo.svg" alt="Kuri Logo" class="logo-img">
+          <span>Kuri</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#mascots">Mascots</a>
+          <a href="#simulator">Simulator</a>
+          <a href="#download">Downloads</a>
+          <a href="https://github.com/Rikuuu01/Kuri-Notch" target="_blank" class="btn btn-secondary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="badge-pill">✨ Release v1.1 • Windows 10 & 11</div>
+      <h1 class="hero-title">The Dynamic Island<br><span>Made for Windows.</span></h1>
+      <p class="hero-desc">
+        Fluid morphing animations, expandable Wi-Fi & Bluetooth controls, syllable-synchronized karaoke lyrics, zero-cable phone transfer, and delightful living desktop mascots.
+      </p>
+      <div class="hero-cta">
+        <a href="#download" class="btn btn-primary">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+          Download Free for Windows
+        </a>
+        <a href="https://github.com/Rikuuu01/Kuri-Notch" target="_blank" class="btn btn-secondary">
+          ⭐ Star on GitHub
+        </a>
+      </div>
+
+      <!-- Live Interactive Simulator -->
+      <div class="simulator-container" id="simulator">
+        <div class="sim-header">
+          <div class="sim-dots">
+            <div class="sim-dot red"></div>
+            <div class="sim-dot yellow"></div>
+            <div class="sim-dot green"></div>
+          </div>
+          <div>Interactive Virtual Notch Preview — Click to Expand!</div>
+          <div style="font-family: monospace; font-size: 11px;">1920 × 1080</div>
+        </div>
+
+        <div class="sim-body">
+          <div class="sim-notch-island" id="simNotch">
+            <div class="sim-notch-inner">
+              <div style="font-size: 11.5px; font-weight: 700; color: #38BDF8;">☀️ 29°C</div>
+              
+              <!-- Center Idle Mascot -->
+              <div class="sim-pet-avatar" id="simPetAvatar" title="Your Center Mascot Companion">
+                <svg width="26" height="18" viewBox="0 0 28 20" fill="none">
+                  <rect x="2" y="2" width="10" height="15" rx="5" fill="#F4F4F5"/>
+                  <circle cx="5" cy="7" r="1.5" fill="#181824"/>
+                  <rect x="16" y="2" width="10" height="15" rx="5" fill="#F4F4F5"/>
+                  <circle cx="19" cy="7" r="1.5" fill="#181824"/>
+                </svg>
+              </div>
+
+              <div style="font-size: 12.5px; font-weight: 800; color: #FFFFFF;">12:50</div>
+            </div>
+
+            <!-- Expanded State -->
+            <div class="sim-expanded-view">
+              <div class="sim-tabs-row">
+                <button class="sim-tab-btn active" onclick="switchSimTab('control')">🎛️ Control</button>
+                <button class="sim-tab-btn" onclick="switchSimTab('music')">🎵 Music</button>
+                <button class="sim-tab-btn" onclick="switchSimTab('shelf')">📁 Shelf</button>
+                <button class="sim-tab-btn" onclick="switchSimTab('health')">🌿 Health</button>
+              </div>
+
+              <div class="sim-card-panel" id="simCardContent">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <strong style="color: #38BDF8;">JARINGAN WI-FI</strong>
+                  <span style="font-size: 11px; background: rgba(52, 211, 153, 0.15); color: #34D399; padding: 2px 8px; border-radius: 6px;">✓ Terhubung</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                  <span>WiFi | RikuuXMail</span>
+                  <span style="color: #34D399; font-weight: 600;">Aktif</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between;">
+                  <span>By.Mikrotik (5GHz)</span>
+                  <span style="color: #94A3B8;">Tersimpan</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls to switch Mascots -->
+          <div class="sim-controls-bar">
+            <span class="sim-ctrl-label">Mascot Personality:</span>
+            <button class="sim-mascot-pill active" onclick="selectMascot('eyes')">👀 Notch Eyes</button>
+            <button class="sim-mascot-pill" onclick="selectMascot('mochi')">🥟 Pastel Mochi</button>
+            <button class="sim-mascot-pill" onclick="selectMascot('astro')">🚀 Astro</button>
+            <button class="sim-mascot-pill" onclick="selectMascot('egg')">🥚 Egg</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mascot Showcase -->
+    <section id="mascots" style="padding: 40px 0;">
+      <div class="section-title-wrap">
+        <div class="section-tag">Desktop Pets</div>
+        <h2 class="section-title">Living Companions in Your Notch</h2>
+      </div>
+
+      <div class="mascot-grid">
+        <div class="mascot-card">
+          <div class="mascot-img-wrap">
+            <img src="assets/pastel_mochi.png" alt="Pastel Mochi">
+          </div>
+          <div class="mascot-name">Pastel Mochi</div>
+          <div class="mascot-type">Organic &amp; Bouncy</div>
+          <p class="mascot-bio">Soft mochi that puts on purple DJ headphones when music starts, squashing with joy upon click.</p>
+        </div>
+
+        <div class="mascot-card">
+          <div class="mascot-img-wrap">
+            <img src="assets/astro_mascot.png" alt="Astro Mascot">
+          </div>
+          <div class="mascot-name">Astro Mascot</div>
+          <div class="mascot-type">Cybernetic Space Pet</div>
+          <p class="mascot-bio">Cosmonaut explorer equipped with a glowing visor, reactive antenna, and futuristic cyber aesthetics.</p>
+        </div>
+
+        <div class="mascot-card">
+          <div class="mascot-img-wrap">
+            <img src="assets/egg_mascot.png" alt="Egg Mascot">
+          </div>
+          <div class="mascot-name">Egg Mascot</div>
+          <div class="mascot-type">Zen Minimalist</div>
+          <p class="mascot-bio">Gentle shell companion with peaceful winks, calming aura, and minimal distraction during focus sessions.</p>
+        </div>
+
+        <div class="mascot-card">
+          <div class="mascot-img-wrap">
+            <img src="assets/notch_eyes.png" alt="Notch Eyes">
+          </div>
+          <div class="mascot-name">Notch Eyes</div>
+          <div class="mascot-type">Island Native</div>
+          <p class="mascot-bio">Seamless oval eyes embedded directly into the notch. Blinks naturally, tracks cursor glance, and stays centered.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento Grid Features -->
+    <section id="features" style="padding: 40px 0;">
+      <div class="section-title-wrap">
+        <div class="section-tag">Capabilities</div>
+        <h2 class="section-title">Designed for Modern Windows Workflows</h2>
+      </div>
+
+      <div class="bento-grid">
+        <div class="bento-card col-2">
+          <div class="bento-icon">🎛️</div>
+          <h3 class="bento-title">In-Notch Control Center Expander</h3>
+          <p class="bento-desc">
+            No need to open the cumbersome Windows Settings app. Expand Wi-Fi network lists and Bluetooth audio pairings right inside the Notch island with fixed-height smooth cards. Switch sound output devices with a single tap.
+          </p>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">📱</div>
+          <h3 class="bento-title">Wireless Phone Share</h3>
+          <p class="bento-desc">
+            Drag files to the Shelf and scan the QR barcode with your smartphone camera. High-speed local Wi-Fi transfer with zero cables and zero cloud uploads.
+          </p>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">🎵</div>
+          <h3 class="bento-title">Syllable Karaoke Lyrics</h3>
+          <p class="bento-desc">
+            Powered by SpicyLyrics, TTML, and LRC-RED. Lyrics light up word-by-word with live audio waveforms and adaptive album art aura glow.
+          </p>
+        </div>
+
+        <div class="bento-card col-2">
+          <div class="bento-icon">🌿</div>
+          <h3 class="bento-title">Health &amp; Daily Life Assistant</h3>
+          <p class="bento-desc">
+            Integrated water tracker with daily goal log, sedentary posture alerts, live BMKG meteorological forecasts, and automatic prayer times (Jadwal Sholat) with optional adzan notifications.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download-section">
+      <div class="badge-pill">Free &amp; Open Source</div>
+      <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 12px;">Get Kuri for Windows Today</h2>
+      <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto;">
+        Compatible with Windows 10 and Windows 11 (64-bit and 32-bit). Hardware accelerated, lightweight, and uses &lt;1% CPU when idle.
+      </p>
+
+      <div class="dl-cards-grid">
+        <div class="dl-card">
+          <div>
+            <div class="dl-badge">Recommended</div>
+            <div class="dl-card-title">Windows x64 Installer</div>
+            <div class="dl-card-sub">Setup wizard with autostart and Start Menu shortcuts.</div>
+          </div>
+          <a href="https://github.com/Rikuuu01/Kuri-Notch/releases/latest" class="btn btn-primary" style="width: 100%;">
+            Download x64 Setup (.exe)
+          </a>
+        </div>
+
+        <div class="dl-card">
+          <div>
+            <div class="dl-badge">No Installation</div>
+            <div class="dl-card-title">Windows x64 Portable</div>
+            <div class="dl-card-sub">Extract and run NotchWin.exe immediately anywhere.</div>
+          </div>
+          <a href="https://github.com/Rikuuu01/Kuri-Notch/releases/latest" class="btn btn-secondary" style="width: 100%;">
+            Download x64 ZIP
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>Kuri — Dynamic Notch for Windows • Licensed under the MIT License</p>
+      <p style="margin-top: 8px;">
+        <a href="https://github.com/Rikuuu01/Kuri-Notch" target="_blank">GitHub Repository</a> • 
+        <a href="https://github.com/Rikuuu01/Kuri-Notch/releases">Releases</a> • 
+        <a href="https://github.com/Rikuuu01/Kuri-Notch/blob/main/docs/00-arsitektur-dan-notch-core.md">Architecture Docs</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // Simulator Interactive Logic
+    const simNotch = document.getElementById('simNotch');
+    const simCardContent = document.getElementById('simCardContent');
+    const simPetAvatar = document.getElementById('simPetAvatar');
+    const topVirtualNotch = document.getElementById('topVirtualNotch');
+    const topVirtualPet = document.getElementById('topVirtualPet');
+
+    // Click on virtual notch to toggle expansion
+    simNotch.addEventListener('click', (e) => {
+      if (e.target.closest('.sim-tabs-row') || e.target.closest('.sim-card-panel')) return;
+      simNotch.classList.toggle('expanded');
+    });
+
+    topVirtualNotch.addEventListener('click', () => {
+      simNotch.classList.toggle('expanded');
+      simNotch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // Tab switching in simulator
+    function switchSimTab(tab) {
+      document.querySelectorAll('.sim-tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (tab === 'control') {
+        simCardContent.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong style="color: #38BDF8;">JARINGAN WI-FI</strong>
+            <span style="font-size: 11px; background: rgba(52, 211, 153, 0.15); color: #34D399; padding: 2px 8px; border-radius: 6px;">✓ Terhubung</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>WiFi | RikuuXMail</span>
+            <span style="color: #34D399; font-weight: 600;">Aktif</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between;">
+            <span>By.Mikrotik (5GHz)</span>
+            <span style="color: #94A3B8;">Tersimpan</span>
+          </div>
+        `;
+      } else if (tab === 'music') {
+        simCardContent.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+            <div style="width: 36px; height: 36px; background: #C084FC; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🎵</div>
+            <div>
+              <div style="font-weight: 700; color: #FFFFFF;">Jiwa Yang Bersedih</div>
+              <div style="color: #94A3B8; font-size: 11px;">Ghea Indrawari • SpicyLyrics Syllable-Sync</div>
+            </div>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.1); border-left: 3px solid #38BDF8; padding: 6px 10px; border-radius: 4px; font-size: 11.5px; color: #38BDF8; font-weight: 600;">
+            ♪ Menangislah, kan kau juga manusia...
+          </div>
+        `;
+      } else if (tab === 'shelf') {
+        simCardContent.innerHTML = `
+          <div style="text-align: center; padding: 10px 0;">
+            <div style="font-size: 20px; margin-bottom: 4px;">📥</div>
+            <strong style="color: #FFFFFF;">Drag &amp; Drop Files Here</strong>
+            <div style="color: #94A3B8; font-size: 11px; margin-top: 2px;">Centered holding shelf &amp; QR Phone Share</div>
+          </div>
+        `;
+      } else if (tab === 'health') {
+        simCardContent.innerHTML = `
+          <div style="display: flex; justify-content: space-around; text-align: center;">
+            <div>
+              <div style="font-size: 18px;">💧</div>
+              <strong style="color: #38BDF8;">6 / 8 Gelas</strong>
+              <div style="color: #94A3B8; font-size: 10.5px;">Target Hidrasi</div>
+            </div>
+            <div>
+              <div style="font-size: 18px;">🚶</div>
+              <strong style="color: #34D399;">45 Menit</strong>
+              <div style="color: #94A3B8; font-size: 10.5px;">Waktu Duduk</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Mascot selector in simulator
+    function selectMascot(type) {
+      document.querySelectorAll('.sim-mascot-pill').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      let svgHtml = '';
+      if (type === 'eyes') {
+        svgHtml = `
+          <svg width="26" height="18" viewBox="0 0 28 20" fill="none">
+            <rect x="2" y="2" width="10" height="15" rx="5" fill="#F4F4F5"/>
+            <circle cx="5" cy="7" r="1.5" fill="#181824"/>
+            <rect x="16" y="2" width="10" height="15" rx="5" fill="#F4F4F5"/>
+            <circle cx="19" cy="7" r="1.5" fill="#181824"/>
+          </svg>
+        `;
+      } else if (type === 'mochi') {
+        svgHtml = `
+          <svg width="26" height="18" viewBox="0 0 28 20" fill="none">
+            <rect x="1" y="2" width="26" height="16" rx="8" fill="#BFCBFF"/>
+            <circle cx="8" cy="8" r="2" fill="#1E1E2A"/>
+            <circle cx="20" cy="8" r="2" fill="#1E1E2A"/>
+            <ellipse cx="14" cy="12" rx="2" ry="1.2" fill="#F472B6"/>
+          </svg>
+        `;
+      } else if (type === 'astro') {
+        svgHtml = `
+          <svg width="26" height="18" viewBox="0 0 28 20" fill="none">
+            <rect x="2" y="1" width="24" height="18" rx="7" fill="#181828" stroke="#38BDF8" stroke-width="1.2"/>
+            <rect x="5" y="4" width="18" height="9" rx="4.5" fill="#38BDF8" opacity="0.85"/>
+            <circle cx="14" cy="2" r="1.5" fill="#F472B6"/>
+          </svg>
+        `;
+      } else if (type === 'egg') {
+        svgHtml = `
+          <svg width="26" height="18" viewBox="0 0 28 20" fill="none">
+            <ellipse cx="14" cy="10" rx="12" ry="9" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1"/>
+            <circle cx="10" cy="9" r="1.5" fill="#451A03"/>
+            <circle cx="18" cy="9" r="1.5" fill="#451A03"/>
+          </svg>
+        `;
+      }
+      simPetAvatar.innerHTML = svgHtml;
+      topVirtualPet.innerHTML = svgHtml;
+    }
+  </script>
+</body>
+</html>

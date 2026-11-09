@@ -40,7 +40,8 @@ namespace NotchWin.Services
             var hash = Convert.ToHexString(sha256.ComputeHash(bytes)).ToLowerInvariant();
             // v4: cache menyimpan daftar kandidat termasuk syllable sync dengan preserving whitespace (spasi antar kata utuh).
             // v5: cache menyimpan daftar kandidat termasuk penyedia lrc.red.
-            return Path.Combine(_cacheDirectory, $"v5-{hash}.json");
+            // v6: cache menyimpan kandidat lengkap termasuk official Spicy Lyrics Developer API.
+            return Path.Combine(_cacheDirectory, $"v7-{hash}.json");
         }
 
         static LyricsService()
@@ -228,7 +229,11 @@ namespace NotchWin.Services
                     .OrderByDescending(c => c.Score)
                     .FirstOrDefault();
 
-                if (bestSyllable != null)
+                // Syllable candidate must match song duration within 6.0s (avoid picking extended/video cuts with mismatching intro)
+                bool syllableMatchesDuration = bestSyllable != null && 
+                    (duration.TotalSeconds <= 10 || !bestSyllable.Duration.HasValue || Math.Abs(bestSyllable.Duration.Value - duration.TotalSeconds) <= 6.0);
+
+                if (syllableMatchesDuration && bestSyllable != null)
                 {
                     autoCandidate = bestSyllable;
                 }
@@ -242,6 +247,10 @@ namespace NotchWin.Services
                     if (bestSynced != null)
                     {
                         autoCandidate = bestSynced;
+                    }
+                    else if (bestSyllable != null)
+                    {
+                        autoCandidate = bestSyllable;
                     }
                     else
                     {
@@ -536,35 +545,59 @@ namespace NotchWin.Services
             string title = rawTitle.Trim();
             string artist = rawArtist?.Trim() ?? string.Empty;
 
-            // Strip YouTube Topic suffix if present (e.g. "Artist - Topic")
+            // 1. Strip YouTube Topic suffix if present (e.g. "Artist - Topic")
             artist = Regex.Replace(artist, @"\s*-\s*Topic\b", "", RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
 
-            // Remove YouTube brackets/metadata e.g. "(Official Music Video)", "[Official Lyric Video]", "(MV)", "[4K]", etc.
-            title = Regex.Replace(title, @"\s*(\(|\[)(?i:official|lyric|video|mv|m/v|audio|remix|full|visualizer|visualiser|hd|hq|4k|clip|vevo)[^\)\]]*(\)|\])", "", RegexOptions.Compiled);
+            // 2. Remove video / format tags in parentheses or brackets:
+            // e.g. "(Official Music Video)", "[Official Lyric Video]", "(MV)", "[4K]", "(Audio)", "(Visualizer)", "(Lyrics)"
+            title = Regex.Replace(title, @"\s*(\(|\[)(?i:official|lyric|video|mv|m/v|audio|full|visualizer|visualiser|hd|hq|4k|clip|vevo|lyrics)[^\)\]]*(\)|\])", "", RegexOptions.Compiled);
 
-            // Strip trailing pipe comments e.g. "Song Title | prod. by ..." or "Song Title | Album"
+            // 3. Strip trailing pipe comments e.g. "Song Title | prod. by ..." or "Song Title | Album"
             int pipeIdx = title.IndexOf('|');
             if (pipeIdx > 0)
             {
                 title = title.Substring(0, pipeIdx).Trim();
             }
 
-            // If title has "Artist - Song", separate them
-            int dashIdx = title.IndexOf(" - ");
-            if (dashIdx > 0 && dashIdx < title.Length - 3)
-            {
-                string possibleArtist = title.Substring(0, dashIdx).Trim();
-                string possibleTitle = title.Substring(dashIdx + 3).Trim();
+            // 4. Check if artist is already a known/valid artist (from Spotify, Apple Music, Media Player, etc.):
+            // If artist is known, strip remaster / edition suffixes from title instead of mistakenly splitting on " - "
+            // e.g. "In The End - 2020 Remaster" -> Title: "In The End", Artist: "Linkin Park"
+            bool hasKnownArtist = !string.IsNullOrWhiteSpace(artist) &&
+                !artist.Equals("Google Chrome", StringComparison.OrdinalIgnoreCase) &&
+                !artist.Equals("Microsoft Edge", StringComparison.OrdinalIgnoreCase) &&
+                !artist.Equals("Brave", StringComparison.OrdinalIgnoreCase) &&
+                !artist.Equals("Mozilla Firefox", StringComparison.OrdinalIgnoreCase) &&
+                !artist.Equals("YouTube", StringComparison.OrdinalIgnoreCase);
 
-                if (!string.IsNullOrWhiteSpace(possibleArtist) && !string.IsNullOrWhiteSpace(possibleTitle))
+            if (hasKnownArtist)
+            {
+                // Clean common suffix patterns in title
+                title = Regex.Replace(title, @"\s*-\s*(?i:\d{4}\s+remaster(ed)?|remaster(ed)?(\s+\d{4})?|radio\s+edit|single\s+version|original\s+mix|mono|stereo|bonus\s+track|deluxe(\s+edition)?)\b.*$", "", RegexOptions.Compiled);
+                title = Regex.Replace(title, @"\s*(\(|\[)(?i:\d{4}\s+remaster(ed)?|remaster(ed)?(\s+\d{4})?|radio\s+edit|single\s+version|original\s+mix|mono|stereo|bonus\s+track|deluxe)[^\)\]]*(\)|\])", "", RegexOptions.Compiled);
+            }
+            else
+            {
+                // Only if artist is unknown/generic (e.g. YouTube window title "Artist - Song"), separate by " - "
+                int dashIdx = title.IndexOf(" - ");
+                if (dashIdx > 0 && dashIdx < title.Length - 3)
                 {
-                    possibleArtist = Regex.Replace(possibleArtist, @"\s*-\s*Topic\b", "", RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
-                    // Clean possibleTitle from trailing features
-                    possibleTitle = Regex.Replace(possibleTitle, @"\s*(\(|\[)?(?i:ft\.|feat\.|featuring)[^\)\]]*(\)|\])?", "", RegexOptions.Compiled);
-                    return (possibleTitle.Trim(), possibleArtist);
+                    string possibleArtist = title.Substring(0, dashIdx).Trim();
+                    string possibleTitle = title.Substring(dashIdx + 3).Trim();
+
+                    // Make sure right side is not just a remaster tag
+                    if (!Regex.IsMatch(possibleTitle, @"^(?i:\d{4}\s+remaster|remaster|radio\s+edit|deluxe)", RegexOptions.Compiled))
+                    {
+                        if (!string.IsNullOrWhiteSpace(possibleArtist) && !string.IsNullOrWhiteSpace(possibleTitle))
+                        {
+                            possibleArtist = Regex.Replace(possibleArtist, @"\s*-\s*Topic\b", "", RegexOptions.IgnoreCase | RegexOptions.Compiled).Trim();
+                            possibleTitle = Regex.Replace(possibleTitle, @"\s*(\(|\[)?(?i:ft\.|feat\.|featuring)[^\)\]]*(\)|\])?", "", RegexOptions.Compiled);
+                            return (possibleTitle.Trim(), possibleArtist);
+                        }
+                    }
                 }
             }
 
+            // 5. Strip trailing features e.g. " (feat. Drake)" or " ft. Anne-Marie"
             title = Regex.Replace(title, @"\s*(\(|\[)?(?i:ft\.|feat\.|featuring)[^\)\]]*(\)|\])?", "", RegexOptions.Compiled);
             return (title.Trim(), artist);
         }

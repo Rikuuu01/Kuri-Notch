@@ -51,6 +51,8 @@ namespace NotchWin.ViewModels
         public const double ExpandedControlCenterHeight = 304.0;
 
         public const double ExpandedMediaHeight = 232.0;
+        public const double ExpandedMediaPickerHeight = 310.0;
+        public const double ExpandedScreenTimeHeight = 356.0;
 
         public const double ExpandedWeatherHeight = 286.0;
 
@@ -430,6 +432,10 @@ namespace NotchWin.ViewModels
 
         public HomeCalendarViewModel HomeCalendar { get; } = new();
 
+        public WifiService Wifi { get; } = new();
+
+        public BluetoothManagerService BluetoothMgr { get; } = new();
+
 
 
         public IBrightnessService BrightnessService => _brightnessService;
@@ -710,6 +716,51 @@ namespace NotchWin.ViewModels
 
         private bool _isEyeBreaksOn;
 
+        [ObservableProperty]
+        private bool _isWifiExpanded;
+
+        [ObservableProperty]
+        private bool _isBluetoothExpanded;
+
+        [ObservableProperty]
+        private bool _isAudioOutputExpanded;
+
+        partial void OnIsWifiExpandedChanged(bool value)
+        {
+            if (value)
+            {
+                IsBluetoothExpanded = false;
+                IsAudioOutputExpanded = false;
+                _ = Wifi.RefreshNetworksAsync();
+            }
+            UpdateGeometryForState(CurrentState);
+            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        partial void OnIsBluetoothExpandedChanged(bool value)
+        {
+            if (value)
+            {
+                IsWifiExpanded = false;
+                IsAudioOutputExpanded = false;
+                _ = BluetoothMgr.RefreshDevicesAsync(_volumeService.BluetoothDeviceName);
+            }
+            UpdateGeometryForState(CurrentState);
+            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        partial void OnIsAudioOutputExpandedChanged(bool value)
+        {
+            if (value)
+            {
+                IsWifiExpanded = false;
+                IsBluetoothExpanded = false;
+                _volumeService.RefreshAvailableDevices();
+            }
+            UpdateGeometryForState(CurrentState);
+            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+        }
+
 
 
         public string WifiStatusLabel
@@ -907,7 +958,7 @@ namespace NotchWin.ViewModels
 
                     HomeNotificationTitle = "Alarm Pengingat (Tunda)";
 
-                    HomeNotificationSubtitle = $"{DateTime.Now:HH:mm} Â· alarm berdering";
+                    HomeNotificationSubtitle = $"{DateTime.Now:HH:mm} \u00B7 alarm berdering";
 
                     HomeNotificationActionText = "Matikan";
 
@@ -1071,7 +1122,7 @@ namespace NotchWin.ViewModels
 
             QuickActionHelper.SetKeepAwake(IsKeepAwakeOn);
 
-            TriggerTransientNotification(IsKeepAwakeOn ? "â˜•" : "ðŸ’¤", "Keep Awake", IsKeepAwakeOn ? "Layar dan sistem dicegah tidur" : "Mode tidur sistem kembali normal");
+            TriggerTransientNotification(IsKeepAwakeOn ? "\u2615" : "\U0001F4A4", "Keep Awake", IsKeepAwakeOn ? "Layar dan sistem dicegah tidur" : "Mode tidur sistem kembali normal");
 
         }
 
@@ -1099,7 +1150,7 @@ namespace NotchWin.ViewModels
 
             IsDarkModeOn = QuickActionHelper.ToggleDarkMode();
 
-            TriggerTransientNotification("ðŸŒ“", "Tema Windows", IsDarkModeOn ? "Mode Gelap aktif" : "Mode Terang aktif");
+            TriggerTransientNotification("\U0001F313", "Tema Windows", IsDarkModeOn ? "Mode Gelap aktif" : "Mode Terang aktif");
 
         }
 
@@ -1113,7 +1164,7 @@ namespace NotchWin.ViewModels
 
             IsMicrophoneMuted = QuickActionHelper.ToggleMicrophoneMute();
 
-            TriggerTransientNotification(IsMicrophoneMuted ? "ðŸŽ¤âŒ" : "ðŸŽ¤", "Mikrofon", IsMicrophoneMuted ? "Mikrofon dibisukan (Muted)" : "Mikrofon aktif");
+            TriggerTransientNotification(IsMicrophoneMuted ? "\U0001F3A4\u274C" : "\U0001F3A4", "Mikrofon", IsMicrophoneMuted ? "Mikrofon dibisukan (Muted)" : "Mikrofon aktif");
 
         }
 
@@ -1127,7 +1178,7 @@ namespace NotchWin.ViewModels
 
             IsEyeBreaksOn = !IsEyeBreaksOn;
 
-            TriggerTransientNotification(IsEyeBreaksOn ? "ðŸ‘ï¸" : "ðŸ‘€", "Eye Breaks", IsEyeBreaksOn ? "Pengingat istirahat mata 20-20-20 aktif" : "Pengingat istirahat mata dinonaktifkan");
+            TriggerTransientNotification(IsEyeBreaksOn ? "\U0001F441\uFE0F" : "\U0001F440", "Eye Breaks", IsEyeBreaksOn ? "Pengingat istirahat mata 20-20-20 aktif" : "Pengingat istirahat mata dinonaktifkan");
 
         }
 
@@ -1155,6 +1206,79 @@ namespace NotchWin.ViewModels
 
         }
 
+        [RelayCommand]
+        public void ToggleWifiExpand()
+        {
+            IsWifiExpanded = !IsWifiExpanded;
+        }
+
+        [RelayCommand]
+        public void ToggleBluetoothExpand()
+        {
+            IsBluetoothExpanded = !IsBluetoothExpanded;
+        }
+
+        [RelayCommand]
+        public void ToggleAudioOutputExpand()
+        {
+            IsAudioOutputExpanded = !IsAudioOutputExpanded;
+        }
+
+        [RelayCommand]
+        public async Task ConnectWifiAsync(WifiNetworkItem? item)
+        {
+            if (item == null) return;
+            await Wifi.ConnectAsync(item);
+        }
+
+        [RelayCommand]
+        public async Task DisconnectWifiAsync()
+        {
+            await Wifi.DisconnectAsync();
+        }
+
+        [RelayCommand]
+        public async Task RefreshWifiAsync()
+        {
+            await Wifi.RefreshNetworksAsync();
+        }
+
+        [RelayCommand]
+        public async Task RefreshBluetoothAsync()
+        {
+            await BluetoothMgr.RefreshDevicesAsync(_volumeService.BluetoothDeviceName);
+        }
+
+        [RelayCommand]
+        public async Task SelectBluetoothDeviceAsync(BluetoothDeviceItem? item)
+        {
+            if (item == null) return;
+            if (item.DeviceType == "audio")
+            {
+                foreach (var dev in Volume.AvailableDevices)
+                {
+                    if (dev.Name.Contains(item.Name, StringComparison.OrdinalIgnoreCase) ||
+                        item.Name.Contains(dev.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await Volume.SelectAudioDeviceAsync(dev);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                QuickActionHelper.OpenBluetoothSettings();
+            }
+        }
+
+        [RelayCommand]
+        public async Task SelectAudioOutputDeviceAsync(AudioDeviceInfo? device)
+        {
+            if (device == null) return;
+            await Volume.SelectAudioDeviceAsync(device);
+            IsAudioOutputExpanded = false;
+        }
+
 
 
         #endregion
@@ -1172,6 +1296,21 @@ namespace NotchWin.ViewModels
             SlideChanged?.Invoke(this, value);
 
             UpdateSlideTelemetryState();
+
+            if (value != MediaSlideIndex && Media != null)
+
+            {
+
+                Media.IsLyricsVersionPickerOpen = false;
+
+            }
+
+            if (value != ControlCenterSlideIndex)
+            {
+                IsWifiExpanded = false;
+                IsBluetoothExpanded = false;
+                IsAudioOutputExpanded = false;
+            }
 
             if (CurrentState == NotchState.Expanded)
 
@@ -1285,7 +1424,7 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    TriggerTransientNotification("ðŸ“±", L10n["Phone.WindowTitle"], L10n["Phone.Error"]);
+                    TriggerTransientNotification("\U0001F4F1", L10n["Phone.WindowTitle"], L10n["Phone.Error"]);
 
                     return;
 
@@ -1580,9 +1719,9 @@ namespace NotchWin.ViewModels
 
             Clipboard = new ClipboardViewModel(_clipboardService);
 
-            Note.ToastRequested += (s, msg) => TriggerTransientNotification("ðŸ“", L10n["Tab.Note"], msg);
+            Note.ToastRequested += (s, msg) => TriggerTransientNotification("\U0001F4DD", L10n["Tab.Note"], msg);
 
-            Clipboard.ToastRequested += (s, msg) => TriggerTransientNotification("ðŸ“‹", L10n["Tab.Clipboard"], msg);
+            Clipboard.ToastRequested += (s, msg) => TriggerTransientNotification("\U0001F4CB", L10n["Tab.Clipboard"], msg);
 
 
 
@@ -1598,7 +1737,7 @@ namespace NotchWin.ViewModels
 
                     {
 
-                        TriggerTransientNotification("ðŸ“¸", L10n["Notification.ScreenshotCaptured"], $"{item.ImageWidth} \u00d7 {item.ImageHeight} px");
+                        TriggerTransientNotification("\U0001F4F8", L10n["Notification.ScreenshotCaptured"], $"{item.ImageWidth} \u00d7 {item.ImageHeight} px");
 
                     }
 
@@ -1610,7 +1749,7 @@ namespace NotchWin.ViewModels
 
                         if (preview.Length > 45) preview = preview.Substring(0, 42) + "...";
 
-                        TriggerTransientNotification("ðŸ“‹", L10n["Notification.TextCopied"], preview);
+                        TriggerTransientNotification("\U0001F4CB", L10n["Notification.TextCopied"], preview);
 
                     }
 
@@ -1656,7 +1795,7 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    TriggerTransientNotification("ðŸ“¥", L10n["Download.CompletedTitle"],
+                    TriggerTransientNotification("\U0001F4E5", L10n["Download.CompletedTitle"],
 
                         L10n.Get("Download.CompletedMulti", notice.Count));
 
@@ -1666,7 +1805,7 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    TriggerTransientNotification("ðŸ“¥", L10n["Download.CompletedTitle"], notice.FirstFileName);
+                    TriggerTransientNotification("\U0001F4E5", L10n["Download.CompletedTitle"], notice.FirstFileName);
 
                 }
 
@@ -1842,6 +1981,28 @@ namespace NotchWin.ViewModels
 
                 }
 
+                else if (e.PropertyName == nameof(MediaViewModel.IsLyricsVersionPickerOpen))
+
+                {
+
+                    Application.Current?.Dispatcher.Invoke(() =>
+
+                    {
+
+                        if (CurrentState == NotchState.Expanded && CurrentSlideIndex == MediaSlideIndex)
+
+                        {
+
+                            UpdateGeometryForState(CurrentState);
+
+                            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+
+                        }
+
+                    });
+
+                }
+
             };
 
 
@@ -1878,7 +2039,7 @@ namespace NotchWin.ViewModels
 
                 string batteryInfo = !string.IsNullOrEmpty(_volumeService.BluetoothBatteryText) ? $" ({_volumeService.BluetoothBatteryText})" : "";
 
-                TriggerTransientNotification("ðŸŽ§", L10n["Notification.BluetoothConnected"], $"{deviceName}{batteryInfo}");
+                TriggerTransientNotification("\U0001F3A7", L10n["Notification.BluetoothConnected"], $"{deviceName}{batteryInfo}");
 
             };
 
@@ -1888,7 +2049,7 @@ namespace NotchWin.ViewModels
 
             {
 
-                TriggerTransientNotification("ðŸŽ§", L10n["Notification.BluetoothDisconnected"], $"{deviceName}");
+                TriggerTransientNotification("\U0001F3A7", L10n["Notification.BluetoothDisconnected"], $"{deviceName}");
 
             };
 
@@ -1902,7 +2063,7 @@ namespace NotchWin.ViewModels
 
                 string message = L10n[isOn ? "Notification.BluetoothOnMessage" : "Notification.BluetoothOffMessage"];
 
-                TriggerTransientNotification("ðŸŽ§", title, message);
+                TriggerTransientNotification("\U0001F3A7", title, message);
 
             };
 
@@ -2234,7 +2395,7 @@ namespace NotchWin.ViewModels
 
 
 
-                TriggerTransientNotification("â±ï¸", L10n["Notification.TimerFinishedTitle"], L10n["Notification.TimerFinishedDesc"]);
+                TriggerTransientNotification("\u23F1\uFE0F", L10n["Notification.TimerFinishedTitle"], L10n["Notification.TimerFinishedDesc"]);
 
             };
 
@@ -2294,13 +2455,13 @@ namespace NotchWin.ViewModels
 
                     HomeNotificationTitle = string.IsNullOrWhiteSpace(item.Text) ? "Alarm Pengingat" : item.Text;
 
-                    HomeNotificationSubtitle = $"{DateTime.Now:HH:mm} Â· alarm pengingat berdering";
+                    HomeNotificationSubtitle = $"{DateTime.Now:HH:mm} \u00B7 alarm pengingat berdering";
 
                     HomeNotificationActionText = "Matikan";
 
 
 
-                    TriggerTransientNotification("â°", "Alarm Pengingat", item.Text);
+                    TriggerTransientNotification("\u23F0", "Alarm Pengingat", item.Text);
 
                     if (item.IsAlarmEnabled)
 
@@ -2382,7 +2543,7 @@ namespace NotchWin.ViewModels
 
                     int durationMs = _soundNotificationService.PrayerCallDurationMs + 2000;
 
-                    TriggerTransientNotification("ðŸ•Œ", L10n["Notification.PrayerReminderTitle"], msg, durationMs, isPrayer: true);
+                    TriggerTransientNotification("\U0001F54C", L10n["Notification.PrayerReminderTitle"], msg, durationMs, isPrayer: true);
 
                     if (_settingsService.CurrentSettings.PrayerSoundEnabled)
 
@@ -3262,6 +3423,14 @@ namespace NotchWin.ViewModels
 
             }
 
+            if (Media != null)
+
+            {
+
+                Media.IsLyricsVersionPickerOpen = false;
+
+            }
+
 
 
             bool didCollapse = CurrentState != NotchState.Collapsed;
@@ -3651,7 +3820,7 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    TargetHeight = ExpandedMediaHeight;
+                    TargetHeight = (Media?.IsLyricsVersionPickerOpen == true) ? ExpandedMediaPickerHeight : ExpandedMediaHeight;
 
                 }
 
@@ -3667,6 +3836,15 @@ namespace NotchWin.ViewModels
 
                         baseCcH += DownloadStripExtraHeight;
 
+                    }
+
+                    if (IsWifiExpanded || IsBluetoothExpanded)
+                    {
+                        baseCcH += 184.0;
+                    }
+                    else if (IsAudioOutputExpanded)
+                    {
+                        baseCcH += 122.0;
                     }
 
                     TargetHeight = baseCcH;
@@ -3702,6 +3880,14 @@ namespace NotchWin.ViewModels
                 {
 
                     TargetHeight = (PhoneShare?.IsPanelOpen == true) ? 286.0 : ExpandedShelfHeight;
+
+                }
+
+                else if (IsScreenTimeActive || CurrentSlideIndex == ScreenTimeSlideIndex)
+
+                {
+
+                    TargetHeight = ExpandedScreenTimeHeight;
 
                 }
 
@@ -3784,7 +3970,7 @@ namespace NotchWin.ViewModels
                             double baseClockW = CollapsedWidth;
                             if (ShowWeatherInCollapsedNotch) baseClockW += 68.0;
                             if (ShowBatteryInCollapsedNotch && Battery?.HasBattery == true) baseClockW += 68.0;
-                            if (ShowPetInCollapsedNotch && IsPetEnabled) baseClockW += 34.0;
+                            if (ShowPetInCollapsedNotch && IsPetEnabled) baseClockW += 38.0;
 
                             collapsedWidth = baseClockW;
 
@@ -3943,19 +4129,19 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    "ðŸ“¸" => MascotState.Screenshot,
+                    "\U0001F4F8" => MascotState.Screenshot,
 
-                    "ðŸ“‹" => MascotState.Copied,
+                    "\U0001F4CB" => MascotState.Copied,
 
-                    "ðŸŽ§" => MascotState.Bluetooth,
+                    "\U0001F3A7" => MascotState.Bluetooth,
 
-                    "â±ï¸" => MascotState.Timer,
+                    "\u23F1\uFE0F" => MascotState.Timer,
 
-                    "ðŸ’§" => MascotState.Drink,
+                    "\U0001F4A7" => MascotState.Drink,
 
-                    "ðŸ•Œ" => MascotState.Adzan,
+                    "\U0001F54C" => MascotState.Adzan,
 
-                    "â°" => MascotState.Alarm,
+                    "\u23F0" => MascotState.Alarm,
 
                     _ => MascotState.Notification
 
@@ -4043,7 +4229,7 @@ namespace NotchWin.ViewModels
 
                 CancelPendingExpand();
 
-                Notification.SetNotification("ðŸ’§", L10n["Notification.WaterReminderTitle"], message, isWaterAlarm: true);
+                Notification.SetNotification("\U0001F4A7", L10n["Notification.WaterReminderTitle"], message, isWaterAlarm: true);
 
                 WidgetHost.TriggerPersistent(WidgetType.Notification);
 
@@ -4195,7 +4381,7 @@ namespace NotchWin.ViewModels
 
 
 
-                string icon = isConnected ? "ðŸ’¾" : "âï¸";
+                string icon = isConnected ? "\U0001F4BE" : "\u23CF\uFE0F";
 
                 string title = isConnected ? L10n["Notification.StorageConnected"] : L10n["Notification.StorageDisconnected"];
 

@@ -1071,24 +1071,18 @@ namespace NotchWin.ViewModels
 
 
 
-        // Display pre-roll: render lyric lines slightly ahead of their LRC timestamp for readability (Poni +300ms lead time)
-        public const int DefaultAutoLatencyCompensationMs = 300;
+                [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(TotalLyricOffsetMs))]
+        private bool _isCurrentLyricsSyllableSynced;
 
-
-
-
-
-
+        // Adaptive lead latency compensation:
+        // Syllable-synced (TTML kata demi kata): 40ms (real-time akurat mencocokkan vokal audio, mengkompensasi frame swap layar 60Hz).
+        // Line-synced (LRC baris demi baris): 120ms (lead time natural yang pas untuk membaca lirik baris berikutnya).
+        public int AutoLatencyCompensationMs => IsCurrentLyricsSyllableSynced ? 40 : 120;
 
         private int _baseLrcOffsetMs = 0;
 
-
-
-
-
-
-
-        public int TotalLyricOffsetMs => _baseLrcOffsetMs + DefaultAutoLatencyCompensationMs + LyricOffsetMs;
+        public int TotalLyricOffsetMs => _baseLrcOffsetMs + AutoLatencyCompensationMs + LyricOffsetMs;
 
 
 
@@ -1404,8 +1398,8 @@ namespace NotchWin.ViewModels
                     {
                         var currentEst = _baseTrackPosition + _playbackStopwatch.Elapsed;
                         var drift = Math.Abs((currentEst - track.Position).TotalSeconds);
-                        // Only snap if there is a real jump (seek or major drift > 1.2s)
-                        if (drift > 1.2)
+                        // Tightly synchronize playback position: snap if drift exceeds 350ms
+                          if (drift > 0.35)
                         {
                             _baseTrackPosition = track.Position;
                             _playbackStopwatch.Restart();
@@ -2350,6 +2344,7 @@ namespace NotchWin.ViewModels
             LyricsCandidates.Clear();
             HasLyricsCandidateChoices = false;
             IsLyricsVersionPickerOpen = false;
+            IsCurrentLyricsSyllableSynced = false;
             IsAutoLyricsCandidateSelected = true;
             SelectedLyricsVersionLabel = string.Empty;
         }
@@ -2466,6 +2461,7 @@ namespace NotchWin.ViewModels
                     ? $"{result.Provider} · SYLLABLE"
                     : (result.IsSynced ? $"{result.Provider} · SYNCED" : $"{result.Provider} · NOT TIMED");
                 IsCurrentLyricsUntimed = !result.IsSynced;
+                IsCurrentLyricsSyllableSynced = result.IsSyllableSynced;
 
                 if (result.IsSynced)
                 {

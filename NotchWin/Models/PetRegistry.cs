@@ -60,7 +60,7 @@ namespace NotchWin.Models
 
     /// <summary>
     /// Complete catalog registry of available character companions in DynamicNotchWindows.
-    /// Features two pure-vector premium companions: Pastel Mochi and Astro Mascot.
+    /// Features four pure-vector premium companions: Pastel Mochi, Astro Mascot, Egg Mascot, and Notch Eyes.
     /// </summary>
     public static class PetRegistry
     {
@@ -104,6 +104,19 @@ namespace NotchWin.Models
                 PreviewImage = "egg_mascot.png",
                 IsNativeVector = true,
                 IsRecommended = false
+            },
+            // 4. Notch Eyes
+            new PetCharacterInfo
+            {
+                Style = PetStyle.NotchEyes,
+                Id = "NotchEyes",
+                Name = "Notch Eyes",
+                Description = "Minimalist dual animated eyes with dynamic pill expansion, reactive status icons, and expressive emotions",
+                Category = "Mascots",
+                AssetFile = "notch_eyes.png",
+                PreviewImage = "notch_eyes.png",
+                IsNativeVector = true,
+                IsRecommended = true
             }
         };
 

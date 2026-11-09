@@ -1,0 +1,227 @@
+<UserControl x:Class="NotchWin.Controls.NotchEyesControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Background="Transparent"
+             Focusable="False">
+
+    <UserControl.Resources>
+        <!-- Brush bersama. Warna AccentBrush diganti dari code-behind per state. -->
+        <SolidColorBrush x:Key="EyeBrush" Color="#F5F5F7" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#F5F5F7" />
+
+        <!-- Gaya garis untuk semua ikon (lucide, kanvas 24x24, tebal 2). Menggunakan DynamicResource agar reaktif tanpa freeze. -->
+        <Style x:Key="IconShape" TargetType="Shape">
+            <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="StrokeThickness" Value="2" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="Fill" Value="{x:Null}" />
+        </Style>
+    </UserControl.Resources>
+
+    <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid x:Name="MainGrid" Width="236" Height="45" Background="#00FFFFFF">
+            <!-- ================= PILL ================= -->
+            <Border x:Name="Pill"
+                    Width="210" Height="45"
+                    HorizontalAlignment="Center" VerticalAlignment="Top"
+                    Background="#000000"
+                    CornerRadius="0,0,25,25"
+                    RenderTransformOrigin="0.5,0">
+                <Border.RenderTransform>
+                    <TransformGroup>
+                        <TranslateTransform x:Name="PillTx" />
+                        <RotateTransform x:Name="PillRot" />
+                    </TransformGroup>
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <!-- Glow: napas bulan (salat) dan kilat (screenshot). Opacity dasar 0. -->
+                    <DropShadowEffect x:Name="Glow" Color="#FFFFFF" BlurRadius="18" ShadowDepth="0" Opacity="0" />
+                </Border.Effect>
+
+                <Grid>
+                    <!-- Cincin kilat untuk screenshot -->
+                    <Border x:Name="FlashRing"
+                            BorderBrush="#FFFFFF" BorderThickness="2"
+                            CornerRadius="0,0,25,25"
+                            Opacity="0" IsHitTestVisible="False" />
+
+                    <!-- Baris isi: [mata][slot ikon], dipusatkan -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                        <!-- ===== MATA ===== -->
+                        <StackPanel x:Name="Eyes" Orientation="Horizontal" VerticalAlignment="Center"
+                                    RenderTransformOrigin="0.5,0.5">
+                            <StackPanel.RenderTransform>
+                                <TransformGroup>
+                                    <TranslateTransform x:Name="EyesTx" />
+                                    <RotateTransform x:Name="EyesRot" />
+                                </TransformGroup>
+                            </StackPanel.RenderTransform>
+
+                            <!-- Mata kiri -->
+                            <Grid x:Name="LeftEye" Width="14" Height="24">
+                                <Grid.RenderTransform>
+                                    <TranslateTransform x:Name="LShift" />
+                                </Grid.RenderTransform>
+
+                                <!-- bentuk pil (Idle) -->
+                                <Rectangle x:Name="LPill" Width="10.5" Height="16.5" RadiusX="5.25" RadiusY="5.25"
+                                           Fill="{StaticResource EyeBrush}" RenderTransformOrigin="0.5,0.5">
+                                    <Rectangle.RenderTransform>
+                                        <ScaleTransform x:Name="LScale" />
+                                    </Rectangle.RenderTransform>
+                                </Rectangle>
+                                <!-- senang ^ -->
+                                <Path x:Name="LHappy" Data="M 1,9 A 5.5,5.5 0 0 1 12,9"
+                                       Stroke="{StaticResource EyeBrush}" StrokeThickness="3.0"
+                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" />
+                                <!-- tenang ‿ -->
+                                <Path x:Name="LCalm" Data="M 1,2 A 5.5,5.5 0 0 0 12,2"
+                                       Stroke="{DynamicResource AccentBrush}" StrokeThickness="3.0"
+                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" />
+                            </Grid>
+
+                            <!-- Mata kanan -->
+                            <Grid x:Name="RightEye" Width="14" Height="24" Margin="5,0,0,0">
+                                <Grid.RenderTransform>
+                                    <TranslateTransform x:Name="RShift" />
+                                </Grid.RenderTransform>
+
+                                <Rectangle x:Name="RPill" Width="10.5" Height="16.5" RadiusX="5.25" RadiusY="5.25"
+                                           Fill="{StaticResource EyeBrush}" RenderTransformOrigin="0.5,0.5">
+                                    <Rectangle.RenderTransform>
+                                        <ScaleTransform x:Name="RScale" />
+                                    </Rectangle.RenderTransform>
+                                </Rectangle>
+                                <Path x:Name="RHappy" Data="M 1,9 A 5.5,5.5 0 0 1 12,9"
+                                       Stroke="{StaticResource EyeBrush}" StrokeThickness="3.0"
+                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" />
+                                <Path x:Name="RCalm" Data="M 1,2 A 5.5,5.5 0 0 0 12,2"
+                                       Stroke="{DynamicResource AccentBrush}" StrokeThickness="3.0"
+                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- ===== SLOT IKON (lebar 0 saat tertutup, 24 saat terbuka: 4 jarak + 20 ikon) ===== -->
+                        <Grid x:Name="IconBox" Width="0" Height="24" VerticalAlignment="Center">
+                            <Grid x:Name="IconInner" Width="20" Height="20" HorizontalAlignment="Right"
+                                  Opacity="0" RenderTransformOrigin="0.5,0.5">
+                                <Grid.RenderTransform>
+                                    <TransformGroup>
+                                        <ScaleTransform x:Name="IconScale" />
+                                        <ScaleTransform x:Name="IconBreath" />
+                                        <RotateTransform x:Name="IconRot" />
+                                        <TranslateTransform x:Name="IconShift" />
+                                    </TransformGroup>
+                                </Grid.RenderTransform>
+
+                                <!-- Tangan melambai (Welcome) -->
+                                <Viewbox x:Name="IcoHand" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Style="{StaticResource IconShape}" Data="M 18,11 L 18,6 A 2,2 0 0 0 16,4 A 2,2 0 0 0 14,6" />
+                                        <Path Style="{StaticResource IconShape}" Data="M 14,10 L 14,4 A 2,2 0 0 0 12,2 A 2,2 0 0 0 10,4 L 10,6" />
+                                        <Path Style="{StaticResource IconShape}" Data="M 10,10.5 L 10,6 A 2,2 0 0 0 8,4 A 2,2 0 0 0 6,6 L 6,14" />
+                                        <Path Style="{StaticResource IconShape}" Data="M 18,8 A 2,2 0 1 1 22,8 L 22,14 A 8,8 0 0 1 14,22 L 12,22 C 9.2,22 7.5,21.14 6.01,19.66 L 2.41,16.06 A 2,2 0 0 1 5.24,13.24 L 7,15" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Jam alarm -->
+                                <Viewbox x:Name="IcoAlarm" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Ellipse Style="{StaticResource IconShape}" Canvas.Left="4" Canvas.Top="5" Width="16" Height="16" />
+                                        <Polyline Style="{StaticResource IconShape}" Points="12,9 12,13 14,15" />
+                                        <Path Style="{StaticResource IconShape}" Data="M 5,3 L 2,6" />
+                                        <Path Style="{StaticResource IconShape}" Data="M 22,6 L 19,3" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Bulan sabit (salat) -->
+                                <Viewbox x:Name="IcoMoon" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Style="{StaticResource IconShape}" Data="M 21,12.79 A 9,9 0 1 1 11.21,3 A 7,7 0 0 0 21,12.79 Z" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Gelembung pesan + titik badge -->
+                                <Viewbox x:Name="IcoMsg" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Style="{StaticResource IconShape}" Data="M 21,15 A 2,2 0 0 1 19,17 L 7,17 L 3,21 L 3,5 A 2,2 0 0 1 5,3 L 19,3 A 2,2 0 0 1 21,5 Z" />
+                                        <Ellipse x:Name="MsgBadge" Canvas.Left="16" Canvas.Top="-2" Width="8" Height="8" Fill="#FF7A8A" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Tetes air (minum). DropFill = isi saat "sudah minum". -->
+                                <Viewbox x:Name="IcoDrop" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Path x:Name="DropFill" Fill="{DynamicResource AccentBrush}" Opacity="0"
+                                              Data="M 12,2.69 L 17.66,8.35 A 8,8 0 1 1 6.34,8.35 Z" />
+                                        <Path Style="{StaticResource IconShape}" Data="M 12,2.69 L 17.66,8.35 A 8,8 0 1 1 6.34,8.35 Z" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Clipboard (salin teks). ClipCheck = tanda centang "tersimpan". -->
+                                <Viewbox x:Name="IcoClip" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Style="{StaticResource IconShape}" Data="M 16,4 L 18,4 A 2,2 0 0 1 20,6 L 20,20 A 2,2 0 0 1 18,22 L 6,22 A 2,2 0 0 1 4,20 L 4,6 A 2,2 0 0 1 6,4 L 8,4" />
+                                        <Rectangle Style="{StaticResource IconShape}" Canvas.Left="8" Canvas.Top="2" Width="8" Height="4" RadiusX="1" RadiusY="1" />
+                                        <Polyline x:Name="ClipCheck" Style="{StaticResource IconShape}" Points="9,14 11,16 15,12" Opacity="0" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Kamera (tangkapan layar) -->
+                                <Viewbox x:Name="IcoCamera" Width="20" Height="20" Visibility="Collapsed">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Style="{StaticResource IconShape}" Data="M 23,19 A 2,2 0 0 1 21,21 L 3,21 A 2,2 0 0 1 1,19 L 1,8 A 2,2 0 0 1 3,6 L 7,6 L 9,3 L 15,3 L 17,6 L 21,6 A 2,2 0 0 1 23,8 Z" />
+                                        <Ellipse Style="{StaticResource IconShape}" Canvas.Left="8" Canvas.Top="9" Width="8" Height="8" />
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Equalizer 4 bar (musik) -->
+                                <StackPanel x:Name="IcoEq" Orientation="Horizontal" Height="18"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <Rectangle Width="3" Height="18" Margin="0,0,2,0" RadiusX="1.5" RadiusY="1.5"
+                                               Fill="{DynamicResource AccentBrush}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="Bar1" ScaleY="0.5" /></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle Width="3" Height="18" Margin="0,0,2,0" RadiusX="1.5" RadiusY="1.5"
+                                               Fill="{DynamicResource AccentBrush}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="Bar2" ScaleY="0.5" /></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle Width="3" Height="18" Margin="0,0,2,0" RadiusX="1.5" RadiusY="1.5"
+                                               Fill="{DynamicResource AccentBrush}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="Bar3" ScaleY="0.5" /></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle Width="3" Height="18" RadiusX="1.5" RadiusY="1.5"
+                                               Fill="{DynamicResource AccentBrush}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="Bar4" ScaleY="0.5" /></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Huruf z / Z melayang (Sleep). -->
+                    <Canvas IsHitTestVisible="False">
+                        <TextBlock x:Name="Z1" Text="z" FontSize="10" FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentBrush}" Canvas.Left="24" Canvas.Top="1" Opacity="0">
+                            <TextBlock.RenderTransform><TranslateTransform x:Name="Z1Shift" /></TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock x:Name="Z2" Text="Z" FontSize="13" FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentBrush}" Canvas.Left="30" Canvas.Top="-4" Opacity="0">
+                            <TextBlock.RenderTransform><TranslateTransform x:Name="Z2Shift" /></TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Canvas>
+                </Grid>
+            </Border>
+        </Grid>
+    </Viewbox>
+</UserControl>
