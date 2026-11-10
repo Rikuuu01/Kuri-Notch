@@ -981,11 +981,11 @@
                     </LinearGradientBrush>
                   </UIElement.OpacityMask>
                   <Grid VerticalAlignment="Top" Height="20">
-                    <Grid Name="CollapsedLyricSlotA" Opacity="1" HorizontalAlignment="Center">
+                    <Grid Name="CollapsedLyricSlotA" Opacity="1" HorizontalAlignment="Center" MaxWidth="{Binding ActualWidth, ElementName=CollapsedLyricsContainer}">
                       <UIElement.RenderTransform>
                         <TranslateTransform x:Name="CollapsedLyricTransformA" X="0" Y="0" />
                       </UIElement.RenderTransform>
-                      <TextBlock Name="CollapsedLyricTextA" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <TextBlock Name="CollapsedLyricTextA" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="{Binding ActualWidth, ElementName=CollapsedLyricsContainer}">
                         <FrameworkElement.Style>
                           <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="Foreground" Value="#FFFFFF" />
@@ -997,7 +997,7 @@
                           </Style>
                         </FrameworkElement.Style>
                       </TextBlock>
-                      <TextBlock Name="CollapsedLyricOverlayA" Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                      <TextBlock Name="CollapsedLyricOverlayA" Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="{Binding ActualWidth, ElementName=CollapsedLyricsContainer}" IsHitTestVisible="False">
                         <UIElement.Clip>
                           <MultiBinding Converter="{StaticResource KaraokeClipConverter}">
                             <Binding RelativeSource="{RelativeSource Self}" />
@@ -1009,11 +1009,11 @@
                         </UIElement.Clip>
                       </TextBlock>
                     </Grid>
-                    <Grid Name="CollapsedLyricSlotB" Opacity="0" HorizontalAlignment="Center">
+                    <Grid Name="CollapsedLyricSlotB" Opacity="0" HorizontalAlignment="Center" MaxWidth="{Binding ActualWidth, ElementName=CollapsedLyricsContainer}">
                       <UIElement.RenderTransform>
                         <TranslateTransform x:Name="CollapsedLyricTransformB" X="0" Y="16" />
                       </UIElement.RenderTransform>
-                      <TextBlock Name="CollapsedLyricTextB" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <TextBlock Name="CollapsedLyricTextB" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="{Binding ActualWidth, ElementName=CollapsedLyricsContainer}">
                         <FrameworkElement.Style>
                           <Style TargetType="{x:Type TextBlock}">
                             <Setter Property="Foreground" Value="#FFFFFF" />
@@ -1025,7 +1025,7 @@
                           </Style>
                         </FrameworkElement.Style>
                       </TextBlock>
-                      <TextBlock Name="CollapsedLyricOverlayB" Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                      <TextBlock Name="CollapsedLyricOverlayB" Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="{Binding ActualWidth, ElementName=CollapsedLyricsContainer}" IsHitTestVisible="False">
                         <UIElement.Clip>
                           <MultiBinding Converter="{StaticResource KaraokeClipConverter}">
                             <Binding RelativeSource="{RelativeSource Self}" />
