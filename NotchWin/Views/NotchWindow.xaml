@@ -2969,8 +2969,19 @@
 
                         <!-- Row 1: Content Grid -->
                         <Grid Grid.Row="1">
-                          <!-- Scrolling lyrics canvas wrapped with OpacityMask gradient -->
-                          <Grid ClipToBounds="True">
+                          <!-- Empty State (Solid & Crisp, Outside OpacityMask so text is completely clear and not faded out on top/bottom) -->
+                          <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="14,0,14,0" Visibility="{Binding Media.HasLyrics, Converter={StaticResource InverseBoolToVis}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <TextBlock Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="36" TextTrimming="CharacterEllipsis" Text="{Binding Media.DisplayTitle}" />
+                              <TextBlock Foreground="#A1A1AA" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="Normal" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,3,0,0" Text="{Binding Media.DisplayArtist}" Visibility="{Binding Media.HasArtist, Converter={StaticResource BoolToVis}}" />
+                              <Border Background="#16FFFFFF" CornerRadius="8" Padding="7,2" Margin="0,6,0,0" HorizontalAlignment="Center" Visibility="{Binding Media.HasLyricsStatusMessage, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Foreground="#A1A1AA" FontSize="11" FontWeight="SemiBold" FontStyle="Italic" HorizontalAlignment="Center" Text="{Binding Media.LyricsStatusMessage}" />
+                              </Border>
+                            </StackPanel>
+                          </Grid>
+
+                          <!-- Scrolling lyrics canvas wrapped with OpacityMask gradient (Only when lyrics exist) -->
+                          <Grid ClipToBounds="True" Visibility="{Binding Media.HasLyrics, Converter={StaticResource BoolToVis}}">
                             <UIElement.OpacityMask>
                               <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                 <GradientStop Color="#00000000" Offset="0.0" />
@@ -2979,16 +2990,7 @@
                                 <GradientStop Color="#00000000" Offset="1.0" />
                               </LinearGradientBrush>
                             </UIElement.OpacityMask>
-                            <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="14,0,14,0" Visibility="{Binding Media.HasLyrics, Converter={StaticResource InverseBoolToVis}}">
-                              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="36" TextTrimming="CharacterEllipsis" Text="{Binding Media.DisplayTitle}" />
-                                <TextBlock Foreground="#A1A1AA" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="Normal" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,3,0,0" Text="{Binding Media.DisplayArtist}" Visibility="{Binding Media.HasArtist, Converter={StaticResource BoolToVis}}" />
-                                <Border Background="#16FFFFFF" CornerRadius="8" Padding="7,2" Margin="0,6,0,0" HorizontalAlignment="Center" Visibility="{Binding Media.HasLyricsStatusMessage, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Foreground="#A1A1AA" FontSize="11" FontWeight="SemiBold" FontStyle="Italic" HorizontalAlignment="Center" Text="{Binding Media.LyricsStatusMessage}" />
-                                </Border>
-                              </StackPanel>
-                            </Grid>
-                            <Canvas Width="340" Height="114" ClipToBounds="True" VerticalAlignment="Top" Visibility="{Binding Media.HasLyrics, Converter={StaticResource BoolToVis}}" PreviewMouseWheel="Lyrics_PreviewMouseWheel">
+                            <Canvas Width="340" Height="114" ClipToBounds="True" VerticalAlignment="Top" PreviewMouseWheel="Lyrics_PreviewMouseWheel">
                               <ItemsControl Name="LyricsItemsControl" Width="340" Canvas.Left="0" Canvas.Top="0" ItemsSource="{Binding Media.LyricsLines}">
                                 <UIElement.RenderTransform>
                                   <TranslateTransform x:Name="LyricsTranslateTransform" Y="38" />
