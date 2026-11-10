@@ -99,14 +99,16 @@ Access your PC essentials directly inside the Notch without opening the Windows 
 - **Precision Responsive Layout**: Center drop zone when closed, clean dual-column layout when the QR barcode is active.
 
 ### 🌿 4. Health & Daily Companion
-- **Hydration Tracker**: Set daily water intake goals, log cups with single clicks, and receive gentle water break reminders.
+- **Hydration Tracker**: Set daily water intake goals, log cups with single clicks, instant Undo support, and receive gentle water break reminders.
 - **Sedentary & Posture Alerts**: Monitors continuous sitting duration and encourages short stand-and-stretch breaks.
 - **Live BMKG Weather**: Real-time Indonesian meteorological data (temperature, rain forecast, weather conditions).
-- **Automated Prayer Times (Jadwal Sholat)**: Accurate geographic prayer calculations with countdown timer and optional gentle adzan alerts.
+- **Automated Prayer Times (Jadwal Sholat)**: Accurate geographic prayer calculations with countdown timer highlighting upcoming prayer times and optional gentle adzan alerts.
 
 ### ⏱️ 5. Smart Productivity Suite
 - **Clipboard History**: Pin, search, and copy recent text snippets and images.
+- **Screen Time & App Tracker**: 24-hour histogram and top application usage tracking with live second-by-second updates.
 - **Timers & Stopwatch**: Quick Pomodoro presets, custom countdowns, and precision stopwatch with lap times.
+- **Notes & Alarm**: Rich text quick notes with instant copy and time-based alarm reminders.
 - **Fullscreen Slim Bar**: Automatically morphs into an ultra-subtle, non-intrusive 6px slim bar when watching full-screen movies or playing games.
 
 ---

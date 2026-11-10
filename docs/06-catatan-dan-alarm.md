@@ -42,6 +42,7 @@ Terletak di bawah editor catatan:
 - **Bullet (`•`)**: `EditingCommands.ToggleBullets`.
 - **Nomor (`1.`)**: `EditingCommands.ToggleNumbering`.
 - **Salin (`Copy`)**: Menyalin seluruh isi catatan ke clipboard sistem.
+- **Pembersihan Tombol Remind**: Tombol "Remind" lama di toolbar catatan telah dihapus karena fungsinya sudah sepenuhnya terintegrasi dalam panel Reminders & Alarm di kolom kanan.
 
 ### 3. Kolom Kanan: Pengingat & Alarm Berbasis Waktu
 - **Pengaturan Jam & Menit**: Dua kotak input (`AlarmHour` dan `AlarmMinute`) untuk menetapkan waktu alarm berdering.

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Threading;
+using System.Threading;
 using NotchWin.Interop;
 using NotchWin.Models;
 
@@ -15,7 +16,7 @@ namespace NotchWin.Services
     public class ScreenTimeService : IScreenTimeService
     {
         private readonly string _storageFilePath;
-        private readonly DispatcherTimer _trackerTimer;
+        private readonly System.Threading.Timer _trackerTimer;
         private readonly object _lock = new();
 
         private ScreenTimeStore _store = new();
@@ -38,12 +39,7 @@ namespace NotchWin.Services
 
             LoadStore();
 
-            _trackerTimer = new DispatcherTimer(DispatcherPriority.Background)
-            {
-                Interval = TimeSpan.FromSeconds(1)
-            };
-            _trackerTimer.Tick += OnTrackerTick;
-            _trackerTimer.Start();
+            _trackerTimer = new System.Threading.Timer(OnTrackerTick, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         }
 
         private void LoadStore()
@@ -121,7 +117,7 @@ namespace NotchWin.Services
             }
         }
 
-        private void OnTrackerTick(object? sender, EventArgs e)
+        private void OnTrackerTick(object? state)
         {
             if (!IsEnabled)
             {
@@ -132,7 +128,8 @@ namespace NotchWin.Services
             var lii = new NativeMethods.LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<NativeMethods.LASTINPUTINFO>() };
             if (NativeMethods.GetLastInputInfo(ref lii))
             {
-                uint idleMs = (uint)Environment.TickCount - lii.dwTime;
+                uint win32Ticks = NativeMethods.GetTickCount();
+                uint idleMs = win32Ticks >= lii.dwTime ? (win32Ticks - lii.dwTime) : (uint.MaxValue - lii.dwTime + win32Ticks);
                 if (idleMs >= (uint)(IdleThresholdSeconds * 1000))
                 {
                     // User is idle, exclude from screen time
@@ -142,24 +139,36 @@ namespace NotchWin.Services
 
             // 2. Foreground Window Detection
             IntPtr hwnd = NativeMethods.GetForegroundWindow();
-            if (hwnd == IntPtr.Zero)
+            uint pid = 0;
+            if (hwnd != IntPtr.Zero)
             {
-                return;
-            }
-
-            NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid);
-            if (pid == 0)
-            {
-                return;
+                NativeMethods.GetWindowThreadProcessId(hwnd, out pid);
             }
 
             // 3. Resolve Process Info (with PID caching)
-            if (!_processCache.TryGetValue(pid, out var procInfo))
+            (string ExeName, string FriendlyName, string ExePath, string Category) procInfo = default;
+            if (pid != 0)
             {
-                procInfo = ResolveProcessInfo(hwnd, pid);
-                if (procInfo.ExeName.Length > 0)
+                if (!_processCache.TryGetValue(pid, out procInfo))
                 {
-                    _processCache[pid] = procInfo;
+                    procInfo = ResolveProcessInfo(hwnd, pid);
+                    if (procInfo.ExeName.Length > 0)
+                    {
+                        _processCache[pid] = procInfo;
+                    }
+                }
+            }
+
+            // Fallback: If hwnd is 0 or resolution returned empty but we have a last active exe, continue tracking it
+            if (string.IsNullOrEmpty(procInfo.ExeName) && !string.IsNullOrEmpty(_lastActiveExe))
+            {
+                foreach (var cached in _processCache.Values)
+                {
+                    if (string.Equals(cached.ExeName, _lastActiveExe, StringComparison.OrdinalIgnoreCase))
+                    {
+                        procInfo = cached;
+                        break;
+                    }
                 }
             }
 
@@ -232,8 +241,18 @@ namespace NotchWin.Services
                 }
             }
 
-            // Fire event for UI update
-            DataUpdated?.Invoke(this, EventArgs.Empty);
+            // Fire event for UI update on Dispatcher
+            if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+            {
+                dispatcher.BeginInvoke(new Action(() =>
+                {
+                    DataUpdated?.Invoke(this, EventArgs.Empty);
+                }));
+            }
+            else
+            {
+                DataUpdated?.Invoke(this, EventArgs.Empty);
+            }
 
             // Periodic auto-save every 30 seconds
             _saveCounter++;
@@ -436,7 +455,7 @@ namespace NotchWin.Services
 
         public void Dispose()
         {
-            _trackerTimer.Stop();
+            _trackerTimer?.Dispose();
             ForceSave();
             GC.SuppressFinalize(this);
         }

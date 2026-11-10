@@ -293,6 +293,18 @@ namespace NotchWin.ViewModels
 
         [ObservableProperty]
 
+        private bool _isWelcomeGreetingActive;
+
+        partial void OnIsWelcomeGreetingActiveChanged(bool value)
+        {
+            UpdateGeometryForState(CurrentState);
+            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+
+
+        [ObservableProperty]
+
         private double _targetHeight = CollapsedHeight;
 
         partial void OnTargetHeightChanged(double oldValue, double newValue)
@@ -771,7 +783,7 @@ namespace NotchWin.ViewModels
 
             {
 
-                if (!IsWifiToggledOn) return "Off";
+                if (!IsWifiToggledOn) return L10n["Control.Off"];
 
                 if (!string.IsNullOrEmpty(SystemHealth?.NetworkName) && SystemHealth.NetworkName != "Disconnected")
 
@@ -793,13 +805,13 @@ namespace NotchWin.ViewModels
 
             {
 
-                if (!IsBluetoothToggledOn) return "Bluetooth Off";
+                if (!IsBluetoothToggledOn) return L10n["Control.BluetoothOff"];
 
                 if (Volume != null && Volume.IsBluetoothAudio && !string.IsNullOrEmpty(Volume.BluetoothDeviceName))
 
                     return Volume.BluetoothDeviceName;
 
-                return "Not connected";
+                return L10n["Control.NotConnected"];
 
             }
 
@@ -1136,8 +1148,6 @@ namespace NotchWin.ViewModels
 
             IsAirplaneModeOn = !IsAirplaneModeOn;
 
-            QuickActionHelper.OpenAirplaneModeSettings();
-
         }
 
 
@@ -1150,7 +1160,7 @@ namespace NotchWin.ViewModels
 
             IsDarkModeOn = QuickActionHelper.ToggleDarkMode();
 
-            TriggerTransientNotification("\U0001F313", "Tema Windows", IsDarkModeOn ? "Mode Gelap aktif" : "Mode Terang aktif");
+            TriggerTransientNotification("\U0001F313", L10n["Control.DarkMode"], IsDarkModeOn ? L10n["Notification.ThemeDarkActive"] : L10n["Notification.ThemeLightActive"]);
 
         }
 
@@ -1164,7 +1174,7 @@ namespace NotchWin.ViewModels
 
             IsMicrophoneMuted = QuickActionHelper.ToggleMicrophoneMute();
 
-            TriggerTransientNotification(IsMicrophoneMuted ? "\U0001F3A4\u274C" : "\U0001F3A4", "Mikrofon", IsMicrophoneMuted ? "Mikrofon dibisukan (Muted)" : "Mikrofon aktif");
+            TriggerTransientNotification(IsMicrophoneMuted ? "\U0001F3A4\u274C" : "\U0001F3A4", L10n["Control.Microphone"], IsMicrophoneMuted ? L10n["Notification.MicrophoneMuted"] : L10n["Notification.MicrophoneActive"]);
 
         }
 
@@ -1296,6 +1306,14 @@ namespace NotchWin.ViewModels
             SlideChanged?.Invoke(this, value);
 
             UpdateSlideTelemetryState();
+
+            if (value == ScreenTimeSlideIndex)
+
+            {
+
+                ScreenTime.Refresh();
+
+            }
 
             if (value != MediaSlideIndex && Media != null)
 
@@ -3740,7 +3758,7 @@ namespace NotchWin.ViewModels
 
             _collapsedLyricsWidthOverride = width;
 
-            if (CurrentState != NotchState.Collapsed)
+            if (CurrentState != NotchState.Collapsed || IsWelcomeGreetingActive)
 
             {
 

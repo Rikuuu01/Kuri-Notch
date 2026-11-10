@@ -60,6 +60,10 @@ namespace NotchWin.ViewModels
         {
             _screenTimeService = screenTimeService;
             _screenTimeService.DataUpdated += OnScreenTimeDataUpdated;
+            LocalizationService.Instance.LanguageChanged += (_, _) =>
+            {
+                System.Windows.Application.Current?.Dispatcher?.Invoke(Refresh);
+            };
 
             Refresh();
         }
@@ -75,7 +79,9 @@ namespace NotchWin.ViewModels
             long totalSeconds = _screenTimeService.GetTodayTotalSeconds();
             int switches = _screenTimeService.GetTodaySwitches();
 
-            TodayDateText = DateTime.Now.ToString("dddd, d MMM");
+            bool isId = string.Equals(LocalizationService.Instance.CurrentLanguage, "id", StringComparison.OrdinalIgnoreCase);
+            var culture = isId ? new System.Globalization.CultureInfo("id-ID") : new System.Globalization.CultureInfo("en-US");
+            TodayDateText = DateTime.Now.ToString("dddd, d MMM", culture);
             TotalTimeTodayText = FormatDuration(totalSeconds);
             SwitchesCountText = switches.ToString();
             HasData = totalSeconds > 0;
@@ -175,18 +181,30 @@ namespace NotchWin.ViewModels
 
         private static string FormatDuration(long seconds)
         {
+            bool isId = string.Equals(LocalizationService.Instance.CurrentLanguage, "id", StringComparison.OrdinalIgnoreCase);
+            string hUnit = isId ? "j" : "h";
+            string mUnit = "m";
+            string sUnit = isId ? "d" : "s";
+
             if (seconds < 60)
             {
-                return $"{seconds}s";
+                return $"{seconds}{sUnit}";
             }
             long minutes = seconds / 60;
+            long remSeconds = seconds % 60;
             if (minutes < 60)
             {
-                return $"{minutes}m";
+                return remSeconds > 0 ? $"{minutes}{mUnit} {remSeconds:D2}{sUnit}" : $"{minutes}{mUnit}";
             }
             long hours = minutes / 60;
             long remMinutes = minutes % 60;
-            return remMinutes > 0 ? $"{hours}j {remMinutes}m" : $"{hours}j";
+            if (remMinutes > 0)
+            {
+                return remSeconds > 0
+                    ? $"{hours}{hUnit} {remMinutes:D2}{mUnit} {remSeconds:D2}{sUnit}"
+                    : $"{hours}{hUnit} {remMinutes:D2}{mUnit}";
+            }
+            return remSeconds > 0 ? $"{hours}{hUnit} {remSeconds:D2}{sUnit}" : $"{hours}{hUnit}";
         }
     }
 }

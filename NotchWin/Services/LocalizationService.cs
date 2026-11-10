@@ -286,6 +286,64 @@ namespace NotchWin.Services
 
             ["Action.Settings"] = "Settings",
 
+            ["Control.AirplaneMode"] = "Airplane mode",
+
+            ["Control.DarkMode"] = "Dark mode",
+
+            ["Control.Microphone"] = "Microphone",
+
+            ["Control.Screenshot"] = "Screenshot",
+
+            ["Control.Lock"] = "Lock",
+
+            ["Control.TaskMgr"] = "Task Mgr",
+
+            ["Control.WifiNetworks"] = "WI-FI NETWORKS",
+
+            ["Control.BluetoothDevices"] = "BLUETOOTH DEVICES",
+
+            ["Control.SelectAudioOutput"] = "SELECT AUDIO OUTPUT",
+
+            ["Control.Rescan"] = "Rescan",
+
+            ["Control.Close"] = "Close",
+
+            ["Control.WifiSettings"] = "Windows Wi-Fi Settings",
+
+            ["Control.BluetoothSettings"] = "Windows Bluetooth Settings",
+
+            ["Control.NoWifiFound"] = "No Wi-Fi networks found",
+
+            ["Control.NoBtFound"] = "No Bluetooth devices found",
+
+            ["Control.Connect"] = "Connect",
+
+            ["Control.Connected"] = "Connected",
+
+            ["Control.SearchingWifi"] = "Searching for Wi-Fi...",
+
+            ["Control.SearchingBt"] = "Searching for Bluetooth...",
+
+            ["Control.BluetoothOff"] = "Bluetooth Off",
+
+            ["Control.NotConnected"] = "Not connected",
+
+            ["Control.Off"] = "Off",
+
+            ["Notification.MicrophoneMuted"] = "Microphone muted",
+
+            ["Notification.MicrophoneActive"] = "Microphone active",
+
+            ["Notification.ThemeDarkActive"] = "Dark mode active",
+
+            ["Notification.ThemeLightActive"] = "Light mode active",
+
+            ["Timer.ActiveTooltip"] = "Active Timer (Click to open)",
+
+            ["Stopwatch.ActiveTooltip"] = "Active Stopwatch (Click to open)",
+
+            ["Shelf.AddedToShelf"] = "Added to Dock",
+
 
 
             // Weather
@@ -357,7 +415,11 @@ namespace NotchWin.Services
 
             ["Water.Add250"] = "+250 ml",
 
+            ["Water.Undo"] = "Undo",
+
             ["Water.Reset"] = "Reset",
+
+            ["Water.AddWater"] = "ADD WATER",
 
             ["Water.TodayLog"] = "Today: {0:F1}L of {1:F1}L",
 
@@ -1078,6 +1140,64 @@ namespace NotchWin.Services
 
             ["Action.Settings"] = "Pengaturan",
 
+            ["Control.AirplaneMode"] = "Mode Pesawat",
+
+            ["Control.DarkMode"] = "Mode Gelap",
+
+            ["Control.Microphone"] = "Mikrofon",
+
+            ["Control.Screenshot"] = "Screenshot",
+
+            ["Control.Lock"] = "Kunci Layar",
+
+            ["Control.TaskMgr"] = "Task Mgr",
+
+            ["Control.WifiNetworks"] = "JARINGAN WI-FI",
+
+            ["Control.BluetoothDevices"] = "PERANGKAT BLUETOOTH",
+
+            ["Control.SelectAudioOutput"] = "PILIH OUTPUT SUARA",
+
+            ["Control.Rescan"] = "Pindai Ulang",
+
+            ["Control.Close"] = "Tutup",
+
+            ["Control.WifiSettings"] = "Pengaturan Wi-Fi Windows",
+
+            ["Control.BluetoothSettings"] = "Pengaturan Bluetooth Windows",
+
+            ["Control.NoWifiFound"] = "Tidak ada jaringan Wi-Fi ditemukan",
+
+            ["Control.NoBtFound"] = "Tidak ada perangkat Bluetooth ditemukan",
+
+            ["Control.Connect"] = "Hubungkan",
+
+            ["Control.Connected"] = "Terhubung",
+
+            ["Control.SearchingWifi"] = "Mencari Wi-Fi...",
+
+            ["Control.SearchingBt"] = "Mencari Bluetooth...",
+
+            ["Control.BluetoothOff"] = "Bluetooth Mati",
+
+            ["Control.NotConnected"] = "Tidak terhubung",
+
+            ["Control.Off"] = "Mati",
+
+            ["Notification.MicrophoneMuted"] = "Mikrofon dibisukan",
+
+            ["Notification.MicrophoneActive"] = "Mikrofon aktif",
+
+            ["Notification.ThemeDarkActive"] = "Mode Gelap aktif",
+
+            ["Notification.ThemeLightActive"] = "Mode Terang aktif",
+
+            ["Timer.ActiveTooltip"] = "Timer Aktif (Klik untuk membuka)",
+
+            ["Stopwatch.ActiveTooltip"] = "Stopwatch Aktif (Klik untuk membuka)",
+
+            ["Shelf.AddedToShelf"] = "Ditambahkan ke Dock",
+
 
 
             // Weather
@@ -1149,7 +1269,11 @@ namespace NotchWin.Services
 
             ["Water.Add250"] = "+250 ml",
 
-            ["Water.Reset"] = "Batal",
+            ["Water.Undo"] = "Urungkan",
+
+            ["Water.Reset"] = "Reset",
+
+            ["Water.AddWater"] = "TAMBAH AIR",
 
             ["Water.TodayLog"] = "Hari ini: {0:F1}L dari {1:F1}L",
 

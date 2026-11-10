@@ -209,42 +209,42 @@ namespace NotchWin.Services
                 nextName = "Subuh";
                 nextTime = tsSubuh;
                 rem = tsSubuh - currentTime;
-                activeIdx = 5; // Waktu aktif: Isya malam sebelumnya
+                activeIdx = 0; // Waktu akan datang: Subuh
             }
             else if (currentTime < tsDhuha)
             {
                 nextName = "Dhuha";
                 nextTime = tsDhuha;
                 rem = tsDhuha - currentTime;
-                activeIdx = 0; // Waktu aktif: Subuh
+                activeIdx = 1; // Waktu akan datang: Dhuha
             }
             else if (currentTime < tsDzuhur)
             {
                 nextName = "Dzuhur";
                 nextTime = tsDzuhur;
                 rem = tsDzuhur - currentTime;
-                activeIdx = 1; // Waktu aktif: Dhuha
+                activeIdx = 2; // Waktu akan datang: Dzuhur
             }
             else if (currentTime < tsAshar)
             {
                 nextName = "Ashar";
                 nextTime = tsAshar;
                 rem = tsAshar - currentTime;
-                activeIdx = 2; // Waktu aktif: Dzuhur
+                activeIdx = 3; // Waktu akan datang: Ashar
             }
             else if (currentTime < tsMaghrib)
             {
                 nextName = "Maghrib";
                 nextTime = tsMaghrib;
                 rem = tsMaghrib - currentTime;
-                activeIdx = 3; // Waktu aktif: Ashar
+                activeIdx = 4; // Waktu akan datang: Maghrib
             }
             else if (currentTime < tsIsya)
             {
                 nextName = "Isya";
                 nextTime = tsIsya;
                 rem = tsIsya - currentTime;
-                activeIdx = 4; // Waktu aktif: Maghrib
+                activeIdx = 5; // Waktu akan datang: Isya
             }
             else
             {
@@ -252,7 +252,7 @@ namespace NotchWin.Services
                 nextName = "Subuh (Besok)";
                 nextTime = tsSubuh;
                 rem = TimeSpan.FromHours(24) - currentTime + tsSubuh;
-                activeIdx = 5; // Waktu aktif: Isya
+                activeIdx = 0; // Waktu akan datang: Subuh besok
             }
 
             return new PrayerSchedule

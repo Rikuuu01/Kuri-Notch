@@ -630,7 +630,7 @@
         <UIElement.RenderTransform>
           <TranslateTransform x:Name="SubNotchBaseTranslate" X="0" Y="30" />
         </UIElement.RenderTransform>
-        <Border Name="TimerSubNotchPill" Width="90" Height="23" Margin="3,0" CornerRadius="0,0,10,10" BorderBrush="{DynamicResource NotchStrokeBrush}" BorderThickness="1,0,1,1" Cursor="Hand" Visibility="Collapsed" Opacity="0" ToolTip="Timer Aktif (Klik untuk membuka)" MouseLeftButtonDown="TimerSubNotchPill_MouseLeftButtonDown" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled">
+        <Border Name="TimerSubNotchPill" Width="90" Height="23" Margin="3,0" CornerRadius="0,0,10,10" BorderBrush="{DynamicResource NotchStrokeBrush}" BorderThickness="1,0,1,1" Cursor="Hand" Visibility="Collapsed" Opacity="0" ToolTip="{Binding L10n[Timer.ActiveTooltip]}" MouseLeftButtonDown="TimerSubNotchPill_MouseLeftButtonDown" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled">
           <FrameworkElement.Style>
             <Style TargetType="{x:Type Border}">
               <Setter Property="Background" Value="#0A0A0E" />
@@ -653,7 +653,7 @@
             <TextBlock Grid.Column="1" Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Consolas, Segoe UI, sans-serif" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding TimerStopwatch.TimerDisplay}" />
           </Grid>
         </Border>
-        <Border Name="StopwatchSubNotchPill" Width="90" Height="23" Margin="3,0" CornerRadius="0,0,10,10" BorderBrush="{DynamicResource NotchStrokeBrush}" BorderThickness="1,0,1,1" Cursor="Hand" Visibility="Collapsed" Opacity="0" ToolTip="Stopwatch Aktif (Klik untuk membuka)" MouseLeftButtonDown="StopwatchSubNotchPill_MouseLeftButtonDown" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled">
+        <Border Name="StopwatchSubNotchPill" Width="90" Height="23" Margin="3,0" CornerRadius="0,0,10,10" BorderBrush="{DynamicResource NotchStrokeBrush}" BorderThickness="1,0,1,1" Cursor="Hand" Visibility="Collapsed" Opacity="0" ToolTip="{Binding L10n[Stopwatch.ActiveTooltip]}" MouseLeftButtonDown="StopwatchSubNotchPill_MouseLeftButtonDown" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled">
           <FrameworkElement.Style>
             <Style TargetType="{x:Type Border}">
               <Setter Property="Background" Value="#0A0A0E" />
@@ -2017,7 +2017,7 @@
 
                   <!-- 3. Airplane mode -->
                   <StackPanel Grid.Column="4">
-                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="Airplane mode" FocusVisualStyle="{x:Null}" Command="{Binding ToggleAirplaneModeCommand}">
+                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="{Binding L10n[Control.AirplaneMode]}" FocusVisualStyle="{x:Null}" Command="{Binding ToggleAirplaneModeCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="12">
@@ -2048,13 +2048,13 @@
                         </ControlTemplate>
                       </Control.Template>
                     </Button>
-                    <TextBlock Text="Airplane mode" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding L10n[Control.AirplaneMode]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
                   </StackPanel>
 
 
                   <!-- 4. Dark mode -->
                   <StackPanel Grid.Column="6">
-                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="Dark mode" FocusVisualStyle="{x:Null}" Command="{Binding ToggleDarkModeCommand}">
+                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="{Binding L10n[Control.DarkMode]}" FocusVisualStyle="{x:Null}" Command="{Binding ToggleDarkModeCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="12">
@@ -2085,7 +2085,7 @@
                         </ControlTemplate>
                       </Control.Template>
                     </Button>
-                    <TextBlock Text="Dark mode" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding L10n[Control.DarkMode]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
                   </StackPanel>
                 </Grid>
 
@@ -2100,10 +2100,10 @@
                         <Path Data="M12,19.5 L12,19.51 M2,8.82 C5.33,5.5 18.67,5.5 22,8.82 M5,12.86 C7.5,10.3 16.5,10.3 19,12.86 M8.5,16.43 C10,14.9 14,14.9 15.5,16.43"
                               Stroke="#38BDF8" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Stretch="Uniform" Width="14" Height="12" VerticalAlignment="Center" Margin="0,0,6,0" />
-                        <TextBlock Text="JARINGAN WI-FI" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding L10n[Control.WifiNetworks]}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" />
                       </StackPanel>
                       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Pindai Ulang" Margin="0,0,6,0" Command="{Binding RefreshWifiCommand}">
+                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.Rescan]}" Margin="0,0,6,0" Command="{Binding RefreshWifiCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="rfBd" Background="#1C1C2A" CornerRadius="6" Padding="6,3">
@@ -2117,7 +2117,7 @@
                             </ControlTemplate>
                           </Control.Template>
                         </Button>
-                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Pengaturan Wi-Fi Windows" Margin="0,0,6,0" Command="{Binding OpenWifiSettingsCommand}">
+                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.WifiSettings]}" Margin="0,0,6,0" Command="{Binding OpenWifiSettingsCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="stBd" Background="#1C1C2A" CornerRadius="6" Padding="6,3">
@@ -2131,7 +2131,7 @@
                             </ControlTemplate>
                           </Control.Template>
                         </Button>
-                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Tutup" Command="{Binding ToggleWifiExpandCommand}">
+                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.Close]}" Command="{Binding ToggleWifiExpandCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="clBd" Background="#1C1C2A" CornerRadius="6" Padding="6,3">
@@ -2157,19 +2157,19 @@
                                 Stroke="#38BDF8" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                 Stretch="Uniform" Width="15" Height="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="Searching for Wi-Fi..." FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding L10n[Control.SearchingWifi]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" />
                       </StackPanel>
 
 
                       <!-- Empty View -->
                       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                   Visibility="{Binding Wifi.ShowEmpty, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="Tidak ada jaringan Wi-Fi ditemukan" FontSize="11" Foreground="#71717A" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding L10n[Control.NoWifiFound]}" FontSize="11" Foreground="#71717A" HorizontalAlignment="Center" />
                         <Button Command="{Binding RefreshWifiCommand}" Margin="0,6,0,0" Background="#1C1C2A" BorderThickness="0" Cursor="Hand">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Background="#1C1C2A" CornerRadius="6" Padding="10,4">
-                                <TextBlock Text="Pindai Ulang" FontSize="10.5" Foreground="#38BDF8" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding L10n[Control.Rescan]}" FontSize="10.5" Foreground="#38BDF8" FontWeight="SemiBold" />
                               </Border>
                             </ControlTemplate>
                           </Control.Template>
@@ -2268,10 +2268,10 @@
                         <Path Data="M6.5,6.5 L17.5,17.5 L12,22 L12,2 L17.5,6.5 L6.5,17.5"
                               Stroke="#38BDF8" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                               Stretch="Uniform" Width="10" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
-                        <TextBlock Text="PERANGKAT BLUETOOTH" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding L10n[Control.BluetoothDevices]}" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" />
                       </StackPanel>
                       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Pindai Ulang" Margin="0,0,6,0" Command="{Binding RefreshBluetoothCommand}">
+                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.Rescan]}" Margin="0,0,6,0" Command="{Binding RefreshBluetoothCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="rfBd" Background="#1C1C2A" CornerRadius="6" Padding="6,3">
@@ -2285,7 +2285,7 @@
                             </ControlTemplate>
                           </Control.Template>
                         </Button>
-                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Pengaturan Bluetooth Windows" Margin="0,0,6,0" Command="{Binding OpenBluetoothSettingsCommand}">
+                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.BluetoothSettings]}" Margin="0,0,6,0" Command="{Binding OpenBluetoothSettingsCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="stBd" Background="#1C1C2A" CornerRadius="6" Padding="6,3">
@@ -2299,7 +2299,7 @@
                             </ControlTemplate>
                           </Control.Template>
                         </Button>
-                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Tutup" Command="{Binding ToggleBluetoothExpandCommand}">
+                        <Button Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.Close]}" Command="{Binding ToggleBluetoothExpandCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="clBd" Background="#1C1C2A" CornerRadius="6" Padding="6,3">
@@ -2325,19 +2325,19 @@
                                 Stroke="#38BDF8" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                                 Stretch="Uniform" Width="11" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="Searching for Bluetooth..." FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding L10n[Control.SearchingBt]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" />
                       </StackPanel>
 
 
                       <!-- Empty View -->
                       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                   Visibility="{Binding BluetoothMgr.ShowEmpty, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="Tidak ada perangkat Bluetooth ditemukan" FontSize="11" Foreground="#71717A" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding L10n[Control.NoBtFound]}" FontSize="11" Foreground="#71717A" HorizontalAlignment="Center" />
                         <Button Command="{Binding RefreshBluetoothCommand}" Margin="0,6,0,0" Background="#1C1C2A" BorderThickness="0" Cursor="Hand">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Background="#1C1C2A" CornerRadius="6" Padding="10,4">
-                                <TextBlock Text="Pindai Ulang" FontSize="10.5" Foreground="#38BDF8" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding L10n[Control.Rescan]}" FontSize="10.5" Foreground="#38BDF8" FontWeight="SemiBold" />
                               </Border>
                             </ControlTemplate>
                           </Control.Template>
@@ -2438,7 +2438,7 @@
 
                   <!-- 1. Microphone -->
                   <StackPanel Grid.Column="0">
-                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="Mikrofon" FocusVisualStyle="{x:Null}" Command="{Binding ToggleMicrophoneMuteCommand}">
+                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="{Binding L10n[Control.Microphone]}" FocusVisualStyle="{x:Null}" Command="{Binding ToggleMicrophoneMuteCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="12">
@@ -2465,13 +2465,13 @@
                         </ControlTemplate>
                       </Control.Template>
                     </Button>
-                    <TextBlock Text="Mikrofon" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding L10n[Control.Microphone]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
                   </StackPanel>
 
 
                   <!-- 2. Screenshot -->
                   <StackPanel Grid.Column="2">
-                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="Screenshot" FocusVisualStyle="{x:Null}" Command="{Binding CaptureScreenCommand}">
+                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="{Binding L10n[Control.Screenshot]}" FocusVisualStyle="{x:Null}" Command="{Binding CaptureScreenCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="12">
@@ -2485,13 +2485,13 @@
                         </ControlTemplate>
                       </Control.Template>
                     </Button>
-                    <TextBlock Text="Screenshot" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding L10n[Control.Screenshot]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
                   </StackPanel>
 
 
                   <!-- 3. Lock -->
                   <StackPanel Grid.Column="4">
-                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="Kunci Layar" FocusVisualStyle="{x:Null}" Command="{Binding LockComputerCommand}">
+                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="{Binding L10n[Control.Lock]}" FocusVisualStyle="{x:Null}" Command="{Binding LockComputerCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="12">
@@ -2505,13 +2505,13 @@
                         </ControlTemplate>
                       </Control.Template>
                     </Button>
-                    <TextBlock Text="Lock" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding L10n[Control.Lock]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
                   </StackPanel>
 
 
                   <!-- 4. Task Manager -->
                   <StackPanel Grid.Column="6">
-                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="Task Manager" FocusVisualStyle="{x:Null}" Command="{Binding LaunchTaskManagerCommand}">
+                    <Button Height="46" Background="#181824" BorderBrush="#262638" BorderThickness="1" Cursor="Hand" ToolTip="{Binding L10n[Control.TaskMgr]}" FocusVisualStyle="{x:Null}" Command="{Binding LaunchTaskManagerCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="12">
@@ -2525,7 +2525,7 @@
                         </ControlTemplate>
                       </Control.Template>
                     </Button>
-                    <TextBlock Text="Task Mgr" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
+                    <TextBlock Text="{Binding L10n[Control.TaskMgr]}" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,5,0,0" />
                   </StackPanel>
                 </Grid>
               </Grid>
@@ -2560,7 +2560,7 @@
                     </Viewbox>
                     <Slider Grid.Column="1" Style="{StaticResource ControlCenterSlimSliderStyle}" Minimum="0" Maximum="100" Margin="10,0,12,0" VerticalAlignment="Center" Value="{Binding MasterVolumePercent, Mode=TwoWay}" PreviewMouseDown="SlimSlider_PreviewMouseDown" PreviewMouseMove="SlimSlider_PreviewMouseMove" PreviewMouseUp="SlimSlider_PreviewMouseUp" />
                     <TextBlock Grid.Column="2" FontSize="11" FontWeight="Medium" Foreground="#A1A1AA" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding MasterVolumePercent}" />
-                    <Button Grid.Column="3" Margin="8,0,0,0" Background="#22222E" BorderThickness="0" Cursor="Hand" ToolTip="Pilih Output Audio" FocusVisualStyle="{x:Null}" Command="{Binding ToggleAudioOutputExpandCommand}">
+                    <Button Grid.Column="3" Margin="8,0,0,0" Background="#22222E" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.SelectAudioOutput]}" FocusVisualStyle="{x:Null}" Command="{Binding ToggleAudioOutputExpandCommand}">
                       <Control.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
                           <Border Name="bd" Background="#22222E" CornerRadius="8" Padding="7,4">
@@ -2609,8 +2609,8 @@
                           Padding="8,6" Margin="0,8,0,2" SnapsToDevicePixels="True">
                     <StackPanel>
                       <DockPanel Margin="4,2,4,6">
-                        <TextBlock Text="PILIH OUTPUT SUARA" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" />
-                        <Button DockPanel.Dock="Right" Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="Tutup" Command="{Binding ToggleAudioOutputExpandCommand}">
+                        <TextBlock Text="{Binding L10n[Control.SelectAudioOutput]}" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" />
+                        <Button DockPanel.Dock="Right" Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" ToolTip="{Binding L10n[Control.Close]}" Command="{Binding ToggleAudioOutputExpandCommand}">
                           <Control.Template>
                             <ControlTemplate TargetType="{x:Type Button}">
                               <Border Name="clBd" Background="#20202E" CornerRadius="4" Padding="5,2">
@@ -3918,7 +3918,7 @@
 
                     <!-- Header -->
                     <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,4">
-                      <TextBlock DockPanel.Dock="Left" FontSize="11" FontWeight="Bold" Foreground="#8E8E9E" Text="TAMBAH AIR" />
+                      <TextBlock DockPanel.Dock="Left" FontSize="11" FontWeight="Bold" Foreground="#8E8E9E" Text="{Binding L10n[Water.AddWater]}" />
                       <TextBlock DockPanel.Dock="Right" FontSize="10" Foreground="#71717A" Text="{Binding L10n[Weather.Today]}" />
                     </DockPanel>
 
@@ -4224,12 +4224,7 @@
                     </Grid>
                     <DockPanel Grid.Row="2" Margin="2,4,2,0">
                       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Style="{StaticResource NoteToolbarButtonStyle}" Margin="0,0,4,0" ToolTip="Set Reminder" Command="{Binding Note.AddReminderCommand}">
-                          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Path Data="M5,1 C5,0.4 5.4,0 6,0 C6.6,0 7,0.4 7,1 L7,1.2 C9,1.8 10,3.5 10,6 L10.5,7.5 L1.5,7.5 L2,6 C2,3.5 3,1.8 5,1.2 L5,1 M4.5,8.5 C4.5,9.3 5.2,10 6,10 C6.8,10 7.5,9.3 7.5,8.5" Fill="#9CA3AF" Width="7.5" Height="7.5" Stretch="Uniform" Margin="0,0,2,0" VerticalAlignment="Center" />
-                            <TextBlock Text="Remind" FontSize="10" FontWeight="SemiBold" Foreground="#9CA3AF" VerticalAlignment="Center" />
-                          </StackPanel>
-                        </Button>
+
                         <Button Style="{StaticResource NoteToolbarButtonStyle}" Margin="0,0,4,0" ToolTip="Copy Full Note" Click="CopyNote_Click">
                           <Path Data="M3,3 L9,3 L9,10 L3,10 M5,1 L11,1 L11,8" Stroke="#9CA3AF" StrokeThickness="1.2" Width="8" Height="8" Stretch="Uniform" />
                         </Button>
@@ -5720,7 +5715,7 @@
                 <Border Name="InNotchToastBorder" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0" Background="#F012121E" BorderBrush="#38BDF8" BorderThickness="1" CornerRadius="14" Padding="12,5" Opacity="0" Visibility="Collapsed" IsHitTestVisible="False" Panel.ZIndex="120">
                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Name="InNotchToastIcon" Text="&#x1F680;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
-                    <TextBlock Name="InNotchToastTitle" Text="Ditambahkan ke Dock" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Name="InNotchToastTitle" Text="{Binding L10n[Shelf.AddedToShelf]}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <TextBlock Name="InNotchToastMsg" Text="Visual Studio Code" FontSize="11" Foreground="#A1A1AA" VerticalAlignment="Center" />
                   </StackPanel>
                 </Border>

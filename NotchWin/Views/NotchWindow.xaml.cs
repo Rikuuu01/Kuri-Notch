@@ -3044,6 +3044,10 @@ public partial class NotchWindow : Window
 		_startupGreetingPlanned = CanPlayStartupGreeting();
 		if (_startupGreetingPlanned)
 		{
+			if (ViewModel != null)
+			{
+				ViewModel.IsWelcomeGreetingActive = true;
+			}
 			ContentHost.IsHitTestVisible = false;
 			HideGreetingTargetPets();
 			if (WelcomeOverlay != null)
@@ -3325,12 +3329,15 @@ public partial class NotchWindow : Window
 
 	private void FinishStartupGreeting()
 	{
-		if (!_startupGreetingActive) return;
+		if (!_startupGreetingActive && !(ViewModel?.IsWelcomeGreetingActive ?? false)) return;
 		_startupGreetingActive = false;
 		Log.Information("Startup greeting finished.");
 
 		if (ViewModel != null)
+		{
 			ViewModel.PropertyChanged -= ViewModel_StartupGreetingPropertyChanged;
+			ViewModel.IsWelcomeGreetingActive = false;
+		}
 
 		if (WelcomeOverlay != null)
 		{

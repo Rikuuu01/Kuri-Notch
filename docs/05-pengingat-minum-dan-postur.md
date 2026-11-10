@@ -20,7 +20,8 @@ Modul ini membantu menjaga kesehatan dan ergonomi pengguna saat bekerja di depan
 
 ### 1. Pelacak Asupan Minum (Hydration Tracker)
 - **Target Harian**: Default 2000ml (`WaterDailyGoalMl`).
-- **Tombol Tambah Cepat**: Tombol pintas untuk menambah +200ml, +250ml, atau +500ml ke total harian.
+- **Tombol Tambah Cepat**: Tombol pintas untuk menambah +150ml, +250ml, atau +500ml ke total harian.
+- **Tombol Undo & Reset**: Tombol "Undo" (atau "Urungkan" dalam bahasa Indonesia) untuk membatalkan entri penambahan air terakhir secara instan, serta tombol "Reset" harian.
 - **Progress Bar & Visualisasi**:
   - Menampilkan persentase pencapaian target harian (`PercentageText`).
   - Menghitung jumlah gelas air yang telah dikonsumsi (`GlassesCountText`).

@@ -324,6 +324,9 @@ namespace NotchWin.Interop
         [DllImport("user32.dll")]
         public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
 
+        [DllImport("kernel32.dll")]
+        public static extern uint GetTickCount();
+
         public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 
         [DllImport("kernel32.dll", SetLastError = true)]

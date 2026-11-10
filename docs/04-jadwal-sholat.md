@@ -36,7 +36,7 @@ Modul ini menyajikan jadwal sholat 6 waktu harian (Subuh, Dhuha, Dzuhur, Ashar, 
   4. **Ashar** (Ikon matahari sore berawan jingga `#FB923C`)
   5. **Maghrib** (Ikon matahari terbenam senja `#F472B6`)
   6. **Isya** (Ikon bulan malam berbintang `#A78BFA`)
-- Kartu waktu sholat yang sedang berlangsung otomatis disorot (*highlighted*) dengan garis batas aksen tema.
+- Kartu waktu sholat yang **akan datang** (*upcoming prayer*) otomatis disorot (*highlighted*) dengan garis batas aksen tema (misal saat ini waktu Dhuha telah lewat, maka kartu Dzuhur yang akan tiba berikutnya yang aktif disorot).
 
 ### 3. Hitung Mundur & Penanda Sholat Aktif
 - Menampilkan waktu sholat yang sedang berlangsung dan waktu sholat berikutnya (`NextPrayerName`).
