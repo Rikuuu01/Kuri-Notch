@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,10 +13,10 @@ namespace NotchWin.Services.Notifications
     {
         private readonly string _dbPath;
         private readonly object _lock = new();
+        private readonly Dictionary<long, long> _knownToasts = new();
         private FileSystemWatcher? _watcher;
         private Timer? _debounceTimer;
         private Timer? _pollTimer;
-        private long _lastSeenOrder = 0;
         private bool _isDisposed;
         private bool _isRunning;
 
@@ -41,9 +42,8 @@ namespace NotchWin.Services.Notifications
                     return;
                 }
 
-                // Initial query: get the current max [Order] so we do not spam past notifications
-                _lastSeenOrder = GetMaxOrder();
-                Log.Information("[WindowsNotificationService] Started. Initial LastSeenOrder: {Order}", _lastSeenOrder);
+                // Initial baseline: populate known toast IDs and arrival times so past notifications don't replay
+                LoadExistingNotificationIds();
 
                 // Setup FileSystemWatcher on Notifications directory
                 string? dir = Path.GetDirectoryName(_dbPath);
@@ -105,18 +105,17 @@ namespace NotchWin.Services.Notifications
         {
             if (_isDisposed || !_isRunning) return;
 
-            // Debounce by 180ms to allow Windows Push Notification Service to finish WAL commit
             lock (_lock)
             {
                 _debounceTimer?.Dispose();
                 _debounceTimer = new Timer(_ =>
                 {
                     Task.Run(() => QueryNewNotifications());
-                }, null, 180, Timeout.Infinite);
+                }, null, 150, Timeout.Infinite);
             }
         }
 
-        private long GetMaxOrder()
+        private void LoadExistingNotificationIds()
         {
             IntPtr db = IntPtr.Zero;
             IntPtr stmt = IntPtr.Zero;
@@ -134,34 +133,36 @@ namespace NotchWin.Services.Notifications
                 if (rc != WinSqlite3Native.SQLITE_OK || db == IntPtr.Zero)
                 {
                     Log.Warning("[WindowsNotificationService] sqlite3_open_v2 failed with code {Rc}: {Msg}", rc, WinSqlite3Native.GetErrorMessage(db));
-                    return 0;
+                    return;
                 }
 
                 WinSqlite3Native.sqlite3_busy_timeout(db, 1000);
 
-                string sql = "SELECT MAX([Order]) FROM Notification WHERE Type = 'toast'";
+                string sql = "SELECT Id, ArrivalTime FROM Notification WHERE Type = 'toast'";
                 byte[] sqlBytes = Encoding.UTF8.GetBytes(sql + "\0");
 
                 rc = WinSqlite3Native.sqlite3_prepare_v2(db, sqlBytes, sqlBytes.Length, out stmt, IntPtr.Zero);
                 if (rc == WinSqlite3Native.SQLITE_OK && stmt != IntPtr.Zero)
                 {
-                    if (WinSqlite3Native.sqlite3_step(stmt) == WinSqlite3Native.SQLITE_ROW)
+                    _knownToasts.Clear();
+                    while (WinSqlite3Native.sqlite3_step(stmt) == WinSqlite3Native.SQLITE_ROW)
                     {
-                        return WinSqlite3Native.sqlite3_column_int64(stmt, 0);
+                        long id = WinSqlite3Native.sqlite3_column_int64(stmt, 0);
+                        long arrival = WinSqlite3Native.sqlite3_column_int64(stmt, 1);
+                        _knownToasts[id] = arrival;
                     }
+                    Log.Information("[WindowsNotificationService] Started. Loaded {Count} baseline toasts.", _knownToasts.Count);
                 }
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "[WindowsNotificationService] Failed to get MaxOrder");
+                Log.Warning(ex, "[WindowsNotificationService] Failed to load baseline notification IDs");
             }
             finally
             {
                 if (stmt != IntPtr.Zero) WinSqlite3Native.sqlite3_finalize(stmt);
                 if (db != IntPtr.Zero) WinSqlite3Native.sqlite3_close(db);
             }
-
-            return 0;
         }
 
         private void QueryNewNotifications()
@@ -186,45 +187,52 @@ namespace NotchWin.Services.Notifications
 
                     if (rc != WinSqlite3Native.SQLITE_OK || db == IntPtr.Zero)
                     {
-                        Log.Debug("[WindowsNotificationService] Could not open db: code {Rc}", rc);
                         return;
                     }
 
                     WinSqlite3Native.sqlite3_busy_timeout(db, 1000);
 
                     string sql = @"
-                        SELECT n.[Order], n.Id, n.Payload, h.PrimaryId
+                        SELECT n.[Order], n.Id, n.ArrivalTime, n.Payload, h.PrimaryId
                         FROM Notification n
                         LEFT JOIN NotificationHandler h ON h.RecordId = n.HandlerId
-                        WHERE n.Type = 'toast' AND n.[Order] > ?1 AND n.Payload IS NOT NULL
-                        ORDER BY n.[Order] ASC";
+                        WHERE n.Type = 'toast' AND n.Payload IS NOT NULL
+                        ORDER BY n.ArrivalTime ASC";
 
                     byte[] sqlBytes = Encoding.UTF8.GetBytes(sql + "\0");
 
                     rc = WinSqlite3Native.sqlite3_prepare_v2(db, sqlBytes, sqlBytes.Length, out stmt, IntPtr.Zero);
                     if (rc != WinSqlite3Native.SQLITE_OK || stmt == IntPtr.Zero)
                     {
-                        Log.Warning("[WindowsNotificationService] prepare_v2 failed: {Msg}", WinSqlite3Native.GetErrorMessage(db));
                         return;
                     }
 
-                    WinSqlite3Native.sqlite3_bind_int64(stmt, 1, _lastSeenOrder);
+                    var newItems = new List<WindowsNotificationModel>();
+                    var currentIds = new HashSet<long>();
 
                     while (WinSqlite3Native.sqlite3_step(stmt) == WinSqlite3Native.SQLITE_ROW)
                     {
                         long order = WinSqlite3Native.sqlite3_column_int64(stmt, 0);
                         long id = WinSqlite3Native.sqlite3_column_int64(stmt, 1);
+                        long arrivalTime = WinSqlite3Native.sqlite3_column_int64(stmt, 2);
 
-                        int blobBytes = WinSqlite3Native.sqlite3_column_bytes(stmt, 2);
-                        IntPtr blobPtr = WinSqlite3Native.sqlite3_column_blob(stmt, 2);
+                        currentIds.Add(id);
 
-                        IntPtr appIdPtr = WinSqlite3Native.sqlite3_column_text(stmt, 3);
+                        int blobBytes = WinSqlite3Native.sqlite3_column_bytes(stmt, 3);
+                        IntPtr blobPtr = WinSqlite3Native.sqlite3_column_blob(stmt, 3);
+
+                        IntPtr appIdPtr = WinSqlite3Native.sqlite3_column_text(stmt, 4);
                         string appId = appIdPtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(appIdPtr) ?? string.Empty : string.Empty;
 
-                        if (order > _lastSeenOrder)
+                        bool isNew = !_knownToasts.TryGetValue(id, out long prevArrival);
+                        bool isUpdated = !isNew && arrivalTime > prevArrival;
+
+                        if (!isNew && !isUpdated)
                         {
-                            _lastSeenOrder = order;
+                            continue;
                         }
+
+                        _knownToasts[id] = arrivalTime;
 
                         // Ignore notifications originated from Kuri itself if any
                         if (appId.Contains("NotchWin", StringComparison.OrdinalIgnoreCase) ||
@@ -256,10 +264,33 @@ namespace NotchWin.Services.Notifications
                                     Timestamp = DateTime.Now
                                 };
 
-                                Log.Information("[WindowsNotificationService] Toast detected: [{AppName}] {Title}: {Message}", appName, title, message);
-                                NotificationReceived?.Invoke(this, item);
+                                Log.Information("[WindowsNotificationService] Toast detected (isNew={IsNew}, isUpdated={IsUpdated}): [{AppName}] {Title}: {Message}", isNew, isUpdated, appName, title, message);
+                                newItems.Add(item);
                             }
                         }
+                    }
+
+                    // Prune known toasts that have been deleted from Windows
+                    if (_knownToasts.Count > 100)
+                    {
+                        var toRemove = new List<long>();
+                        foreach (var kvp in _knownToasts)
+                        {
+                            if (!currentIds.Contains(kvp.Key))
+                            {
+                                toRemove.Add(kvp.Key);
+                            }
+                        }
+                        foreach (var id in toRemove)
+                        {
+                            _knownToasts.Remove(id);
+                        }
+                    }
+
+                    // Dispatch all new/updated notifications
+                    foreach (var item in newItems)
+                    {
+                        NotificationReceived?.Invoke(this, item);
                     }
                 }
                 catch (Exception ex)

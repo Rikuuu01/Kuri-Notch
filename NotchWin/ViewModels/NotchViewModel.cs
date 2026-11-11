@@ -401,6 +401,7 @@ namespace NotchWin.ViewModels
 
         private readonly IShelfService _shelfService;
         private readonly IWindowsNotificationService _windowsNotificationService;
+        private readonly System.Collections.Generic.Queue<(string Icon, string Title, string Message)> _notificationQueue = new();
 
 
 
@@ -2326,6 +2327,22 @@ namespace NotchWin.ViewModels
 
                 {
 
+                    if (type != WidgetType.Notification && _notificationQueue.Count > 0)
+                    {
+                        var next = _notificationQueue.Dequeue();
+                        int settingSec = _settingsService?.CurrentSettings?.NotificationDurationSeconds ?? 3;
+                        int nextDuration = _notificationQueue.Count > 0 ? Math.Min(2500, settingSec * 1000) : Math.Max(2000, settingSec * 1000);
+
+                        var queueTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+                        queueTimer.Tick += (_, _) =>
+                        {
+                            queueTimer.Stop();
+                            DisplaySingleNotification(next.Icon, next.Title, next.Message, nextDuration, isPrayer: false);
+                        };
+                        queueTimer.Start();
+                        return;
+                    }
+
                     if (!Media.HasMedia)
 
                     {
@@ -4182,42 +4199,15 @@ namespace NotchWin.ViewModels
 
                 if (Notification.IsWaterAlarm) return;
 
-
-
-                Notification.SetNotification(icon, title, msg, isPrayer);
-
-                WidgetHost.TriggerTransient(WidgetType.Notification, TimeSpan.FromMilliseconds(effectiveDurationMs));
-
-                UpdateGeometryForState(CurrentState);
-                StateAnimationRequested?.Invoke(this, EventArgs.Empty);
-
-
-
-                // Otomatis kaitkan event notifikasi ke badge maskot
-
-                MascotState mascotAlert = isPrayer ? MascotState.Adzan : icon switch
-
+                if (!isPrayer && WidgetHost.IsTransientActive && WidgetHost.CurrentWidgetType == WidgetType.Notification)
                 {
+                    _notificationQueue.Enqueue((icon, title, msg));
+                    Log.Information("[NotchViewModel] Notification enqueued (Queue count: {Count}): {Title}", _notificationQueue.Count, title);
+                    PetCompanionService.Instance.TriggerAlert(MascotState.Notification, TimeSpan.FromMilliseconds(1500));
+                    return;
+                }
 
-                    "\U0001F4F8" => MascotState.Screenshot,
-
-                    "\U0001F4CB" => MascotState.Copied,
-
-                    "\U0001F3A7" => MascotState.Bluetooth,
-
-                    "\u23F1\uFE0F" => MascotState.Timer,
-
-                    "\U0001F4A7" => MascotState.Drink,
-
-                    "\U0001F54C" => MascotState.Adzan,
-
-                    "\u23F0" => MascotState.Alarm,
-
-                    _ => MascotState.Notification
-
-                };
-
-                PetCompanionService.Instance.TriggerAlert(mascotAlert, TimeSpan.FromMilliseconds(effectiveDurationMs));
+                DisplaySingleNotification(icon, title, msg, effectiveDurationMs, isPrayer);
 
             };
 
@@ -4239,6 +4229,28 @@ namespace NotchWin.ViewModels
 
             }
 
+        }
+
+        private void DisplaySingleNotification(string icon, string title, string msg, int durationMs, bool isPrayer)
+        {
+            Notification.SetNotification(icon, title, msg, isPrayer);
+            WidgetHost.TriggerTransient(WidgetType.Notification, TimeSpan.FromMilliseconds(durationMs));
+
+            UpdateGeometryForState(CurrentState);
+            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+
+            MascotState mascotAlert = isPrayer ? MascotState.Adzan : icon switch
+            {
+                "\U0001F4F8" => MascotState.Screenshot,
+                "\U0001F4CB" => MascotState.Copied,
+                "\U0001F3A7" => MascotState.Bluetooth,
+                "\u23F1\uFE0F" => MascotState.Timer,
+                "\U0001F4A7" => MascotState.Drink,
+                "\U0001F54C" => MascotState.Adzan,
+                "\u23F0" => MascotState.Alarm,
+                _ => MascotState.Notification
+            };
+            PetCompanionService.Instance.TriggerAlert(mascotAlert, TimeSpan.FromMilliseconds(durationMs));
         }
 
 
