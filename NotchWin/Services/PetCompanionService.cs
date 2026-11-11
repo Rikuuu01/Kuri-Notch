@@ -132,6 +132,7 @@ namespace NotchWin.Services
             {
                 _currentAlert = null;
                 _currentAlertDuration = null;
+                _alertExpiryTimer?.Stop();
                 MascotAlertCleared?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -155,11 +156,26 @@ namespace NotchWin.Services
             MascotAlertTriggered?.Invoke(this, new MascotAlertEventArgs(state, duration));
         }
 
+        public void ClearAlert()
+        {
+            _alertExpiryTimer?.Stop();
+            _currentAlert = null;
+            _currentAlertDuration = null;
+            if (!_persistentAlert.HasValue)
+            {
+                MascotAlertCleared?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
         private void OnAlertExpired(object? sender, EventArgs e)
         {
             _alertExpiryTimer?.Stop();
             _currentAlert = null;
             _currentAlertDuration = null;
+            if (!_persistentAlert.HasValue)
+            {
+                MascotAlertCleared?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public PetStyle Style
@@ -288,6 +304,7 @@ namespace NotchWin.Services
             State = PetState.Wink;
             _temporaryStateTicks = 28; // ~700ms wink
             _lastMouseMoveTime = DateTime.UtcNow;
+            TriggerAlert(MascotState.Happy, TimeSpan.FromSeconds(2.0));
         }
 
         private void OnLoopTick(object? sender, EventArgs e)

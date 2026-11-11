@@ -206,7 +206,7 @@ namespace NotchWin.Controls
                 }
                 else
                 {
-                    EnterBaseline();
+                    ClearAlerts();
                 }
                 if (!_sleepTimer.IsEnabled) _sleepTimer.Start();
             }
@@ -225,7 +225,7 @@ namespace NotchWin.Controls
 
         private void OnServiceMascotAlertCleared(object? sender, EventArgs e)
         {
-            Dispatcher.InvokeAsync(DismissAlert);
+            Dispatcher.InvokeAsync(ClearAlerts);
         }
 
         private void OnServiceMusicChanged(object? sender, bool isPlaying)

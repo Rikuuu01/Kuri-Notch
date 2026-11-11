@@ -75,7 +75,7 @@ namespace NotchWin.Controls
 
         /// <summary>Wujud yang sedang tampil: peringatan aktif > tidur > musik > idle.</summary>
         public MascotState CurrentState =>
-            _active?.Kind ?? (_sleeping ? MascotState.Sleep : _music ? MascotState.Music : MascotState.Idle);
+            PetCompanionService.Instance.CurrentAlert ?? _active?.Kind ?? (_sleeping ? MascotState.Sleep : _music ? MascotState.Music : MascotState.Idle);
 
         /// <summary>Lama reaksi Happy. Gunakan Timeout.InfiniteTimeSpan agar bertahan sampai DismissAlert().</summary>
         public TimeSpan HappyDuration { get; set; } = TimeSpan.FromSeconds(3);
@@ -139,6 +139,7 @@ namespace NotchWin.Controls
             {
                 _active = req;
                 Arm(req.Duration);
+                Refresh(force: true);
                 return;
             }
 
@@ -151,14 +152,18 @@ namespace NotchWin.Controls
         /// <summary>Akhiri peringatan aktif; lanjut ke antrean atau kembali ke keadaan dasar.</summary>
         public void DismissAlert()
         {
+            _queue.Clear();
             if (_active != null) EndAlert();
+            else Refresh(force: true);
         }
 
         /// <summary>Bersihkan antrean dan akhiri peringatan aktif.</summary>
         public void ClearAlerts()
         {
             _queue.Clear();
-            DismissAlert();
+            _alertTimer.Stop();
+            _active = null;
+            Refresh(force: true);
         }
 
         // ───────────────────────── Siklus hidup ─────────────────────────
@@ -211,9 +216,15 @@ namespace NotchWin.Controls
             _music = PetCompanionService.Instance.IsMusicPlaying;
             _sleeping = PetCompanionService.Instance.State == PetState.Sleeping;
 
-            if (PetCompanionService.Instance.CurrentAlert.HasValue)
+            var alert = PetCompanionService.Instance.CurrentAlert;
+            if (alert.HasValue)
             {
-                ShowAlert(PetCompanionService.Instance.CurrentAlert.Value, PetCompanionService.Instance.CurrentAlertDuration);
+                _active = new AlertRequest(alert.Value, PetCompanionService.Instance.CurrentAlertDuration ?? DefaultDuration(alert.Value));
+            }
+            else
+            {
+                _active = null;
+                _queue.Clear();
             }
 
             if (IsVisible)
@@ -228,6 +239,7 @@ namespace NotchWin.Controls
             {
                 _pupilTimer.Stop();
                 _blinkTimer.Stop();
+                _alertTimer.Stop();
                 ResetBody();
                 StopFx();
                 ClearBadge();
@@ -253,19 +265,24 @@ namespace NotchWin.Controls
                 if (!_sleeping && !_pupilTimer.IsEnabled) _pupilTimer.Start();
                 if (!_sleeping) ScheduleBlink();
 
-                if (PetCompanionService.Instance.CurrentAlert.HasValue)
+                var alert = PetCompanionService.Instance.CurrentAlert;
+                if (alert.HasValue)
                 {
-                    ShowAlert(PetCompanionService.Instance.CurrentAlert.Value, PetCompanionService.Instance.CurrentAlertDuration);
+                    _active = new AlertRequest(alert.Value, PetCompanionService.Instance.CurrentAlertDuration ?? DefaultDuration(alert.Value));
+                    Arm(_active.Duration);
                 }
                 else
                 {
-                    Refresh(force: true);
+                    _active = null;
+                    _queue.Clear();
                 }
+                Refresh(force: true);
             }
             else
             {
                 _pupilTimer.Stop();
                 _blinkTimer.Stop();
+                _alertTimer.Stop();
                 ResetBody();
                 StopFx();
                 ClearBadge();
@@ -403,7 +420,7 @@ namespace NotchWin.Controls
             }
             else
             {
-                Refresh();
+                Refresh(force: true);
             }
 
             if (finished != null) AlertFinished?.Invoke(this, finished.Kind);
@@ -495,6 +512,8 @@ namespace NotchWin.Controls
         // ── Keadaan dasar ──
         private void ApplyIdle()
         {
+            ResetBody();
+            ClearBadge();
             SetEyes(EyeSet.Open);
             LookCursor();
             if (PetCompanionService.Instance.IsNotchExpanded)
@@ -686,6 +705,7 @@ namespace NotchWin.Controls
             Reset(BodyShift, TY, 0);
             Reset(EyeWide, SX, 1);
             Reset(EyeWide, SY, 1);
+            Reset(EyeBlink, SY, 1);
             Reset(BlushL, OP, 0);
             Reset(BlushR, OP, 0);
             Reset(FlashOverlay, OP, 0);
@@ -727,8 +747,14 @@ namespace NotchWin.Controls
 
         private void ClearBadge()
         {
-            Run(BadgeScale, SX, Go(0, 0.15));
-            Run(BadgeScale, SY, Go(0, 0.15));
+            if (_icons != null)
+            {
+                foreach (var i in _icons)
+                    i.Visibility = Visibility.Collapsed;
+            }
+
+            Reset(BadgeScale, SX, 0);
+            Reset(BadgeScale, SY, 0);
 
             Reset(BellRotate, RA, 0);
             Reset(AlarmRotate, RA, 0);

@@ -2342,6 +2342,11 @@ namespace NotchWin.ViewModels
                         queueTimer.Start();
                         return;
                     }
+                    else if (type != WidgetType.Notification && _notificationQueue.Count == 0)
+                    {
+                        // Pastikan maskot kembali bersih ke idle jika semua antrean notifikasi telah selesai
+                        PetCompanionService.Instance.ClearAlert();
+                    }
 
                     if (!Media.HasMedia)
 
@@ -4203,7 +4208,6 @@ namespace NotchWin.ViewModels
                 {
                     _notificationQueue.Enqueue((icon, title, msg));
                     Log.Information("[NotchViewModel] Notification enqueued (Queue count: {Count}): {Title}", _notificationQueue.Count, title);
-                    PetCompanionService.Instance.TriggerAlert(MascotState.Notification, TimeSpan.FromMilliseconds(1500));
                     return;
                 }
 

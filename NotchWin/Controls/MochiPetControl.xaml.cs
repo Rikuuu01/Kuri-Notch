@@ -76,30 +76,13 @@ namespace NotchWin.Controls
         public void PlayWelcome(TimeSpan? duration = null)
         {
             var d = duration ?? TimeSpan.FromSeconds(3.4);
-            switch (_pet.Style)
-            {
-                case PetStyle.AstroMascot when AstroMascot != null:
-                    AstroMascot.ShowAlert(MascotState.Welcome, d);
-                    break;
-                case PetStyle.EggMascot when EggMascot != null:
-                    EggMascot.PlayWelcome(d);
-                    break;
-                case PetStyle.PastelMochi when PastelMascot != null:
-                    PastelMascot.ShowAlert(MascotState.Welcome, d);
-                    break;
-                case PetStyle.NotchEyes when NotchEyes != null:
-                    NotchEyes.PlayWelcome();
-                    break;
-            }
+            _pet.TriggerAlert(MascotState.Welcome, d);
         }
 
         /// <summary>Hentikan sapaan startup pada instance overlay (dipakai saat greeting dibatalkan).</summary>
         public void HideGreeting()
         {
-            PastelMascot?.DismissAlert();
-            AstroMascot?.DismissAlert();
-            EggMascot?.DismissAlert();
-            NotchEyes?.DismissAlert();
+            _pet.ClearAlert();
         }
 
         private void Control_MouseEnter(object sender, MouseEventArgs e)
@@ -135,22 +118,6 @@ namespace NotchWin.Controls
                 _isPressed = false;
                 // Elastic bounce on release
                 AnimateBounce(1.0, 260);
-                if (_pet.Style == PetStyle.PastelMochi && PastelMascot != null)
-                {
-                    PastelMascot.ShowAlert(MascotState.Happy);
-                }
-                else if (_pet.Style == PetStyle.AstroMascot && AstroMascot != null)
-                {
-                    AstroMascot.ShowAlert(MascotState.Happy);
-                }
-                else if (_pet.Style == PetStyle.EggMascot && EggMascot != null)
-                {
-                    EggMascot.ShowAlert(MascotState.Happy);
-                }
-                else if (_pet.Style == PetStyle.NotchEyes && NotchEyes != null)
-                {
-                    NotchEyes.ShowAlert(MascotState.Happy);
-                }
                 e.Handled = true;
             }
         }
