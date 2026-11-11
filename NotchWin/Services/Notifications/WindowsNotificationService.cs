@@ -14,6 +14,7 @@ namespace NotchWin.Services.Notifications
         private readonly object _lock = new();
         private FileSystemWatcher? _watcher;
         private Timer? _debounceTimer;
+        private Timer? _pollTimer;
         private long _lastSeenOrder = 0;
         private bool _isDisposed;
         private bool _isRunning;
@@ -67,6 +68,11 @@ namespace NotchWin.Services.Notifications
                     }
                 }
 
+                _pollTimer = new Timer(_ =>
+                {
+                    QueryNewNotifications();
+                }, null, 400, 400);
+
                 _isRunning = true;
             }
         }
@@ -86,6 +92,9 @@ namespace NotchWin.Services.Notifications
 
                 _debounceTimer?.Dispose();
                 _debounceTimer = null;
+
+                _pollTimer?.Dispose();
+                _pollTimer = null;
 
                 _isRunning = false;
                 Log.Information("[WindowsNotificationService] Stopped.");

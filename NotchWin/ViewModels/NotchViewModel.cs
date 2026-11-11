@@ -4134,6 +4134,7 @@ namespace NotchWin.ViewModels
                         displayTitle = $"{item.AppName} • {item.Title}";
                     }
 
+                    Log.Information("[NotchViewModel] Triggering transient notification: {Icon} {Title} - {Message}", item.Icon, displayTitle, item.Message);
                     TriggerTransientNotification(item.Icon, displayTitle, item.Message);
                 }
                 catch (Exception ex)
@@ -4186,6 +4187,9 @@ namespace NotchWin.ViewModels
                 Notification.SetNotification(icon, title, msg, isPrayer);
 
                 WidgetHost.TriggerTransient(WidgetType.Notification, TimeSpan.FromMilliseconds(effectiveDurationMs));
+
+                UpdateGeometryForState(CurrentState);
+                StateAnimationRequested?.Invoke(this, EventArgs.Empty);
 
 
 
