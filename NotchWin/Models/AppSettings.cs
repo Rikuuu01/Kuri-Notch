@@ -14,6 +14,7 @@ namespace NotchWin.Models
         public int HoverExpandDelayMs { get; set; } = 280;
         public bool IsMediaWidgetEnabled { get; set; } = false;
         public bool IsPrivacyIndicatorEnabled { get; set; } = true;
+        public bool IsWindowsNotificationSyncEnabled { get; set; } = true;
         public int NotificationDurationSeconds { get; set; } = 3;
         public bool IsAccentColorEnabled { get; set; } = true;
         public bool ShowWeatherInCollapsedNotch { get; set; } = false;

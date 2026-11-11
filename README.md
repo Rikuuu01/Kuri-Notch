@@ -111,6 +111,12 @@ Access your PC essentials directly inside the Notch without opening the Windows 
 - **Notes & Alarm**: Rich text quick notes with instant copy and time-based alarm reminders.
 - **Fullscreen Slim Bar**: Automatically morphs into an ultra-subtle, non-intrusive 6px slim bar when watching full-screen movies or playing games.
 
+### 🔔 6. Native Windows Notification Interceptor
+- **Zero-UWP Native Hook**: Intercepts Windows native toast notifications (WhatsApp, Discord, Telegram, Browsers, Snipping Tool, etc.) using the built-in system SQLite database (`wpndatabase.db`) and `winsqlite3.dll` without requiring UWP/MSIX package registration.
+- **Dynamic Toast Morphing**: Collapsed Notch dynamically expands with a smooth physics animation to show the app icon, title, and message.
+- **Sub-Notch Floating Pill**: Optional pill view with click-to-dismiss support.
+- **Privacy & Toggle**: Toggle On/Off anytime in Settings, with custom duration slider (2–10s).
+
 ---
 
 ## 📦 Installation Guide
@@ -171,6 +177,7 @@ DynamicNotchWindows/
 - [x] In-Notch Wi-Fi and Bluetooth network expanders
 - [x] Interactive Mascot Center Alignment on Idle
 - [x] Phone Share QR code transfer
+- [x] Native Windows toast notification interceptor (Poni-style SQLite engine)
 - [ ] Multi-monitor independent notch placement
 - [ ] Custom community pet avatar importer (.SVG / .Lottie)
 - [ ] Spotify Canvas animated video background support

@@ -842,6 +842,9 @@ namespace NotchWin.Services
 
             ["Settings.PrivacyDesc"] = "Show green/orange dots when webcam or mic is active",
 
+            ["Settings.WindowsNotifSyncTitle"] = "Windows Notifications",
+            ["Settings.WindowsNotifSyncDesc"] = "Show Windows toast notifications (WhatsApp, Discord, Telegram, etc.) in the notch",
+
             ["Settings.NotificationDurationTitle"] = "Notification Duration",
             ["Settings.NotificationDurationDesc"] = "How long floating notifications (USB, Bluetooth, Water, etc.) remain visible (Adzan excluded)",
             ["Settings.SecondsFormat"] = "{0} seconds",
@@ -1683,6 +1686,9 @@ namespace NotchWin.Services
             ["Settings.PrivacyTitle"] = "Indikator Privasi Kamera & Mikrofon",
 
             ["Settings.PrivacyDesc"] = "Tampilkan titik hijau/oranye saat webcam atau mic aktif",
+
+            ["Settings.WindowsNotifSyncTitle"] = "Notifikasi Windows",
+            ["Settings.WindowsNotifSyncDesc"] = "Tampilkan notifikasi toast bawaan Windows (WhatsApp, Discord, Telegram, dll.) di notch",
 
             ["Settings.NotificationDurationTitle"] = "Durasi Notifikasi Notch",
             ["Settings.NotificationDurationDesc"] = "Lama notifikasi mengambang (USB, Bluetooth, Air Minum, dll.) tampil di notch (Adzan dikecualikan)",

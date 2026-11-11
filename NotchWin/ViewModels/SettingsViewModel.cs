@@ -301,6 +301,9 @@ namespace NotchWin.ViewModels
         private bool _isDownloadMonitorEnabled = true;
 
         [ObservableProperty]
+        private bool _isWindowsNotificationSyncEnabled = true;
+
+        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(NotificationDurationDisplay))]
         private int _notificationDurationSeconds = 3;
 
@@ -730,6 +733,7 @@ namespace NotchWin.ViewModels
                 IsPrivacyIndicatorEnabled = settings.IsPrivacyIndicatorEnabled;
 
                 IsDownloadMonitorEnabled = settings.IsDownloadMonitorEnabled;
+                IsWindowsNotificationSyncEnabled = settings.IsWindowsNotificationSyncEnabled;
                 NotificationDurationSeconds = Math.Clamp(settings.NotificationDurationSeconds, 2, 10);
 
                 ShelfRemoveAfterDrag = settings.ShelfRemoveAfterDrag;
@@ -946,6 +950,8 @@ namespace NotchWin.ViewModels
         partial void OnIsPrivacyIndicatorEnabledChanged(bool value) => AutoSave();
 
         partial void OnIsDownloadMonitorEnabledChanged(bool value) => AutoSave();
+
+        partial void OnIsWindowsNotificationSyncEnabledChanged(bool value) => AutoSave();
 
         partial void OnShelfRemoveAfterDragChanged(bool value) => AutoSave();
 
@@ -1378,6 +1384,7 @@ namespace NotchWin.ViewModels
                 IsPrivacyIndicatorEnabled = defaults.IsPrivacyIndicatorEnabled;
 
                 IsDownloadMonitorEnabled = defaults.IsDownloadMonitorEnabled;
+                IsWindowsNotificationSyncEnabled = defaults.IsWindowsNotificationSyncEnabled;
                 NotificationDurationSeconds = defaults.NotificationDurationSeconds;
 
                 ShelfRemoveAfterDrag = defaults.ShelfRemoveAfterDrag;
@@ -1743,6 +1750,7 @@ namespace NotchWin.ViewModels
                     IsPrivacyIndicatorEnabled = IsPrivacyIndicatorEnabled,
 
                     IsDownloadMonitorEnabled = IsDownloadMonitorEnabled,
+                    IsWindowsNotificationSyncEnabled = IsWindowsNotificationSyncEnabled,
                     NotificationDurationSeconds = NotificationDurationSeconds,
 
                     IsAlbumArtAccentEnabled = IsAlbumArtAccentEnabled,

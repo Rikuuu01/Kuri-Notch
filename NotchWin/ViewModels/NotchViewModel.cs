@@ -19,6 +19,7 @@ using NotchWin.Interop;
 using NotchWin.Models;
 
 using NotchWin.Services;
+using NotchWin.Services.Notifications;
 
 using NotchWin.Widgets;
 
@@ -399,6 +400,7 @@ namespace NotchWin.ViewModels
         private readonly IDownloadMonitorService _downloadService;
 
         private readonly IShelfService _shelfService;
+        private readonly IWindowsNotificationService _windowsNotificationService;
 
 
 
@@ -1708,6 +1710,13 @@ namespace NotchWin.ViewModels
 
             _downloadService = new DownloadMonitorService();
 
+            _windowsNotificationService = new WindowsNotificationService();
+            _windowsNotificationService.NotificationReceived += OnWindowsNotificationReceived;
+            if (_settingsService.CurrentSettings.IsWindowsNotificationSyncEnabled)
+            {
+                _windowsNotificationService.Start();
+            }
+
 
 
             WidgetHost = new WidgetHost();
@@ -2736,6 +2745,9 @@ namespace NotchWin.ViewModels
 
             else _downloadService.Stop();
 
+            if (settings.IsWindowsNotificationSyncEnabled) _windowsNotificationService.Start();
+            else _windowsNotificationService.Stop();
+
 
 
             ThemeManager.IsAccentColorEnabled = settings.IsAccentColorEnabled;
@@ -3586,6 +3598,7 @@ namespace NotchWin.ViewModels
             Download.Dispose();
 
             _downloadService.Dispose();
+            _windowsNotificationService.Dispose();
             ScreenTimeService?.Dispose();
 
         }
@@ -3942,9 +3955,15 @@ namespace NotchWin.ViewModels
                     {
 
                         case WidgetType.Notification:
-
-                            collapsedWidth = Notification.IsWaterAlarm ? 340.0 : 280.0;
-
+                            if (Notification.IsWaterAlarm)
+                            {
+                                collapsedWidth = 340.0;
+                            }
+                            else
+                            {
+                                int textLen = (Notification.Title?.Length ?? 0) + (Notification.Message?.Length ?? 0);
+                                collapsedWidth = Math.Clamp(220.0 + (textLen * 3.8), 280.0, 360.0);
+                            }
                             break;
 
                         case WidgetType.Volume:
@@ -4093,7 +4112,36 @@ namespace NotchWin.ViewModels
 
         }
 
+        private void OnWindowsNotificationReceived(object? sender, WindowsNotificationModel item)
+        {
+            if (!_settingsService.CurrentSettings.IsWindowsNotificationSyncEnabled) return;
 
+            Application.Current?.Dispatcher.InvokeAsync(() =>
+            {
+                try
+                {
+                    string displayTitle;
+                    if (string.IsNullOrWhiteSpace(item.Title))
+                    {
+                        displayTitle = item.AppName;
+                    }
+                    else if (item.Title.StartsWith(item.AppName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayTitle = item.Title;
+                    }
+                    else
+                    {
+                        displayTitle = $"{item.AppName} • {item.Title}";
+                    }
+
+                    TriggerTransientNotification(item.Icon, displayTitle, item.Message);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "[NotchViewModel] Failed to display Windows notification");
+                }
+            });
+        }
 
         public void TriggerTransientNotification(string icon, string title, string msg, int durationMs = 0, bool isPrayer = false)
 
