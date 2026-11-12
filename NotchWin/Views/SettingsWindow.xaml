@@ -1620,10 +1620,10 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                        </StackPanel>
 
-                        <!-- ================= PANEL 7: WAKTU LAYAR ================= -->
-                        <StackPanel Visibility="{Binding SelectedCategoryIndex, Converter={StaticResource EqToVis}, ConverterParameter=7}">
+                            <!-- Pemisah Bagian Waktu Layar -->
+                            <Border Height="1" Background="#27272A" Margin="0,18,0,16" />
+
                             <DockPanel Margin="4,0,0,10" LastChildFill="False">
                                 <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding L10n[Settings.ScreenTimeTitle]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" />
