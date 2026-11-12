@@ -230,6 +230,8 @@ namespace NotchWin.Services
 
             ["Notification.DismissTooltip"] = "Click to dismiss notification",
 
+            ["Notification.TimestampNow"] = "now",
+
             ["Notification.Today"] = "Today",
 
             ["Notification.Tomorrow"] = "Tomorrow",
@@ -1086,6 +1088,8 @@ namespace NotchWin.Services
             ["Notification.PrayerReminderTitle"] = "Waktu Sholat",
 
             ["Notification.DismissTooltip"] = "Klik untuk menutup notifikasi",
+
+            ["Notification.TimestampNow"] = "baru saja",
 
             ["Notification.Today"] = "Hari ini",
 

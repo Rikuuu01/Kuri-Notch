@@ -828,10 +828,14 @@
               <TranslateTransform x:Name="CollapsedContentTranslate" X="0" Y="0" />
             </TransformGroup>
           </UIElement.RenderTransform>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="32" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
-          <Grid Column="0">
+          <Grid Grid.Row="0" Grid.Column="0" Height="32" VerticalAlignment="Top">
             <Grid x:Name="CollapsedNormalWidgetsHost" RenderTransformOrigin="0.5, 0.5">
               <Grid.RenderTransform>
                 <TransformGroup>
@@ -1362,7 +1366,8 @@
               </ProgressBar>
             </Grid>
           </Grid>
-          <Grid Name="PrivacyOverlayHost" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,5,0" IsHitTestVisible="False" Opacity="0" Visibility="Collapsed">
+          <!-- Privacy Overlay (Pinned at Row 0) -->
+          <Grid Grid.Row="0" Grid.Column="0" Name="PrivacyOverlayHost" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,5,0" IsHitTestVisible="False" Opacity="0" Visibility="Collapsed">
             <UIElement.RenderTransform>
               <TranslateTransform x:Name="PrivacyOverlayTranslate" X="0" Y="0" />
             </UIElement.RenderTransform>
@@ -1378,6 +1383,161 @@
                 </UIElement.Effect>
               </Ellipse>
             </StackPanel>
+          </Grid>
+
+          <!-- Dynamic Notification Dropdown Card (Row 1) -->
+          <Grid Grid.Row="1" Grid.Column="0" x:Name="CollapsedNotificationDropdownHost"
+                Visibility="Collapsed"
+                Opacity="0"
+                VerticalAlignment="Top"
+                Margin="8,1,8,8"
+                Height="58"
+                Cursor="Hand"
+                ToolTip="{Binding L10n[Notification.DismissTooltip]}"
+                MouseEnter="CollapsedNotificationDropdownHost_MouseEnter"
+                MouseLeave="CollapsedNotificationDropdownHost_MouseLeave"
+                MouseLeftButtonDown="CollapsedNotificationDropdownHost_MouseLeftButtonDown"
+                RenderTransformOrigin="0.5, 0.5">
+            <Grid.RenderTransform>
+              <TransformGroup>
+                <TranslateTransform x:Name="CollapsedNotificationDropdownTranslate" X="0" Y="0" />
+                <ScaleTransform x:Name="CollapsedNotificationDropdownScale" ScaleX="1.0" ScaleY="1.0" />
+              </TransformGroup>
+            </Grid.RenderTransform>
+
+            <!-- Card Background Container -->
+            <Border Background="#16161B"
+                    BorderBrush="#2A2A34"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    SnapsToDevicePixels="True"
+                    UseLayoutRounding="True">
+              <Grid Margin="10,6,12,6">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: App Icon Squircle (38x38) -->
+                <Border Grid.Column="0"
+                        Width="38" Height="38"
+                        CornerRadius="10"
+                        ClipToBounds="True"
+                        VerticalAlignment="Center"
+                        Background="{Binding Notification.BrandBrush}">
+                  <Grid>
+                    <!-- Display Toast Image if present and exists -->
+                    <Image Source="{Binding Notification.ImagePath}"
+                           Stretch="UniformToFill"
+                           Visibility="{Binding Notification.HasImagePath, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- Vector App Icon if no image -->
+                    <Grid Visibility="{Binding Notification.HasImagePath, Converter={StaticResource InverseBoolToVis}}">
+                      <!-- WhatsApp Vector -->
+                      <Path Data="M19.05,4.91 C17.18,3.03 14.69,2 12.04,2 C6.55,2 2.08,6.48 2.08,11.98 C2.08,13.74 2.54,15.46 3.42,16.98 L2,22.16 L7.33,20.76 C8.79,21.56 10.4,21.98 12.04,21.98 L12.04,21.98 C17.52,21.98 21.99,17.5 22,12 C22,9.33 20.95,6.82 19.05,4.91 Z M12.04,20.26 C10.55,20.26 9.09,19.86 7.82,19.11 L7.52,18.93 L4.36,19.76 L5.2,16.68 L5.01,16.37 C4.18,15.06 3.74,13.54 3.74,11.98 C3.74,7.4 7.46,3.69 12.05,3.69 C14.27,3.69 16.35,4.56 17.92,6.13 C19.49,7.7 20.35,9.78 20.35,12 C20.34,16.58 16.62,20.26 12.04,20.26 Z M16.6,14.07 C16.35,13.95 15.13,13.35 14.9,13.27 C14.67,13.18 14.51,13.14 14.34,13.39 C14.18,13.63 13.7,14.2 13.55,14.37 C13.41,14.53 13.26,14.56 13.01,14.43 C12.77,14.31 11.98,14.05 11.04,13.22 C10.31,12.57 9.82,11.76 9.68,11.52 C9.53,11.27 9.66,11.14 9.79,11.01 C9.9,10.9 10.03,10.73 10.15,10.58 C10.27,10.44 10.31,10.33 10.39,10.17 C10.47,10.01 10.43,9.86 10.37,9.74 C10.31,9.62 9.82,8.42 9.62,7.92 C9.42,7.44 9.22,7.5 9.07,7.49 L8.6,7.49 C8.44,7.49 8.17,7.55 7.95,7.79 C7.72,8.04 7.09,8.63 7.09,9.84 C7.09,11.05 7.97,12.22 8.09,12.38 C8.22,12.55 9.83,15.02 12.3,16.08 C12.89,16.33 13.34,16.48 13.7,16.6 C14.29,16.78 14.83,16.76 15.26,16.69 C15.74,16.62 16.73,16.09 16.94,15.5 C17.14,14.91 17.14,14.41 17.08,14.31 C17.02,14.21 16.85,14.19 16.6,14.07 Z"
+                            Fill="#FFFFFF"
+                            Stretch="Uniform"
+                            Width="21" Height="21"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding Notification.IsWhatsApp, Converter={StaticResource BoolToVis}}" />
+
+                      <!-- Telegram Vector -->
+                      <Path Data="M2.3,10.8 L18.8,3.2 C19.6,2.9 20.3,3.4 20.1,4.3 L17.3,17.5 C17.1,18.4 16.5,18.7 15.7,18.2 L11.5,15.1 L9.5,17.1 C9.3,17.3 9.1,17.5 8.7,17.5 L9.0,13.2 L16.8,6.2 C17.1,5.9 16.8,5.7 16.4,6.0 L6.7,12.1 L2.5,10.8 C1.6,10.5 1.6,9.9 2.7,9.5"
+                            Fill="#FFFFFF"
+                            Stretch="Uniform"
+                            Width="20" Height="20"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding Notification.IsTelegram, Converter={StaticResource BoolToVis}}" />
+
+                      <!-- Discord Vector -->
+                      <Path Data="M18.9,4.4 C17.4,3.7 15.9,3.2 14.2,3 C14,3.4 13.8,3.9 13.6,4.3 C11.8,4 10.1,4 8.4,4.3 C8.2,3.9 8,3.4 7.8,3 C6.1,3.2 4.6,3.7 3.1,4.4 C0.6,8.1 0,11.7 0.3,15.3 C2.3,16.8 4.2,17.7 6.1,18.3 C6.6,17.6 7,16.9 7.4,16.1 C6.7,15.8 6.1,15.5 5.5,15 C5.6,14.9 5.8,14.8 6,14.6 C9.8,16.4 14.2,16.4 18,14.6 C18.2,14.8 18.3,14.9 18.5,15 C17.9,15.5 17.3,15.8 16.6,16.1 C17,16.9 17.4,17.6 17.9,18.3 C19.8,17.7 21.7,16.8 23.7,15.3 C24.1,11.1 23,7.5 20.9,4.4 Z M7.9,13.1 C6.8,13.1 5.8,12 5.8,10.8 C5.8,9.5 6.7,8.5 7.9,8.5 C9.1,8.5 10,9.5 10,10.8 C10,12 9,13.1 7.9,13.1 Z M16.1,13.1 C15,13.1 14,12 14,10.8 C14,9.5 14.9,8.5 16.1,8.5 C17.3,8.5 18.2,9.5 18.2,10.8 C18.2,12 17.2,13.1 16.1,13.1 Z"
+                            Fill="#FFFFFF"
+                            Stretch="Uniform"
+                            Width="21" Height="21"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding Notification.IsDiscord, Converter={StaticResource BoolToVis}}" />
+
+                      <!-- Spotify Vector -->
+                      <Path Data="M12,2 C6.5,2 2,6.5 2,12 C2,17.5 6.5,22 12,22 C17.5,22 22,17.5 22,12 C22,6.5 17.5,2 12,2 Z M16.6,16.4 C16.4,16.7 16,16.8 15.7,16.6 C13.1,15 9.7,14.6 5.7,15.5 C5.3,15.6 5,15.3 4.9,15 C4.8,14.6 5.1,14.3 5.4,14.2 C9.8,13.2 13.6,13.6 16.4,15.4 C16.8,15.5 16.8,16 16.6,16.4 Z M17.9,13.3 C17.6,13.7 17.1,13.9 16.7,13.6 C13.7,11.7 9,11.2 5.4,12.3 C5,12.4 4.5,12.2 4.4,11.7 C4.3,11.3 4.5,10.8 4.9,10.7 C9.1,9.4 14.3,10 17.6,12.1 C18,12.3 18.2,12.9 17.9,13.3 Z M18,10.2 C14.4,8 8.4,7.8 4.9,8.9 C4.3,9.1 3.7,8.7 3.5,8.2 C3.3,7.6 3.7,7 4.2,6.8 C8.3,5.6 14.9,5.8 19.1,8.3 C19.6,8.6 19.8,9.2 19.5,9.7 C19.2,10.2 18.5,10.4 18,10.2 Z"
+                            Fill="#FFFFFF"
+                            Stretch="Uniform"
+                            Width="20" Height="20"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding Notification.IsSpotify, Converter={StaticResource BoolToVis}}" />
+
+                      <!-- Generic / Fallback Text Icon -->
+                      <TextBlock Text="{Binding Notification.Icon}"
+                                 FontSize="18"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center"
+                                 Visibility="{Binding Notification.IsGenericVector, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                  </Grid>
+                </Border>
+
+                <!-- Right: Header (App Name + Timestamp), Title, Message Body -->
+                <Grid Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                  </Grid.RowDefinitions>
+
+                  <!-- Row 0: App Name + Timestamp -->
+                  <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                      <!-- Mini WhatsApp glyph -->
+                      <Border Width="12" Height="12" CornerRadius="3" Background="#25D366" Margin="0,0,5,0" VerticalAlignment="Center" Visibility="{Binding Notification.IsWhatsApp, Converter={StaticResource BoolToVis}}">
+                        <Path Data="M19.05,4.91 C17.18,3.03 14.69,2 12.04,2 C6.55,2 2.08,6.48 2.08,11.98 C2.08,13.74 2.54,15.46 3.42,16.98 L2,22.16 L7.33,20.76 C8.79,21.56 10.4,21.98 12.04,21.98 L12.04,21.98 C17.52,21.98 21.99,17.5 22,12 C22,9.33 20.95,6.82 19.05,4.91 Z M12.04,20.26 C10.55,20.26 9.09,19.86 7.82,19.11 L7.52,18.93 L4.36,19.76 L5.2,16.68 L5.01,16.37 C4.18,15.06 3.74,13.54 3.74,11.98 C3.74,7.4 7.46,3.69 12.05,3.69 C14.27,3.69 16.35,4.56 17.92,6.13 C19.49,7.7 20.35,9.78 20.35,12 C20.34,16.58 16.62,20.26 12.04,20.26 Z M16.6,14.07 C16.35,13.95 15.13,13.35 14.9,13.27 C14.67,13.18 14.51,13.14 14.34,13.39 C14.18,13.63 13.7,14.2 13.55,14.37 C13.41,14.53 13.26,14.56 13.01,14.43 C12.77,14.31 11.98,14.05 11.04,13.22 C10.31,12.57 9.82,11.76 9.68,11.52 C9.53,11.27 9.66,11.14 9.79,11.01 C9.9,10.9 10.03,10.73 10.15,10.58 C10.27,10.44 10.31,10.33 10.39,10.17 C10.47,10.01 10.43,9.86 10.37,9.74 C10.31,9.62 9.82,8.42 9.62,7.92 C9.42,7.44 9.22,7.5 9.07,7.49 L8.6,7.49 C8.44,7.49 8.17,7.55 7.95,7.79 C7.72,8.04 7.09,8.63 7.09,9.84 C7.09,11.05 7.97,12.22 8.09,12.38 C8.22,12.55 9.83,15.02 12.3,16.08 C12.89,16.33 13.34,16.48 13.7,16.6 C14.29,16.78 14.83,16.76 15.26,16.69 C15.74,16.62 16.73,16.09 16.94,15.5 C17.14,14.91 17.14,14.41 17.08,14.31 C17.02,14.21 16.85,14.19 16.6,14.07 Z" Fill="#FFFFFF" Stretch="Uniform" Width="8" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding Notification.AppName}"
+                                 Foreground="#9CA3AF"
+                                 FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                                 FontSize="11"
+                                 FontWeight="SemiBold"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Notification.TimestampText}"
+                               Foreground="#71717A"
+                               FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                               FontSize="10.5"
+                               FontWeight="Normal"
+                               VerticalAlignment="Center" />
+                  </Grid>
+
+                  <!-- Row 1: Sender / Title -->
+                  <TextBlock Grid.Row="1"
+                             Text="{Binding Notification.Title}"
+                             Foreground="#FFFFFF"
+                             FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                             FontSize="12.5"
+                             FontWeight="SemiBold"
+                             LineHeight="15"
+                             LineStackingStrategy="BlockLineHeight"
+                             TextTrimming="CharacterEllipsis"
+                             Margin="0,1,0,0" />
+
+                  <!-- Row 2: Message Body -->
+                  <TextBlock Grid.Row="2"
+                             Text="{Binding Notification.Message}"
+                             Foreground="#D4D4D8"
+                             FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif"
+                             FontSize="11.5"
+                             FontWeight="Normal"
+                             LineHeight="14"
+                             LineStackingStrategy="BlockLineHeight"
+                             TextTrimming="CharacterEllipsis"
+                             Margin="0,1,0,0" />
+                </Grid>
+              </Grid>
+            </Border>
           </Grid>
         </Grid>
         <Grid Name="ExpandedContentGrid" Opacity="0" Visibility="Collapsed" Margin="16,6,16,6" RenderTransformOrigin="0.5, 0" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" PreviewMouseWheel="ExpandedContentGrid_PreviewMouseWheel">

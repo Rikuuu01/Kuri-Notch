@@ -325,6 +325,15 @@ namespace NotchWin.ViewModels
 
 
         [ObservableProperty]
+        private bool _isNotificationDropdownActive;
+
+        partial void OnIsNotificationDropdownActiveChanged(bool value)
+        {
+            UpdateGeometryForState(CurrentState);
+            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        [ObservableProperty]
 
         private bool _isContentVisible;
 
@@ -401,7 +410,8 @@ namespace NotchWin.ViewModels
 
         private readonly IShelfService _shelfService;
         private readonly IWindowsNotificationService _windowsNotificationService;
-        private readonly System.Collections.Generic.Queue<(string Icon, string Title, string Message)> _notificationQueue = new();
+        private readonly System.Collections.Generic.Queue<NotificationBannerItem> _notificationQueue = new();
+        private DispatcherTimer? _notificationDropdownTimer;
 
 
 
@@ -2327,26 +2337,7 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    if (type != WidgetType.Notification && _notificationQueue.Count > 0)
-                    {
-                        var next = _notificationQueue.Dequeue();
-                        int settingSec = _settingsService?.CurrentSettings?.NotificationDurationSeconds ?? 3;
-                        int nextDuration = _notificationQueue.Count > 0 ? Math.Min(2500, settingSec * 1000) : Math.Max(2000, settingSec * 1000);
 
-                        var queueTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
-                        queueTimer.Tick += (_, _) =>
-                        {
-                            queueTimer.Stop();
-                            DisplaySingleNotification(next.Icon, next.Title, next.Message, nextDuration, isPrayer: false);
-                        };
-                        queueTimer.Start();
-                        return;
-                    }
-                    else if (type != WidgetType.Notification && _notificationQueue.Count == 0)
-                    {
-                        // Pastikan maskot kembali bersih ke idle jika semua antrean notifikasi telah selesai
-                        PetCompanionService.Instance.ClearAlert();
-                    }
 
                     if (!Media.HasMedia)
 
@@ -3240,6 +3231,7 @@ namespace NotchWin.ViewModels
             // Alarm minum aktif: hover tidak boleh membuka notch.
 
             if (Notification.IsWaterAlarm) return;
+            if (IsNotificationDropdownActive) return;
 
 
 
@@ -4058,11 +4050,18 @@ namespace NotchWin.ViewModels
                     collapsedWidth = Math.Max(265.0, collapsedWidth);
                 }
 
-                TargetWidth = collapsedWidth;
-
-                TargetHeight = CollapsedHeight;
-
-                TargetCornerRadius = CollapsedCornerRadius;
+                if (IsNotificationDropdownActive)
+                {
+                    TargetWidth = Math.Max(collapsedWidth, 420.0);
+                    TargetHeight = 100.0;
+                    TargetCornerRadius = 22.0;
+                }
+                else
+                {
+                    TargetWidth = collapsedWidth;
+                    TargetHeight = CollapsedHeight;
+                    TargetCornerRadius = CollapsedCornerRadius;
+                }
 
             }
 
@@ -4142,22 +4141,31 @@ namespace NotchWin.ViewModels
             {
                 try
                 {
-                    string displayTitle;
-                    if (string.IsNullOrWhiteSpace(item.Title))
-                    {
-                        displayTitle = item.AppName;
-                    }
-                    else if (item.Title.StartsWith(item.AppName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        displayTitle = item.Title;
-                    }
-                    else
-                    {
-                        displayTitle = $"{item.AppName} • {item.Title}";
-                    }
+                    var (appName, icon, appType, brandColor) = NotificationAppResolver.ResolveDetailed(item.AppId, item.AppName, item.Icon);
 
-                    Log.Information("[NotchViewModel] Triggering transient notification: {Icon} {Title} - {Message}", item.Icon, displayTitle, item.Message);
-                    TriggerTransientNotification(item.Icon, displayTitle, item.Message);
+                    string title = string.IsNullOrWhiteSpace(item.Title) ? appName : item.Title;
+                    string message = item.Message;
+                    string timestamp = L10n["Notification.TimestampNow"] ?? "now";
+
+                    int settingSeconds = _settingsService?.CurrentSettings?.NotificationDurationSeconds ?? 3;
+                    int durationMs = Math.Max(2500, settingSeconds * 1000);
+
+                    var bannerItem = new NotificationBannerItem
+                    {
+                        AppName = appName,
+                        AppId = item.AppId,
+                        Title = title,
+                        Message = message,
+                        Icon = icon,
+                        ImagePath = item.ImagePath,
+                        AppType = appType,
+                        BrandColor = brandColor,
+                        TimestampText = timestamp,
+                        DurationMs = durationMs
+                    };
+
+                    Log.Information("[NotchViewModel] Triggering notification dropdown banner: [{App}] {Title} - {Message}", appName, title, message);
+                    TriggerNotificationBanner(bannerItem);
                 }
                 catch (Exception ex)
                 {
@@ -4192,58 +4200,74 @@ namespace NotchWin.ViewModels
 
                 int settingSeconds = _settingsService?.CurrentSettings?.NotificationDurationSeconds ?? 3;
 
-                effectiveDurationMs = durationMs > 0 ? durationMs : Math.Max(2000, settingSeconds * 1000);
+                effectiveDurationMs = durationMs > 0 ? durationMs : Math.Max(2500, settingSeconds * 1000);
 
             }
 
+            var (appName, resolvedIcon, appType, brandColor) = NotificationAppResolver.ResolveForInternal(icon, title);
 
-
-            Action action = () =>
-
+            var bannerItem = new NotificationBannerItem
             {
-
-                if (Notification.IsWaterAlarm) return;
-
-                if (!isPrayer && WidgetHost.IsTransientActive && WidgetHost.CurrentWidgetType == WidgetType.Notification)
-                {
-                    _notificationQueue.Enqueue((icon, title, msg));
-                    Log.Information("[NotchViewModel] Notification enqueued (Queue count: {Count}): {Title}", _notificationQueue.Count, title);
-                    return;
-                }
-
-                DisplaySingleNotification(icon, title, msg, effectiveDurationMs, isPrayer);
-
+                AppName = appName,
+                Title = title,
+                Message = msg,
+                Icon = string.IsNullOrEmpty(icon) ? resolvedIcon : icon,
+                AppType = appType,
+                BrandColor = brandColor,
+                TimestampText = L10n["Notification.TimestampNow"] ?? "now",
+                DurationMs = effectiveDurationMs,
+                IsPrayer = isPrayer
             };
 
-
-
-            if (app.Dispatcher.CheckAccess())
-
-            {
-
-                action();
-
-            }
-
-            else
-
-            {
-
-                app.Dispatcher.InvokeAsync(action);
-
-            }
+            TriggerNotificationBanner(bannerItem);
 
         }
 
-        private void DisplaySingleNotification(string icon, string title, string msg, int durationMs, bool isPrayer)
+        public void TriggerNotificationBanner(NotificationBannerItem item)
         {
-            Notification.SetNotification(icon, title, msg, isPrayer);
-            WidgetHost.TriggerTransient(WidgetType.Notification, TimeSpan.FromMilliseconds(durationMs));
+            var app = Application.Current;
+            if (app == null || app.Dispatcher == null || app.Dispatcher.HasShutdownStarted) return;
 
-            UpdateGeometryForState(CurrentState);
-            StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+            Action action = () =>
+            {
+                if (IsNotificationDropdownActive)
+                {
+                    _notificationQueue.Enqueue(item);
+                    Log.Information("[NotchViewModel] Notification enqueued (Queue count: {Count}): [{App}] {Title}", _notificationQueue.Count, item.AppName, item.Title);
+                    return;
+                }
 
-            MascotState mascotAlert = isPrayer ? MascotState.Adzan : icon switch
+                DisplaySingleNotificationBanner(item);
+            };
+
+            if (app.Dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                app.Dispatcher.InvokeAsync(action);
+            }
+        }
+
+        private void DisplaySingleNotificationBanner(NotificationBannerItem item)
+        {
+            Notification.SetBanner(
+                appName: item.AppName,
+                title: item.Title,
+                message: item.Message,
+                icon: item.Icon,
+                imagePath: item.ImagePath,
+                appType: item.AppType,
+                brandColorHex: item.BrandColor,
+                timestampText: item.TimestampText,
+                isPrayer: item.IsPrayer,
+                isWaterAlarm: item.IsWaterAlarm
+            );
+
+            IsNotificationDropdownActive = true;
+
+            MascotState mascotAlert = item.IsPrayer ? MascotState.Adzan : item.Icon switch
             {
                 "\U0001F4F8" => MascotState.Screenshot,
                 "\U0001F4CB" => MascotState.Copied,
@@ -4254,7 +4278,62 @@ namespace NotchWin.ViewModels
                 "\u23F0" => MascotState.Alarm,
                 _ => MascotState.Notification
             };
-            PetCompanionService.Instance.TriggerAlert(mascotAlert, TimeSpan.FromMilliseconds(durationMs));
+            PetCompanionService.Instance.TriggerAlert(mascotAlert, TimeSpan.FromMilliseconds(item.DurationMs));
+
+            if (_notificationDropdownTimer == null)
+            {
+                _notificationDropdownTimer = new DispatcherTimer();
+                _notificationDropdownTimer.Tick += OnNotificationDropdownTimerTick;
+            }
+            _notificationDropdownTimer.Stop();
+            _notificationDropdownTimer.Interval = TimeSpan.FromMilliseconds(item.DurationMs);
+            _notificationDropdownTimer.Start();
+        }
+
+        private void OnNotificationDropdownTimerTick(object? sender, EventArgs e)
+        {
+            _notificationDropdownTimer?.Stop();
+            DismissOrAdvanceNotification();
+        }
+
+        public void PauseNotificationDropdownTimer()
+        {
+            _notificationDropdownTimer?.Stop();
+        }
+
+        public void ResumeNotificationDropdownTimer()
+        {
+            if (IsNotificationDropdownActive && _notificationDropdownTimer != null)
+            {
+                int settingSeconds = _settingsService?.CurrentSettings?.NotificationDurationSeconds ?? 3;
+                int durationMs = Math.Max(2000, settingSeconds * 1000);
+                _notificationDropdownTimer.Interval = TimeSpan.FromMilliseconds(durationMs);
+                _notificationDropdownTimer.Start();
+            }
+        }
+
+        public void DismissOrAdvanceNotification()
+        {
+            if (_notificationQueue.Count > 0)
+            {
+                var next = _notificationQueue.Dequeue();
+                int settingSec = _settingsService?.CurrentSettings?.NotificationDurationSeconds ?? 3;
+                next.DurationMs = _notificationQueue.Count > 0 ? Math.Min(2500, settingSec * 1000) : Math.Max(2500, settingSec * 1000);
+
+                var queueTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+                queueTimer.Tick += (_, _) =>
+                {
+                    queueTimer.Stop();
+                    DisplaySingleNotificationBanner(next);
+                };
+                queueTimer.Start();
+            }
+            else
+            {
+                _notificationDropdownTimer?.Stop();
+                IsNotificationDropdownActive = false;
+                PetCompanionService.Instance.ClearAlert();
+            }
         }
 
 

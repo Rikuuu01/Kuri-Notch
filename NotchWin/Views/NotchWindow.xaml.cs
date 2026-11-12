@@ -10589,6 +10589,16 @@ public void ApplyNotchScale(double scale, bool animate = true)
 				}
 			});
 		}
+		else if (e.PropertyName == nameof(NotchViewModel.IsNotificationDropdownActive))
+		{
+			Dispatcher.Invoke(() =>
+			{
+				if (ViewModel != null)
+				{
+					AnimateNotificationDropdown(ViewModel.IsNotificationDropdownActive);
+				}
+			});
+		}
 		else if (e.PropertyName == nameof(NotchViewModel.IsCollapsedStopwatchDisplay))
 		{
 			Dispatcher.Invoke(() =>
@@ -19485,6 +19495,60 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 		ViewModel?.WidgetHost?.DismissTransient();
 
+	}
+
+	private void AnimateNotificationDropdown(bool show)
+	{
+		if (CollapsedNotificationDropdownHost == null || CollapsedNotificationDropdownTranslate == null) return;
+
+		if (show)
+		{
+			CollapsedNotificationDropdownHost.Visibility = Visibility.Visible;
+			var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
+			var fade = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(240)) { EasingFunction = ease };
+			var slide = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(280))
+			{
+				From = -8.0,
+				EasingFunction = ease
+			};
+
+			CollapsedNotificationDropdownHost.BeginAnimation(UIElement.OpacityProperty, fade);
+			CollapsedNotificationDropdownTranslate.BeginAnimation(TranslateTransform.YProperty, slide);
+			StartOutlineAlertGlow();
+		}
+		else
+		{
+			var ease = new QuadraticEase { EasingMode = EasingMode.EaseIn };
+			var fade = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease };
+			var slide = new DoubleAnimation(-8.0, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease };
+
+			fade.Completed += (s, e) =>
+			{
+				if (ViewModel == null || !ViewModel.IsNotificationDropdownActive)
+				{
+					CollapsedNotificationDropdownHost.Visibility = Visibility.Collapsed;
+				}
+			};
+
+			CollapsedNotificationDropdownHost.BeginAnimation(UIElement.OpacityProperty, fade);
+			CollapsedNotificationDropdownTranslate.BeginAnimation(TranslateTransform.YProperty, slide);
+		}
+	}
+
+	private void CollapsedNotificationDropdownHost_MouseEnter(object sender, MouseEventArgs e)
+	{
+		ViewModel?.PauseNotificationDropdownTimer();
+	}
+
+	private void CollapsedNotificationDropdownHost_MouseLeave(object sender, MouseEventArgs e)
+	{
+		ViewModel?.ResumeNotificationDropdownTimer();
+	}
+
+	private void CollapsedNotificationDropdownHost_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+	{
+		e.Handled = true;
+		ViewModel?.DismissOrAdvanceNotification();
 	}
 
 
