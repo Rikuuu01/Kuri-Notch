@@ -1087,29 +1087,84 @@
                 <controls:MochiPetControl x:Name="MediaCollapsedPet" Width="26" Height="19" Margin="6,0,0,0" VerticalAlignment="Center" ToolTip="Pet Companion" Visibility="{Binding IsCollapsedPetVisible, Converter={StaticResource BoolToVis}}" />
               </StackPanel>
             </Grid>
-            <Grid Margin="12,0,12,0" Visibility="{Binding WidgetHost.CurrentWidgetType, Converter={StaticResource WidgetTypeToVis}, ConverterParameter=Volume}">
+            <!-- Unified HUD Indicator (Volume, Brightness, Caps Lock, Num Lock) -->
+            <Grid Margin="14,0,14,0" Visibility="{Binding WidgetHost.CurrentWidgetType, Converter={StaticResource WidgetTypeToVis}, ConverterParameter='Hud,Volume'}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <Grid Column="0" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,8,0">
-                <Path Data="M1,4 L4,4 L8,1 L8,13 L4,10 L1,10" Fill="{DynamicResource AccentLightBrush}" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <Path Data="M10,4 L14,8 M14,4 L10,8" Stroke="#EF4444" StrokeThickness="1.5" Stretch="Uniform" Visibility="{Binding Volume.IsMuted, Converter={StaticResource BoolToVis}}" />
-              </Grid>
-              <Grid Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
-                <ProgressBar Height="5" Minimum="0" Maximum="100" BorderThickness="0" Background="#27272E" Value="{Binding Volume.VolumePercent}">
+
+              <!-- Left: Icon & Label -->
+              <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Volume Icon -->
+                <Grid Width="14" Height="14" VerticalAlignment="Center" Visibility="{Binding Hud.IsVolumeType, Converter={StaticResource BoolToVis}}">
+                  <Viewbox Width="14" Height="14" Stretch="Uniform">
+                    <Canvas Width="16" Height="16">
+                      <Path Data="M8,3 L4,6 L1,6 L1,10 L4,10 L8,13 Z" Fill="#FFFFFF" />
+                      <Path Data="M10.5,5.5 C11.5,6.7 11.5,9.3 10.5,10.5" Stroke="#FFFFFF" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="{Binding Hud.IsMuted, Converter={StaticResource InverseBoolToVis}}" />
+                      <Path Data="M13,3.5 C15,5.5 15,10.5 13,12.5" Stroke="#FFFFFF" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="{Binding Hud.IsMuted, Converter={StaticResource InverseBoolToVis}}" />
+                      <Path Data="M10.5,6 L14.5,10 M14.5,6 L10.5,10" Stroke="#EF4444" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="{Binding Hud.IsMuted, Converter={StaticResource BoolToVis}}" />
+                    </Canvas>
+                  </Viewbox>
+                </Grid>
+
+                <!-- Brightness Icon -->
+                <Grid Width="14" Height="14" VerticalAlignment="Center" Visibility="{Binding Hud.IsBrightnessType, Converter={StaticResource BoolToVis}}">
+                  <Viewbox Width="14" Height="14" Stretch="Uniform">
+                    <Canvas Width="16" Height="16">
+                      <Ellipse Canvas.Left="4.5" Canvas.Top="4.5" Width="7" Height="7" Fill="#FFFFFF" />
+                      <Path Data="M8,1 L8,2.8 M8,13.2 L8,15 M1,8 L2.8,8 M13.2,8 L15,8 M3,3 L4.3,4.3 M11.7,11.7 L13,13 M3,13 L4.3,11.7 M11.7,4.3 L13,3" Stroke="#FFFFFF" StrokeThickness="1.3" StrokeStartLineCap="Round" />
+                    </Canvas>
+                  </Viewbox>
+                </Grid>
+
+                <!-- Caps Lock Icon -->
+                <Grid Width="14" Height="14" VerticalAlignment="Center" Visibility="{Binding Hud.IsCapsLockType, Converter={StaticResource BoolToVis}}">
+                  <Viewbox Width="14" Height="14" Stretch="Uniform">
+                    <Canvas Width="16" Height="16">
+                      <Path Data="M8,2.5 L3.5,7 L6,7 L6,11 L10,11 L10,7 L12.5,7 Z" Fill="#FFFFFF" />
+                      <Rectangle Canvas.Left="3" Canvas.Top="12.5" Width="10" Height="1.8" RadiusX="0.9" RadiusY="0.9" Fill="#FFFFFF" />
+                    </Canvas>
+                  </Viewbox>
+                </Grid>
+
+                <!-- Num Lock Icon -->
+                <Grid Width="14" Height="14" VerticalAlignment="Center" Visibility="{Binding Hud.IsNumLockType, Converter={StaticResource BoolToVis}}">
+                  <Viewbox Width="14" Height="14" Stretch="Uniform">
+                    <Canvas Width="16" Height="16">
+                      <Rectangle Canvas.Left="1.5" Canvas.Top="1.5" Width="13" Height="13" RadiusX="2.5" RadiusY="2.5" Stroke="#FFFFFF" StrokeThickness="1.2" Fill="Transparent" />
+                      <Path Data="M6.5,5.5 L8,4.5 L8,11.5 M6.5,11.5 L9.5,11.5" Stroke="#FFFFFF" StrokeThickness="1.3" StrokeStartLineCap="Round" StrokeLineJoin="Round" />
+                    </Canvas>
+                  </Viewbox>
+                </Grid>
+
+                <!-- Title Label -->
+                <TextBlock Text="{Binding Hud.Title}" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="SemiBold" Foreground="#D4D4D8" Margin="8,0,0,0" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- Right: Progress Bar & Value Text / Status -->
+              <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <!-- Progress Bar (for Volume & Brightness) -->
+                <ProgressBar Width="96" Height="4.5" Minimum="0" Maximum="100" Value="{Binding Hud.ProgressValue}" BorderThickness="0" Background="#27272E" Visibility="{Binding Hud.HasProgressBar, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center">
                   <Control.Template>
                     <ControlTemplate TargetType="{x:Type ProgressBar}">
                       <Grid Name="TemplateRoot">
-                        <Border Name="PART_Track" Background="{TemplateBinding Control.Background}" CornerRadius="2.5" />
-                        <Border Name="PART_Indicator" Background="{DynamicResource AccentLightBrush}" CornerRadius="2.5" HorizontalAlignment="Left" />
+                        <Border Name="PART_Track" Background="{TemplateBinding Control.Background}" CornerRadius="2.25" />
+                        <Border Name="PART_Indicator" Background="#FFFFFF" CornerRadius="2.25" HorizontalAlignment="Left" />
                       </Grid>
                     </ControlTemplate>
                   </Control.Template>
                 </ProgressBar>
-              </Grid>
-              <TextBlock Grid.Column="2" Foreground="#FFFFFF" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding Volume.VolumeText}" />
+
+                <!-- Numeric Value (for Volume & Brightness: e.g. 98, 100, 0) -->
+                <TextBlock Text="{Binding Hud.ValueText}" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="12.5" FontWeight="Bold" Foreground="{Binding Hud.ValueForegroundBrush}" Margin="10,0,0,0" VerticalAlignment="Center" Visibility="{Binding Hud.HasProgressBar, Converter={StaticResource BoolToVis}}" />
+
+                <!-- Status Badge (for Caps Lock & Num Lock: e.g. On / Off or Aktif / Mati) -->
+                <Border Background="{Binding Hud.StatusBadgeBackgroundBrush}" CornerRadius="6" Padding="8,2" Visibility="{Binding Hud.HasProgressBar, Converter={StaticResource InverseBoolToVis}}" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Hud.ValueText}" FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" FontSize="11.5" FontWeight="Bold" Foreground="{Binding Hud.ValueForegroundBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Border>
+              </StackPanel>
             </Grid>
             <Grid Margin="12,0,12,0" Visibility="{Binding WidgetHost.CurrentWidgetType, Converter={StaticResource WidgetTypeToVis}, ConverterParameter=Battery}">
               <Grid.ColumnDefinitions>

@@ -410,6 +410,8 @@ namespace NotchWin.ViewModels
 
         private readonly IShelfService _shelfService;
         private readonly IWindowsNotificationService _windowsNotificationService;
+        private readonly IKeyboardLockService _keyboardLockService;
+        private bool _isBrightnessInitialized;
         private readonly System.Collections.Generic.Queue<NotificationBannerItem> _notificationQueue = new();
         private DispatcherTimer? _notificationDropdownTimer;
 
@@ -420,6 +422,8 @@ namespace NotchWin.ViewModels
         public MediaViewModel Media { get; }
 
         public VolumeViewModel Volume { get; }
+
+        public HudViewModel Hud { get; }
 
         public BatteryViewModel Battery { get; }
 
@@ -1683,7 +1687,9 @@ namespace NotchWin.ViewModels
 
             IBrightnessService? brightnessService = null,
 
-            ISystemMonitorService? systemMonitorService = null)
+            ISystemMonitorService? systemMonitorService = null,
+
+            IKeyboardLockService? keyboardLockService = null)
 
         {
 
@@ -1704,6 +1710,8 @@ namespace NotchWin.ViewModels
             _brightnessService = brightnessService ?? new BrightnessService();
 
             _systemMonitorService = systemMonitorService ?? new SystemMonitorService();
+
+            _keyboardLockService = keyboardLockService ?? new KeyboardLockService();
 
             _weatherService = new WeatherService();
 
@@ -1735,6 +1743,8 @@ namespace NotchWin.ViewModels
             Media = new MediaViewModel(_mediaService, _settingsService);
 
             Volume = new VolumeViewModel(_volumeService);
+
+            Hud = new HudViewModel();
 
             Battery = new BatteryViewModel(_batteryService);
 
@@ -1928,6 +1938,8 @@ namespace NotchWin.ViewModels
 
             WidgetHost.RegisterWidget(Volume);
 
+            WidgetHost.RegisterWidget(Hud);
+
             WidgetHost.RegisterWidget(Battery);
 
             WidgetHost.RegisterWidget(Notification);
@@ -2065,6 +2077,11 @@ namespace NotchWin.ViewModels
 
                     OnPropertyChanged(nameof(IsMasterVolumeMuted));
 
+                    if (!IsSliderDragging && !e.IsInitial && CurrentState == NotchState.Collapsed)
+                    {
+                        TriggerHud(HudType.Volume, e.VolumePercent, e.IsMuted);
+                    }
+
                 });
 
             };
@@ -2123,6 +2140,11 @@ namespace NotchWin.ViewModels
 
                         OnPropertyChanged(nameof(ScreenBrightnessPercent));
 
+                        if (_isBrightnessInitialized && CurrentState == NotchState.Collapsed)
+                        {
+                            TriggerHud(HudType.Brightness, b);
+                        }
+
                     }
 
                 });
@@ -2143,9 +2165,35 @@ namespace NotchWin.ViewModels
 
                     OnPropertyChanged(nameof(ScreenBrightnessPercent));
 
+                    _isBrightnessInitialized = true;
+
                 });
 
             });
+
+            _keyboardLockService.CapsLockChanged += (s, isOn) =>
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (CurrentState == NotchState.Collapsed)
+                    {
+                        TriggerHud(HudType.CapsLock, 0, isOn);
+                    }
+                });
+            };
+
+            _keyboardLockService.NumLockChanged += (s, isOn) =>
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    if (CurrentState == NotchState.Collapsed)
+                    {
+                        TriggerHud(HudType.NumLock, 0, isOn);
+                    }
+                });
+            };
+
+            _keyboardLockService.Start();
 
 
 
@@ -2275,7 +2323,10 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    WidgetHost.TriggerTransient(WidgetType.Volume, TimeSpan.FromMilliseconds(1600));
+                    if (CurrentState == NotchState.Collapsed)
+                    {
+                        TriggerHud(HudType.Volume, Volume.VolumePercent, Volume.IsMuted);
+                    }
 
                 });
 
@@ -3613,6 +3664,8 @@ namespace NotchWin.ViewModels
 
             _downloadService.Dispose();
             _windowsNotificationService.Dispose();
+            _keyboardLockService?.Dispose();
+            _brightnessService?.Dispose();
             ScreenTimeService?.Dispose();
 
         }
@@ -3980,9 +4033,10 @@ namespace NotchWin.ViewModels
                             }
                             break;
 
+                        case WidgetType.Hud:
                         case WidgetType.Volume:
 
-                            collapsedWidth = 240.0;
+                            collapsedWidth = 290.0;
 
                             break;
 
@@ -4170,6 +4224,58 @@ namespace NotchWin.ViewModels
                 catch (Exception ex)
                 {
                     Log.Warning(ex, "[NotchViewModel] Failed to display Windows notification");
+                }
+            });
+        }
+
+        public void TriggerHud(HudType type, double value = 0, bool isFlag = false)
+        {
+            var app = Application.Current;
+            if (app == null || app.Dispatcher == null || app.Dispatcher.HasShutdownStarted) return;
+
+            app.Dispatcher.Invoke(() =>
+            {
+                Hud.HudType = type;
+                switch (type)
+                {
+                    case HudType.Volume:
+                        Hud.Title = L10n["Hud.Volume"];
+                        Hud.HasProgressBar = true;
+                        Hud.ProgressValue = value;
+                        Hud.IsMuted = isFlag;
+                        Hud.ValueText = isFlag ? L10n["Hud.Muted"] : ((int)Math.Round(value)).ToString();
+                        break;
+
+                    case HudType.Brightness:
+                        Hud.Title = L10n["Hud.Brightness"];
+                        Hud.HasProgressBar = true;
+                        Hud.ProgressValue = value;
+                        Hud.IsMuted = false;
+                        Hud.ValueText = ((int)Math.Round(value)).ToString();
+                        break;
+
+                    case HudType.CapsLock:
+                        Hud.Title = L10n["Hud.CapsLock"];
+                        Hud.HasProgressBar = false;
+                        Hud.IsStatusOn = isFlag;
+                        Hud.ValueText = isFlag ? L10n["Hud.On"] : L10n["Hud.Off"];
+                        break;
+
+                    case HudType.NumLock:
+                        Hud.Title = L10n["Hud.NumLock"];
+                        Hud.HasProgressBar = false;
+                        Hud.IsStatusOn = isFlag;
+                        Hud.ValueText = isFlag ? L10n["Hud.On"] : L10n["Hud.Off"];
+                        break;
+                }
+
+                WidgetHost.TriggerTransient(WidgetType.Hud, TimeSpan.FromMilliseconds(1600));
+                Log.Information("[NotchViewModel] TriggerHud: Type={Type}, Title='{Title}', ValueText='{ValueText}', Progress={Progress}", type, Hud.Title, Hud.ValueText, Hud.ProgressValue);
+
+                if (CurrentState == NotchState.Collapsed)
+                {
+                    UpdateGeometryForState(CurrentState);
+                    StateAnimationRequested?.Invoke(this, EventArgs.Empty);
                 }
             });
         }

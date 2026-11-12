@@ -7,6 +7,7 @@ namespace NotchWin.Widgets
         Battery,
         Volume,
         Notification,
-        Timer
+        Timer,
+        Hud
     }
 }

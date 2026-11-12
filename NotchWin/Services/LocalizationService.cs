@@ -190,6 +190,14 @@ namespace NotchWin.Services
 
             ["Volume.Mute"] = "Muted",
 
+            ["Hud.Volume"] = "Volume",
+            ["Hud.Brightness"] = "Brightness",
+            ["Hud.CapsLock"] = "Caps Lock",
+            ["Hud.NumLock"] = "Num Lock",
+            ["Hud.On"] = "On",
+            ["Hud.Off"] = "Off",
+            ["Hud.Muted"] = "Muted",
+
             ["Battery.Charging"] = "Charging",
 
             ["Battery.FullyCharged"] = "Fully Charged",
@@ -1048,6 +1056,14 @@ namespace NotchWin.Services
             ["Pin.Unpin"] = "Buka Kunci Notch (otomatis mengecil saat mouse keluar)",
 
             ["Volume.Mute"] = "Senyap",
+
+            ["Hud.Volume"] = "Volume",
+            ["Hud.Brightness"] = "Kecerahan",
+            ["Hud.CapsLock"] = "Caps Lock",
+            ["Hud.NumLock"] = "Num Lock",
+            ["Hud.On"] = "Aktif",
+            ["Hud.Off"] = "Mati",
+            ["Hud.Muted"] = "Senyap",
 
             ["Battery.Charging"] = "Mengisi Daya",
 
