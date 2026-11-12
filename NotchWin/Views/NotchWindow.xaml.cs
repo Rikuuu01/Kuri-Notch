@@ -5876,7 +5876,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-			SettingsViewModel viewModel = new SettingsViewModel(ViewModel.SettingsService, new AutostartService(), ViewModel.DisplayService);
+			SettingsViewModel viewModel = new SettingsViewModel(ViewModel.SettingsService, new AutostartService(), ViewModel.DisplayService, ViewModel.UpdateService);
 
 
 
@@ -19547,6 +19547,18 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 	private void CollapsedNotificationDropdownHost_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
+		if (e.OriginalSource is DependencyObject dep && FindVisualParent<System.Windows.Controls.Button>(dep) != null)
+		{
+			// Let the Button handle the click event
+			return;
+		}
+
+		if (ViewModel?.IsUpdateDownloading == true)
+		{
+			// Don't dismiss while downloading update
+			return;
+		}
+
 		e.Handled = true;
 		ViewModel?.DismissOrAdvanceNotification();
 	}

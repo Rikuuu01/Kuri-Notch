@@ -547,6 +547,8 @@ namespace NotchWin.Services
 
             ["Settings.CategoryModules"] = "Navbar Modules",
 
+            ["Settings.CategoryUpdates"] = "Updates",
+
             ["Settings.DescSystem"] = "Configure Windows autostart, fullscreen behavior, and privacy indicators",
 
             ["Settings.DescWidgets"] = "Customize active modules and widgets on the notch",
@@ -558,6 +560,36 @@ namespace NotchWin.Services
             ["Settings.DescWater"] = "Regular water drink reminders and daily hydration tracking",
 
             ["Settings.DescModules"] = "Manage, reorder, and enable or disable slides/menus in the notch navbar",
+
+            ["Settings.DescUpdates"] = "Check and install application updates",
+
+            ["Settings.CurrentVersion"] = "Current Version",
+
+            ["Settings.LatestVersion"] = "Latest Version",
+
+            ["Settings.CheckUpdates"] = "Check for Updates",
+
+            ["Settings.UpdateNow"] = "Update Now",
+
+            ["Settings.Changelog"] = "Release Notes",
+
+            ["Update.AvailableTitle"] = "Update available",
+
+            ["Update.AvailableMsg"] = "Version v{0} is ready to install",
+
+            ["Update.Ignore"] = "Ignore",
+
+            ["Update.UpdateNow"] = "Update",
+
+            ["Update.Downloading"] = "Downloading update...",
+
+            ["Update.Installing"] = "Installing & restarting...",
+
+            ["Update.UpToDate"] = "Kuri is up to date",
+
+            ["Update.CheckFailed"] = "Failed to check for updates",
+
+            ["Update.Checking"] = "Checking for updates...",
 
             ["Settings.ModulesTitle"] = "ACTIVE NAVBAR MODULES",
             ["Settings.ModulesDesc"] = "Use arrow buttons to adjust order and switches to enable or disable modules.",
@@ -1411,12 +1443,28 @@ namespace NotchWin.Services
             ["Settings.CategoryPrayer"] = "Jadwal Sholat",
             ["Settings.CategoryWater"] = "Pengingat Minum",
             ["Settings.CategoryModules"] = "Modul Navbar",
+            ["Settings.CategoryUpdates"] = "Pembaruan",
             ["Settings.DescSystem"] = "Konfigurasi autostart Windows, perilaku fullscreen, dan sensor privasi",
             ["Settings.DescWidgets"] = "Kustomisasi modul dan widget yang aktif pada notch",
             ["Settings.DescWeather"] = "Prakiraan cuaca, suhu real-time, dan pengaturan lokasi kota",
             ["Settings.DescPrayer"] = "Jadwal sholat 5 waktu otomatis dan notifikasi adzan",
             ["Settings.DescWater"] = "Pengingat minum air teratur dan target hidrasi harian",
             ["Settings.DescModules"] = "Atur posisi urutan dan aktifkan/nonaktifkan menu slide di navbar notch",
+            ["Settings.DescUpdates"] = "Periksa dan pasang pembaruan aplikasi",
+            ["Settings.CurrentVersion"] = "Versi Saat Ini",
+            ["Settings.LatestVersion"] = "Versi Terbaru",
+            ["Settings.CheckUpdates"] = "Periksa Pembaruan",
+            ["Settings.UpdateNow"] = "Perbarui Sekarang",
+            ["Settings.Changelog"] = "Catatan Rilis",
+            ["Update.AvailableTitle"] = "Update available",
+            ["Update.AvailableMsg"] = "Versi v{0} siap diinstal",
+            ["Update.Ignore"] = "Abaikan",
+            ["Update.UpdateNow"] = "Perbarui",
+            ["Update.Downloading"] = "Mengunduh pembaruan...",
+            ["Update.Installing"] = "Memasang & memuat ulang...",
+            ["Update.UpToDate"] = "Kuri sudah versi terbaru",
+            ["Update.CheckFailed"] = "Gagal memeriksa pembaruan",
+            ["Update.Checking"] = "Memeriksa pembaruan...",
             ["Settings.ModulesTitle"] = "MODUL NAVBAR NOTCH",
             ["Settings.ModulesDesc"] = "Gunakan tombol panah untuk mengubah posisi urutan dan sakelar untuk mengaktifkan modul.",
             ["Settings.ResetModules"] = "Pulihkan Urutan",

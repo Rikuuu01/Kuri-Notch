@@ -414,6 +414,18 @@ namespace NotchWin.ViewModels
         private bool _isBrightnessInitialized;
         private readonly System.Collections.Generic.Queue<NotificationBannerItem> _notificationQueue = new();
         private DispatcherTimer? _notificationDropdownTimer;
+        private readonly IUpdateService _updateService;
+        public IUpdateService UpdateService => _updateService;
+        private bool _isUpdateIgnoredForSession;
+
+        [ObservableProperty]
+        private bool _isUpdateDownloading;
+
+        [ObservableProperty]
+        private double _updateDownloadProgress;
+
+        [ObservableProperty]
+        private string _updateDownloadStatusText = string.Empty;
 
 
 
@@ -1735,6 +1747,10 @@ namespace NotchWin.ViewModels
             {
                 _windowsNotificationService.Start();
             }
+
+            _updateService = new UpdateService();
+            _updateService.UpdateAvailable += OnUpdateServiceUpdateAvailable;
+            _updateService.StartAutoCheck();
 
 
 
@@ -3667,6 +3683,8 @@ namespace NotchWin.ViewModels
             _keyboardLockService?.Dispose();
             _brightnessService?.Dispose();
             ScreenTimeService?.Dispose();
+            _updateService.UpdateAvailable -= OnUpdateServiceUpdateAvailable;
+            _updateService?.Dispose();
 
         }
 
@@ -4368,7 +4386,9 @@ namespace NotchWin.ViewModels
                 brandColorHex: item.BrandColor,
                 timestampText: item.TimestampText,
                 isPrayer: item.IsPrayer,
-                isWaterAlarm: item.IsWaterAlarm
+                isWaterAlarm: item.IsWaterAlarm,
+                isUpdateNotice: item.IsUpdateNotice,
+                updateData: item.UpdateData
             );
 
             IsNotificationDropdownActive = true;
@@ -4420,6 +4440,8 @@ namespace NotchWin.ViewModels
 
         public void DismissOrAdvanceNotification()
         {
+            if (IsUpdateDownloading) return;
+
             if (_notificationQueue.Count > 0)
             {
                 var next = _notificationQueue.Dequeue();
@@ -4439,6 +4461,86 @@ namespace NotchWin.ViewModels
                 _notificationDropdownTimer?.Stop();
                 IsNotificationDropdownActive = false;
                 PetCompanionService.Instance.ClearAlert();
+            }
+        }
+
+        private void OnUpdateServiceUpdateAvailable(object? sender, Models.UpdateCheckResult result)
+        {
+            if (_isUpdateIgnoredForSession) return;
+
+            var app = Application.Current;
+            if (app == null || app.Dispatcher == null || app.Dispatcher.HasShutdownStarted) return;
+
+            app.Dispatcher.InvokeAsync(() =>
+            {
+                var bannerItem = new NotificationBannerItem
+                {
+                    AppName = "Kuri System",
+                    Title = "Update available",
+                    Message = $"v{result.LatestVersion} • {result.Title}",
+                    Icon = "🚀",
+                    AppType = "system",
+                    BrandColor = "#0A84FF",
+                    TimestampText = "now",
+                    DurationMs = 35000,
+                    IsUpdateNotice = true,
+                    UpdateData = result
+                };
+                TriggerNotificationBanner(bannerItem);
+            });
+        }
+
+        [RelayCommand]
+        public void IgnoreUpdateNotification()
+        {
+            _isUpdateIgnoredForSession = true;
+            PauseNotificationDropdownTimer();
+            DismissOrAdvanceNotification();
+        }
+
+        [RelayCommand]
+        public async Task ApplyOtaUpdateAsync()
+        {
+            var data = Notification.UpdateData;
+            if (data == null || string.IsNullOrWhiteSpace(data.DownloadUrl))
+            {
+                Log.Warning("[NotchViewModel] ApplyOtaUpdate called but UpdateData is empty");
+                return;
+            }
+
+            PauseNotificationDropdownTimer();
+            IsUpdateDownloading = true;
+            UpdateDownloadProgress = 0;
+            UpdateDownloadStatusText = $"{LocalizationService.Instance["Update.Downloading"]} 0%";
+
+            var progress = new Progress<double>(percent =>
+            {
+                UpdateDownloadProgress = percent;
+                UpdateDownloadStatusText = $"{LocalizationService.Instance["Update.Downloading"]} {percent:0}%";
+            });
+
+            try
+            {
+                bool ok = await _updateService.DownloadAndApplyUpdateAsync(data, progress);
+                if (!ok)
+                {
+                    UpdateDownloadStatusText = LocalizationService.Instance["Update.CheckFailed"];
+                    await Task.Delay(3000);
+                    IsUpdateDownloading = false;
+                    DismissOrAdvanceNotification();
+                }
+                else
+                {
+                    UpdateDownloadStatusText = LocalizationService.Instance["Update.Installing"];
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[NotchViewModel] ApplyOtaUpdate failed");
+                UpdateDownloadStatusText = "Error: " + ex.Message;
+                await Task.Delay(3000);
+                IsUpdateDownloading = false;
+                DismissOrAdvanceNotification();
             }
         }
 

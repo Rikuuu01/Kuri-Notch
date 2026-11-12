@@ -411,12 +411,27 @@ DynamicNotchWindows/
 
 ---
 
-### 🔮 Fase 18: Rencana Pengembangan Masa Depan (Roadmap Berikutnya)
+### 🚀 Fase 18: Over-The-Air (OTA) Auto-Updater via GitHub (Selesai - v1.2.0)
 
-- [ ] **Over-The-Air (OTA) Auto-Updater via GitHub Releases**:
-  - Pengecekan otomatis versi baru aplikasi via GitHub REST API / raw JSON.
-  - Unduhan latar belakang (*silent background download*) paket pembaruan.
-  - Ekstraksi/eksekusi updater mini independen untuk menggantikan file biner dan me-restart Kuri tanpa kehilangan data pengaturan.
+- [x] **Pemeriksaan Pembaruan Dual-Source (Manifest & GitHub Releases)**:
+  - Pemeriksaan primer via `update-manifest.json` langsung (bebas batas laju / *rate limits* GitHub API).
+  - *Fallback* otomatis ke GitHub REST API (`releases/latest`) jika manifest tidak dapat diakses.
+- [x] **Notifikasi Dropdown Konfirmasi di Notch**:
+  - Kartu notifikasi khusus `"Update available"` dengan opsi `[Ignore]` dan `[Update]`.
+  - Durasi lebih panjang (35 detik) tanpa mengganggu fungsi utama notch.
+  - Klik `[Update]` langsung mengunduh paket dengan progress bar dan persentase di kartu notch.
+  - Instalasi otomatis dan restart Kuri secara instan setelah unduhan selesai.
+- [x] **Kategori Pembaruan di Pengaturan (Category 7: Pembaruan)**:
+  - Kartu versi saat ini (`CurrentVersion`) dan tombol `[Periksa Pembaruan]`.
+  - Kartu rilis baru jika tersedia, penampil catatan rilis (*changelog viewer*), tombol `[Perbarui Sekarang]`, dan progress bar unduhan.
+- [x] **Dukungan Mode Setup & Portable**:
+  - Deteksi otomatis Inno Setup (`unins000.exe`): mengeksekusi installer dengan flag `/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS`.
+  - Mode Portable: mengeksekusi skrip background PowerShell untuk menunggu proses keluar, mengekstrak arsip zip, dan menjalankan ulang `NotchWin.exe`.
+
+---
+
+### 🔮 Fase 19: Rencana Pengembangan Masa Depan (Roadmap Berikutnya)
+
 - [ ] **Integrasi Kalender & Google Calendar / Outlook**:
   - Kartu agenda harian untuk menampilkan meeting/jadwal terdekat.
 - [ ] **Widget Pemantau Kinerja Hardware Mendalam (Hardware Monitor)**:

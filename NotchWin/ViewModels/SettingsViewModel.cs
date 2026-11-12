@@ -35,6 +35,7 @@ namespace NotchWin.ViewModels
         private readonly IAutostartService _autostartService;
 
         private readonly IDisplayService _displayService;
+        private readonly IUpdateService _updateService;
 
         private readonly ILocationSearchService _locationSearchService = new LocationSearchService();
 
@@ -666,7 +667,9 @@ namespace NotchWin.ViewModels
 
             IAutostartService autostartService,
 
-            IDisplayService displayService)
+            IDisplayService displayService,
+
+            IUpdateService? updateService = null)
 
         {
 
@@ -675,6 +678,8 @@ namespace NotchWin.ViewModels
             _autostartService = autostartService;
 
             _displayService = displayService;
+
+            _updateService = updateService ?? (System.Windows.Application.Current?.MainWindow?.DataContext as NotchViewModel)?.UpdateService ?? new UpdateService();
 
 
 
@@ -1854,6 +1859,130 @@ namespace NotchWin.ViewModels
             }
 
         }
+
+        #region Updates (Category 7)
+
+        public string CurrentAppVersion => _updateService.CurrentVersionString;
+
+        [ObservableProperty]
+        private string _latestAppVersion = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanCheckForUpdates))]
+        private bool _isUpdateChecking;
+
+        [ObservableProperty]
+        private bool _isUpdateAvailable;
+
+        [ObservableProperty]
+        private bool _isUpToDate;
+
+        [ObservableProperty]
+        private string _updateCheckStatusText = string.Empty;
+
+        [ObservableProperty]
+        private string _updateChangelogText = string.Empty;
+
+        [ObservableProperty]
+        private string _updateReleaseDate = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanCheckForUpdates))]
+        [NotifyPropertyChangedFor(nameof(CanStartUpdate))]
+        private bool _isSettingsUpdateDownloading;
+
+        [ObservableProperty]
+        private double _settingsUpdateDownloadProgress;
+
+        [ObservableProperty]
+        private string _settingsUpdateDownloadStatusText = string.Empty;
+
+        public bool CanCheckForUpdates => !IsUpdateChecking && !IsSettingsUpdateDownloading;
+        public bool CanStartUpdate => !IsSettingsUpdateDownloading;
+
+        private Models.UpdateCheckResult? _lastCheckResult;
+
+        [RelayCommand]
+        public async Task CheckForUpdatesManualAsync()
+        {
+            if (IsUpdateChecking || IsSettingsUpdateDownloading) return;
+
+            IsUpdateChecking = true;
+            IsUpdateAvailable = false;
+            IsUpToDate = false;
+            UpdateCheckStatusText = LocalizationService.Instance["Update.Checking"];
+
+            try
+            {
+                var result = await _updateService.CheckForUpdateAsync(isManual: true);
+                _lastCheckResult = result;
+
+                if (!string.IsNullOrWhiteSpace(result.ErrorMessage) && !result.IsUpdateAvailable)
+                {
+                    UpdateCheckStatusText = $"{LocalizationService.Instance["Update.CheckFailed"]}: {result.ErrorMessage}";
+                }
+                else if (result.IsUpdateAvailable)
+                {
+                    IsUpdateAvailable = true;
+                    LatestAppVersion = $"v{result.LatestVersion}";
+                    UpdateChangelogText = result.Changelog;
+                    UpdateReleaseDate = result.ReleaseDate;
+                    UpdateCheckStatusText = string.Format(LocalizationService.Instance["Update.AvailableMsg"], result.LatestVersion);
+                }
+                else
+                {
+                    IsUpToDate = true;
+                    LatestAppVersion = $"v{result.LatestVersion}";
+                    UpdateCheckStatusText = LocalizationService.Instance["Update.UpToDate"];
+                }
+            }
+            catch (Exception ex)
+            {
+                UpdateCheckStatusText = $"{LocalizationService.Instance["Update.CheckFailed"]}: {ex.Message}";
+            }
+            finally
+            {
+                IsUpdateChecking = false;
+            }
+        }
+
+        [RelayCommand]
+        public async Task StartSettingsUpdateAsync()
+        {
+            if (_lastCheckResult == null || string.IsNullOrWhiteSpace(_lastCheckResult.DownloadUrl)) return;
+            if (IsSettingsUpdateDownloading) return;
+
+            IsSettingsUpdateDownloading = true;
+            SettingsUpdateDownloadProgress = 0;
+            SettingsUpdateDownloadStatusText = $"{LocalizationService.Instance["Update.Downloading"]} 0%";
+
+            var progress = new Progress<double>(percent =>
+            {
+                SettingsUpdateDownloadProgress = percent;
+                SettingsUpdateDownloadStatusText = $"{LocalizationService.Instance["Update.Downloading"]} {percent:0}%";
+            });
+
+            try
+            {
+                bool ok = await _updateService.DownloadAndApplyUpdateAsync(_lastCheckResult, progress);
+                if (!ok)
+                {
+                    SettingsUpdateDownloadStatusText = LocalizationService.Instance["Update.CheckFailed"];
+                    IsSettingsUpdateDownloading = false;
+                }
+                else
+                {
+                    SettingsUpdateDownloadStatusText = LocalizationService.Instance["Update.Installing"];
+                }
+            }
+            catch (Exception ex)
+            {
+                SettingsUpdateDownloadStatusText = "Error: " + ex.Message;
+                IsSettingsUpdateDownloading = false;
+            }
+        }
+
+        #endregion
 
     }
 

@@ -14,5 +14,7 @@ namespace NotchWin.Models
         public int DurationMs { get; set; } = 3500;
         public bool IsPrayer { get; set; } = false;
         public bool IsWaterAlarm { get; set; } = false;
+        public bool IsUpdateNotice { get; set; } = false;
+        public UpdateCheckResult? UpdateData { get; set; }
     }
 }

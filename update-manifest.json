@@ -1,0 +1,11 @@
+{
+  "version": "1.2.0",
+  "releaseDate": "2026-11-12",
+  "title": "Kuri 1.2.0 - Two-Tier Island Notifications & Hardware HUD",
+  "changelog": "- Fitur Baru: Notifikasi Dropdown Island Dua Tingkat (Two-Tier Dropdown)\n- Fitur Baru: Indikator Hardware HUD Terpadu (Volume, Brightness, Caps Lock, Num Lock)\n- Peningkatan: Transisi animasi dinamis dan sinkronisasi status maskot idle\n- Fitur Baru: Sistem Pembaruan OTA via GitHub",
+  "installerUrl_x64": "https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.2.0/Kuri-Setup-x64.exe",
+  "installerUrl_x86": "https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.2.0/Kuri-Setup-x86.exe",
+  "portableZipUrl_x64": "https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.2.0/Kuri-Portable-x64.zip",
+  "portableZipUrl_x86": "https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.2.0/Kuri-Portable-x86.zip",
+  "sha256_x64": ""
+}

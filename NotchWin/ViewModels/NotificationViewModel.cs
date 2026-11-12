@@ -50,6 +50,12 @@ namespace NotchWin.ViewModels
         [ObservableProperty]
         private bool _isWaterAlarm;
 
+        [ObservableProperty]
+        private bool _isUpdateNotice;
+
+        [ObservableProperty]
+        private Models.UpdateCheckResult? _updateData;
+
         public bool HasImagePath => !string.IsNullOrWhiteSpace(ImagePath) && File.Exists(ImagePath);
         public bool IsWhatsApp => string.Equals(AppType, "whatsapp", StringComparison.OrdinalIgnoreCase);
         public bool IsTelegram => string.Equals(AppType, "telegram", StringComparison.OrdinalIgnoreCase);
@@ -76,7 +82,9 @@ namespace NotchWin.ViewModels
             string brandColorHex,
             string timestampText,
             bool isPrayer = false,
-            bool isWaterAlarm = false)
+            bool isWaterAlarm = false,
+            bool isUpdateNotice = false,
+            Models.UpdateCheckResult? updateData = null)
         {
             AppName = appName;
             Title = title;
@@ -87,6 +95,8 @@ namespace NotchWin.ViewModels
             TimestampText = timestampText;
             IsPrayer = isPrayer;
             IsWaterAlarm = isWaterAlarm;
+            IsUpdateNotice = isUpdateNotice;
+            UpdateData = updateData;
 
             try
             {
