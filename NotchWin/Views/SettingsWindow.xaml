@@ -968,7 +968,7 @@
                                     <Border Height="1" Background="#27272A" Margin="0,2,0,12" />
 
                                     <!-- Windows Native Notifications Sync Toggle -->
-                                    <CheckBox Style="{StaticResource ModernCheckBox}"
+                                    <CheckBox Style="{StaticResource FluentToggleSwitch}"
                                               IsChecked="{Binding IsWindowsNotificationSyncEnabled, Mode=TwoWay}"
                                               Margin="0,0,0,12">
                                         <StackPanel>
