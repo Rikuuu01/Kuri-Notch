@@ -246,6 +246,24 @@ Saat **FullscreenDetector** mendeteksi aplikasi layar penuh (borderless game, vi
 
 ---
 
+## 🔄 Sistem Pembaruan Otomatis (OTA Auto-Updater via GitHub)
+
+Kuri memiliki modul pembaruan mandiri (*Over-The-Air Auto-Updater*) yang terintegrasi langsung dengan GitHub tanpa ketergantungan pustaka luar yang berat:
+1. **Pemeriksaan Dual-Source Bebas Limit**:
+   - `UpdateService` memprioritaskan pengecekan file manifest mentah `update-manifest.json` di repositori GitHub melalui CDN GitHub Raw. Mekanisme ini tidak terikat batasan laju (*rate limit*) 60 req/jam dari GitHub REST API.
+   - Jika manifest tidak dapat dijangkau, layanan secara otomatis beralih ke endpoint `api.github.com/repos/Rikuuu01/Kuri-Notch/releases/latest`.
+2. **Notifikasi Interaktif di Notch**:
+   - Ketika versi remote lebih tinggi daripada versi aplikasi aktif, kartu notifikasi dropdown island memanjang ke bawah menampilkan judul `"Update available"` dan informasi versi baru.
+   - Tombol `[Ignore]` memungkinkan pengguna mengabaikan pemberitahuan untuk sesi saat ini tanpa menutup paksa.
+   - Tombol `[Update]` langsung mengunduh paket pembaruan, mengubah baris pesan menjadi teks progres real-time (`"Mengunduh pembaruan... XX%"`) dan bilah kemajuan (*progress bar*).
+3. **Menu Pengaturan Terdedikasi**:
+   - Kategori 7 (**🔄 Pembaruan / Updates**) di jendela Pengaturan menyediakan pengecekan manual, penampil catatan rilis (*changelog viewer*), dan tombol pembaruan langsung.
+4. **Eksekusi Penggantian File & Restart Aman**:
+   - **Mode Setup (Inno Setup)**: Jika terdeteksi file `unins000.exe`, unduhan berupa installer `.exe` dijalankan dengan flag `/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS`.
+   - **Mode Portable**: Jika tidak terinstal via Inno Setup, file arsip `.zip` diunduh ke direktori sementara. Skrip PowerShell tersembunyi dijalankan untuk menunggu PID aplikasi keluar (`Wait-Process`), mengekstrak ZIP langsung ke direktori aplikasi (`Expand-Archive -Force`), lalu meluncurkan kembali `NotchWin.exe`.
+
+---
+
 ## 🚫 Panduan Modifikasi Aman (Do's & Don'ts)
 - **JANGAN** menempatkan `DropShadowEffect` atau efek bitmap langsung pada elemen `TextBlock` atau geometri teks karena akan mematikan ClearType dan me-raster teks menjadi bitmap buram beresolusi rendah.
 - **JANGAN** menggunakan koordinat pecahan (seperti `Y = notchHeight - 1.5` atau `Y = 30.5`) pada elemen visual; selalu bulatkan ke pixel bulat (`Math.Round(...)`).

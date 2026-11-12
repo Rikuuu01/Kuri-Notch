@@ -1732,13 +1732,13 @@
 
                             <!-- Section: Pembaruan Tersedia (Changelog & Download) -->
                             <StackPanel Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BoolToVis}}" Margin="0,0,0,16">
-                                <TextBlock Text="{Binding L10n[Settings.LatestVersion]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,8" />
+                                <TextBlock Text="{Binding L10n[Update.AvailableTitle]}" FontSize="12" FontWeight="Bold" Foreground="#A1A1AA" Margin="4,0,0,8" />
                                 <Border Background="#16161B" BorderBrush="#0A84FF" BorderThickness="1" CornerRadius="12" Padding="16,14">
                                     <StackPanel>
                                         <DockPanel LastChildFill="False">
                                             <StackPanel DockPanel.Dock="Left">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="Versi Terbaru:" FontSize="13" Foreground="#9CA3AF" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding L10n[Settings.LatestVersion], StringFormat='{}{0}:'}" FontSize="13" Foreground="#9CA3AF" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                                     <TextBlock Text="{Binding LatestAppVersion}" FontSize="15" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding UpdateReleaseDate, StringFormat='Dirilis: {0}'}" FontSize="11" Foreground="#71717A" Margin="0,2,0,0" />
