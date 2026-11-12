@@ -4491,6 +4491,24 @@ namespace NotchWin.ViewModels
         }
 
         [RelayCommand]
+        public void SimulateUpdateNotice()
+        {
+            var testResult = new Models.UpdateCheckResult
+            {
+                IsUpdateAvailable = true,
+                CurrentVersion = new Version(1, 2, 0),
+                LatestVersion = new Version(1, 3, 0),
+                Title = "Kuri 1.3.0 - Update Test",
+                ReleaseDate = DateTime.Now.ToString("yyyy-MM-dd"),
+                Changelog = "- Pengujian Fitur: Notifikasi Konfirmasi di Notch [Ignore] & [Update]\n- Pengujian Fitur: Unduhan OTA dengan progress bar real-time\n- Pengujian Fitur: Penampil Catatan Rilis di Pengaturan",
+                DownloadUrl = "test://simulate"
+            };
+
+            _isUpdateIgnoredForSession = false;
+            OnUpdateServiceUpdateAvailable(this, testResult);
+        }
+
+        [RelayCommand]
         public void IgnoreUpdateNotification()
         {
             _isUpdateIgnoredForSession = true;

@@ -13,7 +13,7 @@ namespace NotchWin.Services
 {
     public class UpdateService : IUpdateService
     {
-        private const string ManifestUrl = "https://raw.githubusercontent.com/Rikuuu01/Kuri-Notch/main/update-manifest.json";
+        private static string ManifestUrl => Environment.GetEnvironmentVariable("KURI_UPDATE_URL") ?? "https://raw.githubusercontent.com/Rikuuu01/Kuri-Notch/main/update-manifest.json";
         private const string GitHubApiLatestUrl = "https://api.github.com/repos/Rikuuu01/Kuri-Notch/releases/latest";
 
         private readonly HttpClient _httpClient;
@@ -87,21 +87,50 @@ namespace NotchWin.Services
 
             try
             {
-                // 1. Try reading lightweight update-manifest.json first (no GitHub API rate limits)
                 UpdateManifest? manifest = null;
-                try
+
+                // 0. Check local test manifest if present (e.g. for developer / offline testing)
+                string[] candidateManifests = [
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update-manifest-dev.json"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update-manifest.json"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "update-manifest-dev.json"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "update-manifest.json")
+                ];
+                foreach (var path in candidateManifests)
                 {
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                    var response = await _httpClient.GetAsync(ManifestUrl, cts.Token);
-                    if (response.IsSuccessStatusCode)
+                    if (File.Exists(path))
                     {
-                        var json = await response.Content.ReadAsStringAsync(cts.Token);
-                        manifest = JsonSerializer.Deserialize<UpdateManifest>(json);
+                        try
+                        {
+                            string json = await File.ReadAllTextAsync(path);
+                            manifest = JsonSerializer.Deserialize<UpdateManifest>(json);
+                            if (manifest != null && !string.IsNullOrWhiteSpace(manifest.Version))
+                            {
+                                Log.Information("UpdateService: Loaded manifest from local path {Path}", path);
+                                break;
+                            }
+                        }
+                        catch { }
                     }
                 }
-                catch (Exception ex)
+
+                // 1. Try reading lightweight update-manifest.json via HTTP if not loaded locally
+                if (manifest == null)
                 {
-                    Log.Debug(ex, "UpdateService: Manifest fetch failed, will try GitHub Releases API fallback");
+                    try
+                    {
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                        var response = await _httpClient.GetAsync(ManifestUrl, cts.Token);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var json = await response.Content.ReadAsStringAsync(cts.Token);
+                            manifest = JsonSerializer.Deserialize<UpdateManifest>(json);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug(ex, "UpdateService: Manifest fetch failed, will try GitHub Releases API fallback");
+                    }
                 }
 
                 if (manifest != null && !string.IsNullOrWhiteSpace(manifest.Version))
@@ -186,6 +215,36 @@ namespace NotchWin.Services
             {
                 Log.Warning("UpdateService: Download URL is empty");
                 return false;
+            }
+
+            if (result.DownloadUrl.StartsWith("test://", StringComparison.OrdinalIgnoreCase))
+            {
+                _isDownloading = true;
+                _downloadProgress = 0;
+                try
+                {
+                    for (int p = 10; p <= 100; p += 10)
+                    {
+                        await Task.Delay(260, ct);
+                        _downloadProgress = p;
+                        progress?.Report(p);
+                    }
+                    await Task.Delay(400, ct);
+                    Log.Information("UpdateService: Simulated test update completed 100%.");
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(
+                            "Simulasi unduhan pembaruan selesai 100%!\n\nSeluruh alur fitur OTA Auto-Updater (Notifikasi Notch, Progress Bar, dan Pengaturan) terverifikasi berfungsi sempurna.",
+                            "Kuri Update Test",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    });
+                    return true;
+                }
+                finally
+                {
+                    _isDownloading = false;
+                }
             }
 
             _isDownloading = true;

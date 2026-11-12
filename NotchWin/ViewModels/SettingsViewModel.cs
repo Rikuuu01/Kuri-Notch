@@ -1903,6 +1903,31 @@ namespace NotchWin.ViewModels
         private Models.UpdateCheckResult? _lastCheckResult;
 
         [RelayCommand]
+        public void SimulateUpdate()
+        {
+            var testResult = new Models.UpdateCheckResult
+            {
+                IsUpdateAvailable = true,
+                CurrentVersion = new Version(1, 2, 0),
+                LatestVersion = new Version(1, 3, 0),
+                Title = "Kuri 1.3.0 - Update Test",
+                ReleaseDate = DateTime.Now.ToString("yyyy-MM-dd"),
+                Changelog = "- Pengujian Fitur: Notifikasi Konfirmasi di Notch [Ignore] & [Update]\n- Pengujian Fitur: Unduhan OTA dengan progress bar real-time\n- Pengujian Fitur: Penampil Catatan Rilis di Pengaturan",
+                DownloadUrl = "test://simulate"
+            };
+
+            _lastCheckResult = testResult;
+            IsUpdateAvailable = true;
+            IsUpToDate = false;
+            LatestAppVersion = $"v{testResult.LatestVersion}";
+            UpdateChangelogText = testResult.Changelog;
+            UpdateReleaseDate = testResult.ReleaseDate;
+            UpdateCheckStatusText = string.Format(LocalizationService.Instance["Update.AvailableMsg"], testResult.LatestVersion);
+
+            (System.Windows.Application.Current?.MainWindow?.DataContext as NotchViewModel)?.SimulateUpdateNotice();
+        }
+
+        [RelayCommand]
         public async Task CheckForUpdatesManualAsync()
         {
             if (IsUpdateChecking || IsSettingsUpdateDownloading) return;
