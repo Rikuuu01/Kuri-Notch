@@ -173,6 +173,41 @@ Di bawah badan notch utama, terdapat kontainer dinamis `SubNotchContainer` yang 
 
 ---
 
+## 📬 Notifikasi Dua Tingkat (Two-Tiered Dropdown Island Notifications)
+
+Dynamic Notch Windows menerapkan arsitektur notifikasi pulau dua tingkat (*Two-Tiered Island Notification*):
+1. **Tier 1 (Row 0 - Pinned Island Core)**:
+   - Tetap menampilkan widget aktif utama (Pemutar Musik & Lirik Berjalan, Jam, Cuaca, atau Maskot) dengan tinggi 32 DIP.
+   - Tidak menimpa, menghentikan, atau menyela lirik lagu yang sedang berputar.
+2. **Tier 2 (Row 1 - Floating Dropdown Card)**:
+   - Terintegrasi di dalam satu canvas `NotchWindow` yang sama, memanjang secara organik ke bawah (*height expansion* hingga 100 DIP).
+   - Menampilkan kartu notifikasi bergaya squircle gelap:
+     - Ikon aplikasi sumber (WhatsApp, Telegram, Browser, dsb.) dengan resolusi tajam.
+     - Nama aplikasi dan timestamp relatif (misal "now").
+     - Judul pesan / pengirim dalam font tebal (*bold*).
+     - Isi ringkasan pesan.
+   - Dilengkapi sistem antrean cerdas (*notification queue*) yang menampilkan pesan berturut-turut dengan transisi fade & slide lembut tanpa kedipan visual.
+
+---
+
+## 🎚️ Indikator HUD Hardware Terpadu (Volume, Kecerahan, Caps Lock, Num Lock)
+
+Untuk interaksi keyboard dan tombol fungsi cepat, notch collapsed bertransisi menjadi panel HUD terpadu (*Unified Hardware HUD*):
+1. **Dimensi & Desain**:
+   - Melebar ke 290 DIP (tinggi 32 DIP) dengan animasi spring halus.
+   - Sisi Kiri: Ikon vektor murni (Speaker horn & gelombang, Sun rays, ISO Caps Lock arrow, Keypad Num Lock) + Label teks judul (`#D4D4D8`).
+   - Sisi Kanan:
+     - **Volume & Kecerahan**: Progress bar kapsul (lebar 96 DIP, tebal 4.5 DIP, radius 2.25 DIP, background `#27272E`, fill `#FFFFFF`) + angka nilai bulat tanpa `%`.
+     - **Caps Lock & Num Lock**: Status pill badge yang jelas ("On" / "Off" atau "Aktif" / "Mati").
+2. **Deteksi Multi-Layer**:
+   - Volume: `NAudio.CoreAudioApi` IAudioEndpointVolume COM callback.
+   - Kecerahan: WMI watcher `WmiMonitorBrightnessEvent` pada `root\wmi` + threadpool poller cadangan.
+   - Caps & Num Lock: Low-level keyboard hook Win32 (`WH_KEYBOARD_LL`) yang membaca status riil `GetKeyState`.
+3. **Siklus Hidup**:
+   - Tampil selama 1,6 detik secara transient, kemudian otomatis kembali ke status musik / jam tanpa lag.
+
+---
+
 ## 🟢 Overlay Indikator Privasi (Ujung Kanan Notch)
 
 Dot privasi kamera (hijau `#22C55E`) dan mikrofon (oranye `#F97316`) adalah **overlay mengambang** di ujung kanan notch, bukan bagian dari layout widget:

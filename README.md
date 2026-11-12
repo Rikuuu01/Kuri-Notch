@@ -84,7 +84,7 @@ Kuri features **interactive, reactive desktop pets** that live inside your notch
 Access your PC essentials directly inside the Notch without opening the Windows Settings app:
 - **In-Notch Wi-Fi Expander**: Scan, view, and connect to Wi-Fi networks in a fixed-height card with live connection badges.
 - **In-Notch Bluetooth Expander**: Scan and pair nearby Bluetooth peripherals and audio gear.
-- **Quick Action Toggles**: Airplane Mode, Dark/Light Mode, Mic Mute, Instant Screen Capture, Screen Lock, and Task Manager launcher.
+- **Quick Action Toggles**: Airplane Mode (internal toggle without launching Windows Settings), Dark/Light Mode, Mic Mute, Instant Screen Capture, Screen Lock, and Task Manager launcher.
 - **Sliders & Audio Output Switcher**: Precision sliders for Volume & Display Brightness with an inline drop-down-free sound output device switcher (Speakers, Headphones, FxSound, etc.).
 
 ### 🎵 2. Dynamic Media Player & Syllable-Sync Lyrics
@@ -92,6 +92,7 @@ Access your PC essentials directly inside the Notch without opening the Windows 
 - **Syllable-by-Syllable Karaoke**: Powered by the **SpicyLyrics API**, **TTML**, and **LRC-RED** engines. Watch lyrics light up word-by-word in real time.
 - **Collapsed Mini Karaoke**: Keep lyrics singing across your screen even when the notch is collapsed!
 - **Album Art Aura**: Dynamic background glow that adapts to the album art palette.
+- **Isolated Startup Greeting**: Welcome mode preserves clean idle dimensions and seamlessly transitions into full active lyrics after greeting completes.
 
 ### 📱 3. Shelf & Zero-Cable Phone Share
 - **Drag & Drop Shelf**: Temporary staging area for files, images, and documents across applications.
@@ -108,14 +109,21 @@ Access your PC essentials directly inside the Notch without opening the Windows 
 - **Clipboard History**: Pin, search, and copy recent text snippets and images.
 - **Screen Time & App Tracker**: 24-hour histogram and top application usage tracking with live second-by-second updates.
 - **Timers & Stopwatch**: Quick Pomodoro presets, custom countdowns, and precision stopwatch with lap times.
-- **Notes & Alarm**: Rich text quick notes with instant copy and time-based alarm reminders.
+- **Quick Notes**: Lightweight markdown-friendly scratchpad with instant copy.
 - **Fullscreen Slim Bar**: Automatically morphs into an ultra-subtle, non-intrusive 6px slim bar when watching full-screen movies or playing games.
 
-### 🔔 6. Native Windows Notification Interceptor
-- **Zero-UWP Native Hook**: Intercepts Windows native toast notifications (WhatsApp, Discord, Telegram, Browsers, Snipping Tool, etc.) using the built-in system SQLite database (`wpndatabase.db`) and `winsqlite3.dll` without requiring UWP/MSIX package registration.
-- **Dynamic Toast Morphing**: Collapsed Notch dynamically expands with a smooth physics animation to show the app icon, title, and message.
-- **Sub-Notch Floating Pill**: Optional pill view with click-to-dismiss support.
-- **Privacy & Toggle**: Toggle On/Off anytime in Settings, with custom duration slider (2–10s).
+### 🔔 6. Two-Tiered Dropdown Island Notifications
+- **Zero-Interrupt Dual Deck**: Windows toast notifications (WhatsApp, Telegram, Discord, Browsers, etc.) drop down smoothly below the notch into a dedicated secondary tier (`Row 1`) without interrupting active music playback, album art, or scrolling lyrics in `Row 0`!
+- **Zero-UWP Native Hook**: Intercepts Windows native toast notifications using the built-in system SQLite database (`wpndatabase.db`) and `winsqlite3.dll` without requiring UWP/MSIX package registration.
+- **Brand Squircle & Timestamps**: Clean app brand icon, bold sender title, preview message, and relative timestamp badges.
+- **Privacy & Toggle**: Toggle On/Off anytime in Settings with customizable display durations.
+
+### 🎚️ 7. Real-Time HUD Indicators (Volume, Brightness, Caps & Num Lock)
+- **Unified Island HUD**: Instant visual feedback in the collapsed notch when adjusting hardware keys or settings:
+  - **Master Volume**: Speaker icon (with mute state indicator), capsule progress bar, and raw numeric level.
+  - **Display Brightness**: Sun icon with radial rays, capsule progress bar, and level percentage.
+  - **Caps Lock & Num Lock**: Native hardware lock watcher intercepting keyboard state in real-time, displaying crisp ISO icons and status badges ("On" / "Off" or "Aktif" / "Mati").
+- **Automatic Auto-Dismiss**: Smoothly returns to active music lyrics or clock after 1.6 seconds.
 
 ---
 
@@ -178,6 +186,9 @@ DynamicNotchWindows/
 - [x] Interactive Mascot Center Alignment on Idle
 - [x] Phone Share QR code transfer
 - [x] Native Windows toast notification interceptor (Poni-style SQLite engine)
+- [x] Two-Tiered Dropdown Island Notifications (Non-interruptive toast banners during active media)
+- [x] Unified Hardware HUD Indicators (Volume, Screen Brightness, Caps Lock, Num Lock)
+- [ ] Over-The-Air (OTA) Auto-Updater via GitHub Releases
 - [ ] Multi-monitor independent notch placement
 - [ ] Custom community pet avatar importer (.SVG / .Lottie)
 - [ ] Spotify Canvas animated video background support

@@ -388,8 +388,35 @@ DynamicNotchWindows/
 
 ---
 
-### 🔮 Fase 17: Rencana Pengembangan Masa Depan (Roadmap Berikutnya)
+### ✅ Fase 17: Intersepsi Notifikasi Windows & Indikator HUD Hardware Terpadu
 
+- [x] **Two-Tiered Dropdown Island Notifications (Non-Interruptive)**:
+  - Notifikasi Windows native (WhatsApp, Telegram, Browser, dsb.) diekstrak langsung dari `wpndatabase.db` via `winsqlite3.dll` tanpa registrasi UWP/MSIX.
+  - Mengembangkan sistem notch dua tingkat (*Two-Tiered Deck*): `Row 0` tetap menyematkan musik, album art, dan lirik karaoke yang sedang berputar (atau jam), sementara `Row 1` memanjang ke bawah dengan mulus sebagai kartu notifikasi elegan berwarna gelap lengkap dengan ikon brand, judul pengirim bold, teks pesan, dan timestamp relatif ("now").
+  - Antrean notifikasi cerdas (*notification queue*) dengan auto-dismiss dan rotasi mulus saat banyak pesan masuk berturut-turut.
+  - Maskot (Pet) sinkron sempurna di seluruh status (collapsed, alert, expanded).
+- [x] **Indikator HUD Hardware Terpadu (Volume, Kecerahan, Caps Lock, Num Lock)**:
+  - Format visual kompak ala Dynamic Island di notch collapsed (lebar 290 DIP, tinggi 32 DIP).
+  - Tampilan kiri: Ikon vektor minimalis (`Speaker`, `Matahari/Brightness`, `Caps Lock ISO`, `Num Lock Keypad`) + label judul.
+  - Tampilan kanan: Progress bar kapsul 96px tebal 4.5px (Volume & Kecerahan) dengan angka murni tanpa `%`, atau status pill badge ("On" / "Off" atau "Aktif" / "Mati") untuk Caps Lock dan Num Lock.
+  - Deteksi event hardware otomatis via `NAudio WASAPI`, WMI watcher `WmiMonitorBrightnessEvent` + polling cadangan, serta low-level keyboard hook `SetWindowsHookEx(WH_KEYBOARD_LL)`.
+  - Otomatis kembali ke musik & lirik setelah 1,6 detik tanpa memutus audio.
+- [x] **Perbaikan & Peningkatan Fitur**:
+  - Isolasi lebar Welcome Greeting: lebar notch tetap berukuran idle saat menyapa, lalu kembali ke ukuran lirik aktif setelah greeting selesai.
+  - Tombol Airplane Mode di Control Center hanya mengubah toggle internal tanpa membuka Windows Settings.
+  - Kartu Sholat memprioritaskan jadwal sholat mendatang (*upcoming prayer*).
+  - Screen Time tracker terbarui secara real-time detik-demi-detik.
+  - Tombol Undo pada pelacak hidrasi diperbaiki dan dilokalisasi.
+  - Sinkronisasi dwibahasa penuh (English & Bahasa Indonesia).
+
+---
+
+### 🔮 Fase 18: Rencana Pengembangan Masa Depan (Roadmap Berikutnya)
+
+- [ ] **Over-The-Air (OTA) Auto-Updater via GitHub Releases**:
+  - Pengecekan otomatis versi baru aplikasi via GitHub REST API / raw JSON.
+  - Unduhan latar belakang (*silent background download*) paket pembaruan.
+  - Ekstraksi/eksekusi updater mini independen untuk menggantikan file biner dan me-restart Kuri tanpa kehilangan data pengaturan.
 - [ ] **Integrasi Kalender & Google Calendar / Outlook**:
   - Kartu agenda harian untuk menampilkan meeting/jadwal terdekat.
 - [ ] **Widget Pemantau Kinerja Hardware Mendalam (Hardware Monitor)**:
