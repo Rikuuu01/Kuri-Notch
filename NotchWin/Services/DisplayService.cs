@@ -105,6 +105,10 @@ namespace NotchWin.Services
                 {
                     return target;
                 }
+
+                var fallback = monitors.FirstOrDefault(m => m.IsPrimary) ?? monitors[0];
+                Log.Warning("Target monitor '{Target}' was not found in connected monitors. Falling back to '{Primary}'.", targetDeviceName, fallback.DisplayName);
+                return fallback;
             }
 
             return monitors.FirstOrDefault(m => m.IsPrimary) ?? monitors[0];

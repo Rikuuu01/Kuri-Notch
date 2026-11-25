@@ -12,6 +12,7 @@ namespace NotchWin.ViewModels
     {
         public int Hour { get; set; }
         public double HeightPercent { get; set; }
+        public double BarHeight { get; set; }
         public bool IsCurrentHour { get; set; }
         public string Label { get; set; } = string.Empty;
         public string Tooltip { get; set; } = string.Empty;
@@ -23,7 +24,9 @@ namespace NotchWin.ViewModels
         public string ProcessName { get; set; } = string.Empty;
         public string DurationText { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
+        public string CategoryDisplay { get; set; } = string.Empty;
         public string CategoryColorHex { get; set; } = "#636366";
+        public string AppTooltip { get; set; } = string.Empty;
         public double PercentOfTotal { get; set; }
         public double BarWidth { get; set; }
     }
@@ -52,6 +55,10 @@ namespace NotchWin.ViewModels
         [ObservableProperty]
         private string _todayDateText = string.Empty;
 
+        private const double MaxChartBarHeight = 42.0;
+
+        public bool IsUiActive { get; set; } = false;
+
         public ObservableCollection<HourlyBarItem> HourlyBars { get; } = new();
         public ObservableCollection<AppUsageDisplayItem> TopApps { get; } = new();
         public ObservableCollection<CategorySegmentItem> CategorySegments { get; } = new();
@@ -70,7 +77,10 @@ namespace NotchWin.ViewModels
 
         private void OnScreenTimeDataUpdated(object? sender, EventArgs e)
         {
-            Refresh();
+            if (IsUiActive)
+            {
+                Refresh();
+            }
         }
 
         public void Refresh()
@@ -99,6 +109,7 @@ namespace NotchWin.ViewModels
             {
                 long secs = (dayData?.Hours != null && h < dayData.Hours.Length) ? dayData.Hours[h] : 0;
                 double heightPct = (secs <= 0) ? 4.0 : Math.Max(8.0, (double)secs / maxHourlySecs * 100.0);
+                double barHeight = (secs <= 0) ? 2.0 : Math.Clamp((double)secs / maxHourlySecs * MaxChartBarHeight, 4.0, MaxChartBarHeight);
 
                 string label = (h == 0 || h == 6 || h == 12 || h == 18 || h == 23) ? $"{h:D2}" : string.Empty;
                 string tooltip = $"{h:D2}:00 - {FormatDuration(secs)}";
@@ -107,6 +118,7 @@ namespace NotchWin.ViewModels
                 {
                     Hour = h,
                     HeightPercent = heightPct,
+                    BarHeight = barHeight,
                     IsCurrentHour = (h == currentHour),
                     Label = label,
                     Tooltip = tooltip
@@ -133,15 +145,20 @@ namespace NotchWin.ViewModels
                     {
                         cat = ScreenTimeCategories.Categorize(app.Path, app.Name);
                     }
+                    string catDisplay = GetLocalizedCategory(cat);
+                    string duration = FormatDuration(app.Seconds);
+                    double roundedPct = Math.Round(pct, 1);
 
                     TopApps.Add(new AppUsageDisplayItem
                     {
                         Name = !string.IsNullOrWhiteSpace(app.Name) ? app.Name : PathWithoutExt(app.Path),
                         ProcessName = PathWithoutExt(app.Path),
-                        DurationText = FormatDuration(app.Seconds),
+                        DurationText = duration,
                         Category = cat,
+                        CategoryDisplay = catDisplay,
                         CategoryColorHex = ScreenTimeCategories.GetColorHex(cat),
-                        PercentOfTotal = Math.Round(pct, 1),
+                        AppTooltip = $"{catDisplay} · {duration} ({roundedPct}%)",
+                        PercentOfTotal = roundedPct,
                         BarWidth = barW
                     });
                 }
@@ -165,6 +182,16 @@ namespace NotchWin.ViewModels
                 }
             }
         }
+
+        private static string GetLocalizedCategory(string category) => category switch
+        {
+            ScreenTimeCategories.Browsing => LocalizationService.Instance["ScreenTime.CategoryBrowsing"],
+            ScreenTimeCategories.Development => LocalizationService.Instance["ScreenTime.CategoryDevelopment"],
+            ScreenTimeCategories.Entertainment => LocalizationService.Instance["ScreenTime.CategoryEntertainment"],
+            ScreenTimeCategories.Productivity => LocalizationService.Instance["ScreenTime.CategoryProductivity"],
+            ScreenTimeCategories.System => LocalizationService.Instance["ScreenTime.CategorySystem"],
+            _ => LocalizationService.Instance["ScreenTime.CategoryOther"]
+        };
 
         private static string PathWithoutExt(string path)
         {

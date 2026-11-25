@@ -17,10 +17,13 @@ namespace NotchWin.Services
         private static readonly string FilePath = Path.Combine(DataDirectory, "water_state.json");
 
         private WaterTrackerState _state = new();
+        private readonly object _stateLock = new();
         private Timer? _tickerTimer;
         private int _intervalMinutes = 45;
+        private bool _isReminderEnabled = true;
         private bool _isAlarmActive = false;
         private bool _isUserIdle = false;
+        private volatile bool _isDisposed;
         private DateTime _snoozedUntil = DateTime.MinValue;
         private int _saveCounter = 0;
 
@@ -39,8 +42,8 @@ namespace NotchWin.Services
             var lii = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
             if (GetLastInputInfo(ref lii))
             {
-                uint tickCount = (uint)Environment.TickCount;
-                uint idleMs = tickCount - lii.dwTime;
+                uint tickCount = unchecked((uint)Environment.TickCount);
+                uint idleMs = unchecked(tickCount - lii.dwTime);
                 return TimeSpan.FromMilliseconds(idleMs);
             }
             return TimeSpan.Zero;
@@ -126,80 +129,97 @@ namespace NotchWin.Services
 
         private void Save()
         {
-            try
+            lock (_stateLock)
             {
-                Directory.CreateDirectory(DataDirectory);
-                string json = JsonSerializer.Serialize(_state, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(FilePath, json);
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Failed to save water tracker state");
+                try
+                {
+                    Directory.CreateDirectory(DataDirectory);
+                    string json = JsonSerializer.Serialize(_state, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(FilePath, json);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to save water tracker state");
+                }
             }
         }
 
         private void StartTicker()
         {
+            if (_isDisposed) return;
             _tickerTimer?.Dispose();
             _tickerTimer = new Timer(OnTick, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
 
         private void OnTick(object? _)
         {
-            CheckDayReset();
+            if (_isDisposed) return;
 
-            // Detect user activity (mouse / keyboard) via GetLastInputInfo
-            var idleTime = GetIdleTime();
-            bool idle = idleTime.TotalSeconds >= 60.0; // 60 seconds threshold
-            _isUserIdle = idle;
+            string? reminderMessage = null;
+            bool reminderCleared = false;
+            bool shouldSave = false;
 
-            if (!idle)
+            lock (_stateLock)
             {
-                // User is actively working in front of the screen
-                _state.CurrentSittingSeconds++;
-                _state.TotalSittingSecondsToday++;
-                if (_state.CurrentSittingSeconds > _state.LongestSessionSecondsToday)
-                {
-                    _state.LongestSessionSecondsToday = _state.CurrentSittingSeconds;
-                }
+                CheckDayReset();
 
-                // Check Alarm Trigger
-                int targetSeconds = _intervalMinutes * 60;
-                bool isSnoozed = _snoozedUntil > DateTime.Now;
-                if (!isSnoozed && _state.CurrentSittingSeconds >= targetSeconds)
+                // Detect user activity (mouse / keyboard) via GetLastInputInfo
+                var idleTime = GetIdleTime();
+                bool idle = idleTime.TotalSeconds >= 60.0; // 60 seconds threshold
+                _isUserIdle = idle;
+
+                if (!idle)
                 {
-                    if (!_isAlarmActive)
+                    // User is actively working in front of the screen
+                    _state.CurrentSittingSeconds++;
+                    _state.TotalSittingSecondsToday++;
+                    if (_state.CurrentSittingSeconds > _state.LongestSessionSecondsToday)
                     {
-                        _isAlarmActive = true;
-                        int sittingMinutes = Math.Max(1, _state.CurrentSittingSeconds / 60);
-                        WaterReminderTriggered?.Invoke(this, $"Time to hydrate! You've been sitting actively for {sittingMinutes} minutes. Stand up, stretch, and drink a glass of water! 💧");
+                        _state.LongestSessionSecondsToday = _state.CurrentSittingSeconds;
+                    }
+
+                    // Trigger hydration alarm notification only when the Water Reminder toggle is enabled
+                    int targetSeconds = _intervalMinutes * 60;
+                    bool isSnoozed = _snoozedUntil > DateTime.Now;
+                    if (_isReminderEnabled && !isSnoozed && _state.CurrentSittingSeconds >= targetSeconds)
+                    {
+                        if (!_isAlarmActive)
+                        {
+                            _isAlarmActive = true;
+                            int sittingMinutes = Math.Max(1, _state.CurrentSittingSeconds / 60);
+                            reminderMessage = $"Time to hydrate! You've been sitting actively for {sittingMinutes} minutes. Stand up, stretch, and drink a glass of water! 💧";
+                        }
                     }
                 }
-            }
-            else
-            {
-                // User is idle / laptop on standby / away from desk
-                // If user has been away for more than 5 minutes (300s), they took a break from the screen
-                if (idleTime.TotalSeconds >= 300.0 && _state.CurrentSittingSeconds > 0)
+                else
                 {
-                    if (_state.CurrentSittingSeconds >= 120)
+                    // User is idle / laptop on standby / away from desk
+                    // If user has been away for more than 5 minutes (300s), they took a break from the screen
+                    if (idleTime.TotalSeconds >= 300.0 && _state.CurrentSittingSeconds > 0)
                     {
-                        _state.BreaksCountToday++;
+                        if (_state.CurrentSittingSeconds >= 120)
+                        {
+                            _state.BreaksCountToday++;
+                        }
+                        bool wasAlarmActive = _isAlarmActive;
+                        _state.CurrentSittingSeconds = 0;
+                        _isAlarmActive = false;
+                        _snoozedUntil = DateTime.MinValue;
+                        reminderCleared = wasAlarmActive;
                     }
-                    bool wasAlarmActive = _isAlarmActive;
-                    _state.CurrentSittingSeconds = 0;
-                    _isAlarmActive = false;
-                    _snoozedUntil = DateTime.MinValue;
-                    if (wasAlarmActive) ReminderCleared?.Invoke(this, EventArgs.Empty);
+                }
+
+                // Periodic auto-save every 60 seconds
+                if (++_saveCounter >= 60)
+                {
+                    _saveCounter = 0;
+                    shouldSave = true;
                 }
             }
 
-            // Periodic auto-save every 60 seconds
-            if (++_saveCounter >= 60)
-            {
-                _saveCounter = 0;
-                Save();
-            }
+            if (shouldSave) Save();
+            if (reminderCleared) ReminderCleared?.Invoke(this, EventArgs.Empty);
+            if (reminderMessage != null) WaterReminderTriggered?.Invoke(this, reminderMessage);
 
             CountdownTicked?.Invoke(this, EventArgs.Empty);
         }
@@ -276,29 +296,53 @@ namespace NotchWin.Services
             }
         }
 
-        public void StartReminder(int intervalMinutes)
+        public void UpdateInterval(int intervalMinutes)
         {
             int clamped = Math.Clamp(intervalMinutes, 10, 240);
-            if (clamped != _intervalMinutes)
+            bool changed = clamped != _intervalMinutes;
+            bool wasAlarmActive = false;
+            lock (_stateLock)
             {
-                _intervalMinutes = clamped;
-                bool wasAlarmActive = _isAlarmActive;
-                _snoozedUntil = DateTime.MinValue;
-                _isAlarmActive = false;
+                if (changed)
+                {
+                    _intervalMinutes = clamped;
+                    wasAlarmActive = _isAlarmActive;
+                    _snoozedUntil = DateTime.MinValue;
+                    _isAlarmActive = false;
+                }
+            }
+            if (changed)
+            {
+                CountdownTicked?.Invoke(this, EventArgs.Empty);
                 if (wasAlarmActive) ReminderCleared?.Invoke(this, EventArgs.Empty);
             }
-            StartTicker();
+        }
+
+        public void StartReminder(int intervalMinutes)
+        {
+            _isReminderEnabled = true;
+            UpdateInterval(intervalMinutes);
+            if (_tickerTimer == null)
+            {
+                StartTicker();
+            }
         }
 
         public void StopReminder()
         {
-            _tickerTimer?.Dispose();
-            _tickerTimer = null;
+            // Keep passive sitting/posture tracking active for the Screen Time Posture Monitor card;
+            // only suppress hydration popup alarms when Water Reminder is disabled.
+            _isReminderEnabled = false;
 
-            bool wasAlarmActive = _isAlarmActive;
-            _isAlarmActive = false;
-            _snoozedUntil = DateTime.MinValue;
+            bool wasAlarmActive;
+            lock (_stateLock)
+            {
+                wasAlarmActive = _isAlarmActive;
+                _isAlarmActive = false;
+                _snoozedUntil = DateTime.MinValue;
+            }
             if (wasAlarmActive) ReminderCleared?.Invoke(this, EventArgs.Empty);
+            CountdownTicked?.Invoke(this, EventArgs.Empty);
         }
 
         public void Snooze(int minutes = 2)
@@ -317,7 +361,11 @@ namespace NotchWin.Services
 
         public void Dispose()
         {
-            StopReminder();
+            _isDisposed = true;
+            _tickerTimer?.Dispose();
+            _tickerTimer = null;
+            Save();
+            GC.SuppressFinalize(this);
         }
     }
 }

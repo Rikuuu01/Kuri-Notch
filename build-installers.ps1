@@ -8,7 +8,7 @@ Write-Host "     Supports Windows 10 & Windows 11 (x64 / x86)         " -Foregro
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 $rootDir = $PSScriptRoot
-$version = "1.2"
+$version = "1.3"
 $projectDir = "$rootDir\NotchWin"
 $installerDir = "$rootDir\installer"
 $releaseDir = "$rootDir\release"

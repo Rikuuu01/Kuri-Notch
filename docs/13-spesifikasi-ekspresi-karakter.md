@@ -2,7 +2,7 @@
 
 > Indeks seluruh dokumentasi: [README.md](README.md)
 >
-> Dokumen ini adalah **kontrak visual** untuk membuat karakter maskot baru yang kompatibel dengan sistem Pet Companion. Karakter apa pun yang memenuhi daftar ini bisa menggantikan Pastel Mochi / Astro Mascot / Egg Mascot tanpa mengubah logika layanan.
+> Dokumen ini adalah **kontrak visual** untuk membuat karakter maskot baru yang kompatibel dengan sistem Pet Companion. Karakter apa pun yang memenuhi daftar ini bisa melengkapi atau menggantikan Pastel Mochi / Astro Mascot / Egg Mascot / Notch Eyes tanpa mengubah logika layanan.
 
 ---
 

@@ -8,25 +8,27 @@ Aplikasi Dynamic Notch / Dynamic Island modern, elegan, dan berkinerja tinggi un
 
 Seluruh dokumentasi proyek berada di folder `docs/` ini. Dokumen modul fitur adalah acuan wajib sebelum membaca, mendiagnosis, atau mengedit kode terkait.
 
-### Modul & Fitur (00–14)
+### Modul & Fitur (00–16)
 
 | No | Modul / Fitur | File | Deskripsi Ringkas |
 |:---:|:---|:---|:---|
-| 00 | **Notch Core & Window Lifecycle** | [00-arsitektur-dan-notch-core.md](00-arsitektur-dan-notch-core.md) | Arsitektur WPF MVVM, animasi geometri notch, navbar pill, sub-notch, overlay privasi, startup entrance, dan fullscreen slim bar. |
-| 01 | **Pusat Kontrol** | [01-control-center.md](01-control-center.md) | Telemetri CPU/RAM/GPU/jaringan, slider volume & kecerahan, pemilih audio output, quick action, dan baterai. |
-| 02 | **Pemutar Musik & Lirik** | [02-music-player-dan-lirik.md](02-music-player-dan-lirik.md) | GSMTC, kontrol media, lirik karaoke lrclib, tampilan 1-baris compact berisian progres, pengaturan tebal/ukuran lirik, pemilih versi, offset per-lagu, dan warna aksen album. |
+| 00 | **Notch Core & Window Lifecycle** | [00-arsitektur-dan-notch-core.md](00-arsitektur-dan-notch-core.md) | Arsitektur WPF MVVM, animasi geometri notch, 11 navbar tab, sub-notch, overlay privasi, startup entrance, dan fullscreen slim bar. |
+| 01 | **Pusat Kontrol** | [01-control-center.md](01-control-center.md) | Expander Wi-Fi & Bluetooth in-notch, slider volume & kecerahan, pemilih audio output, quick action toggles, dan baterai HD. |
+| 02 | **Pemutar Musik & Lirik** | [02-music-player-dan-lirik.md](02-music-player-dan-lirik.md) | GSMTC, kontrol media instan 0ms, lirik karaoke SpicyLyrics + lrc.red + LRCLIB, pemilih versi lirik in-place, offset per-lagu, dan warna aksen album. |
 | 03 | **Prakiraan Cuaca** | [03-cuaca.md](03-cuaca.md) | Data BMKG & Open-Meteo, parameter cuaca, prakiraan per jam, dan pencarian kota. |
 | 04 | **Jadwal Sholat** | [04-jadwal-sholat.md](04-jadwal-sholat.md) | Hisab Kemenag, 6 kartu waktu sholat, countdown, chime adzan dengan banner persisten + snooze 5 menit. |
-| 05 | **Pengingat Minum & Postur** | [05-pengingat-minum-dan-postur.md](05-pengingat-minum-dan-postur.md) | Pelacak hidrasi, alarm persisten dengan snooze, dan pelacak durasi duduk. |
+| 05 | **Pengingat Minum & Postur** | [05-pengingat-minum-dan-postur.md](05-pengingat-minum-dan-postur.md) | Pelacak hidrasi, alarm persisten dengan snooze, dan pelacak durasi duduk (sedentary flip card). |
 | 06 | **Catatan & Alarm** | [06-catatan-dan-alarm.md](06-catatan-dan-alarm.md) | Catatan multi-tab rich text, alarm jam-menit, dan autosave debounce. |
 | 07 | **Riwayat Papan Klip** | [07-clipboard-history.md](07-clipboard-history.md) | Listener clipboard Win32, riwayat teks & screenshot, pin, dan notifikasi. |
-| 08 | **Timer & Stopwatch** | [08-timer-dan-stopwatch.md](08-timer-dan-stopwatch.md) | Timer countdown preset, stopwatch lap, dan sub-notch live pill. |
+| 08 | **Timer & Stopwatch** | [08-timer-dan-stopwatch.md](08-timer-dan-stopwatch.md) | Timer countdown preset, stopwatch lap, sub-notch live pill, dan garis cahaya outline glow. |
 | 09 | **Shelf & Dock** | [09-shelf-dan-dock.md](09-shelf-dan-dock.md) | Penampungan file drag-and-drop dengan persistensi `shelf.json`, overlay drop 3 target (Shelf/Dock/Konversi Gambar), hapus-setelah-drag, dock pintasan aplikasi terpadu di menu Home. |
-| 10 | **Pengaturan & Tema** | [10-pengaturan-dan-tema.md](10-pengaturan-dan-tema.md) | Material latar, warna aksen, autostart, fullscreen, multi-monitor, dan lokalisasi. |
-| 11 | **Pet Companion (Maskot)** | [11-mochi-notch-pet.md](11-mochi-notch-pet.md) | Maskot vektor Pastel Mochi, Astro & Egg, 8 badge reaksi, gaze physics, auto-sleep, dan sapaan startup. |
-| 12 | **Download Monitor** | [12-download-monitor.md](12-download-monitor.md) | Deteksi unduhan via file parsial, persen dari DB Chromium, pil + strip + toast. |
-| 13 | **Spesifikasi Ekspresi Karakter** | [13-spesifikasi-ekspresi-karakter.md](13-spesifikasi-ekspresi-karakter.md) | Kontrak visual 13 state, 3 set mata, 8 badge, micro-expression, dan checklist karakter baru. |
+| 10 | **Pengaturan & Tema** | [10-pengaturan-dan-tema.md](10-pengaturan-dan-tema.md) | Material latar, warna aksen, autostart task, fullscreen slim bar, multi-monitor, konfigurasi modul navbar, dan lokalisasi. |
+| 11 | **Pet Companion (Maskot)** | [11-mochi-notch-pet.md](11-mochi-notch-pet.md) | 4 Maskot vektor murni (Pastel Mochi, Astro, Egg, Notch Eyes), 8 badge reaksi, gaze physics, auto-sleep, dan sapaan startup. |
+| 12 | **Download Monitor** | [12-download-monitor.md](12-download-monitor.md) | Deteksi unduhan Chromium/Firefox, alternasi konten notch tertutup dengan nama target & glif animasi, persen DB Chromium, dan sub-notch expanded. |
+| 13 | **Spesifikasi Ekspresi Karakter** | [13-spesifikasi-ekspresi-karakter.md](13-spesifikasi-ekspresi-karakter.md) | Kontrak visual 13 state, 3 set mata, 8 badge, micro-expression, dan spesifikasi 4 karakter maskot. |
 | 14 | **Phone Share (Berbagi ke HP)** | [14-phone-share.md](14-phone-share.md) | Server HTTP LAN bawaan dengan kode QR per sesi: unggah file/teks dari HP ke Shelf & clipboard PC, unduh file Shelf ke HP, folder tujuan & auto-stop idle 15 menit. |
+| 15 | **Screen Time (Waktu Layar)** | [15-screen-time.md](15-screen-time.md) | Pelacakan aktivitas aplikasi detik-demi-detik, deteksi idle kursor/keyboard, histogram 24 jam, 5 aplikasi teratas, dan persistensi `screentime.json`. |
+| 16 | **Notifikasi Windows Dua Tingkat & HUD** | [16-notifikasi-windows-dan-hud.md](16-notifikasi-windows-dan-hud.md) | Intersepsi notifikasi Windows `wpndatabase.db` via `winsqlite3.dll` dengan dropdown pulau dua tingkat (Row 0 media, Row 1 toast), serta Unified Hardware HUD (Volume, Kecerahan, Caps & Num Lock). |
 
 ### Panduan & Referensi
 
@@ -64,32 +66,31 @@ Seluruh dokumentasi proyek berada di folder `docs/` ini. Dokumen modul fitur ada
 * **Dukungan Bahasa Indonesia**: Dapat beralih ke Bahasa Indonesia kapan saja melalui menu Pengaturan.
 * **Reaktif Tanpa Restart**: Mengubah bahasa akan memperbarui seluruh teks aplikasi secara seketika dan otomatis tersimpan.
 
-### 4. Widget Media Cerdas & Karaoke Lirik Sinkron (Spicy Lyrics + LRCLIB)
+### 4. Widget Media Cerdas & Karaoke Lirik Sinkron (Spicy Lyrics + lrc.red + LRCLIB)
 * **Integrasi Native SMTC**: Membaca sesi media Windows (`Windows.Media.Control`) secara *event-driven* tanpa polling (Spotify, YouTube, Apple Music, browser).
-* **Artwork & Kontrol Musik Penuh**: Menampilkan thumbnail album, judul lagu, artis, seekbar interaktif, dan tombol Prev, Play/Pause, Next.
+* **Kontrol Musik Instan (0ms Latency)**: UI optimistik untuk tombol Previous, Play/Pause, Next dengan eksekusi non-blocking dan fallback virtual hardware key Win32 (`VK_MEDIA_*`).
+* **Artwork & Visualizer**: Menampilkan thumbnail album, judul lagu, artis, seekbar interaktif, dan visualizer audio gelombang bergerak.
 * **Integrasi Penuh Spicy Lyrics & Syllable Sync (Presisi Suku Kata)**:
-  * **Dual-Pipeline Spicy Lyrics**: Mengambil lirik TTML suku kata presisi per kata via Official Developer API (`api.spicylyrics.org/v1`) jika token pengembang diisi, dengan fallback otomatis ke mirror publik terbuka (`api.betterlyrics.org/getLyrics`) dan LRCLIB.
+  * **Tri-Pipeline Provider**: Mengambil lirik TTML suku kata presisi per kata via Official Developer API (`api.spicylyrics.org/v1`) atau Public Mirror (`api.betterlyrics.org`), lirik terbuka berakurasi tinggi via **lrc.red** (`https://lrc.red`), serta universal fallback ke **LRCLIB**.
   * **Preservasi Spasi Antar-Kata**: XML parser menjaga integritas spasi antar-elemen TTML sehingga lirik terpisah rapi (`Look at the stars`) tanpa kata menyatu.
   * **Animasi 60 FPS Bebas Stutter / Anti Patah-patah**: `KaraokeClipConverter` presisi dengan kompensasi *left-offset* teks yang berpusat di tengah, timer 16ms stabil pada `DispatcherPriority.Render`, dan perlindungan *drift* SMTC (1.2 detik) agar tidak terjadi lonjakan atau hentakan mundur di tengah lagu.
-* **Panel Karaoke Lirik Sinkron Standar LRC**:
-  * **Tampilan Utuh Tanpa Terpotong**: Teks lirik ditampilkan penuh dan natural sepanjang lantunan bait penyanyi tanpa pemotongan prematur buatan.
-  * **Pencarian Cerdas (`ScoreCandidate`)**: Memilih kandidat lirik tersinkronisasi terbaik dengan prioritas utama Spicy Lyrics (+2500/+2000) dan LRCLIB (+1000).
-  * **Pemilih Versi Lirik Interaktif**: Dropdown popup dengan indikator sumber yang jelas (`[Spicy Lyrics]` berwarna rose/merah muda atau `[LRCLIB]` abu-abu) beserta tag tipe lirik (`SYLLABLE`, `SYNCED`, `PLAIN`, atau `INSTRUMENTAL`).
+* **Panel Karaoke Lirik Sinkron Standar LRC & Pemilih In-Place**:
+  * **Pemilih Versi Lirik In-Place**: Menggantikan tampilan lirik secara langsung di tempat (*in-place view swap* `LyricsPickerView`) dengan tombol `[← Lirik]` dan `[✕]`, tanpa popup melayang yang rentan glitch. Menyediakan lencana provider visual: **`lrc.red`** (coral), **`Spicy Lyrics`** (rose), dan **`LRCLIB`** (slate).
   * **Memori Offset Per-Lagu Persisten**: Kalibrasi offset manual otomatis tersimpan per-lagu (`SongOffsets.json`) dan dimuat seketika saat lagu diputar kembali.
-  * **Badge Sumber & Tipe Lirik**: Pojok kanan-bawah panel lirik menunjukkan provider aktif: `Spicy Lyrics · SYLLABLE`, `lrclib.net · SYNCED`, dll.
-  * **Ikon Musik Statis (`♫`)**: Jeda instrumen/intro tampil tenang dengan simbol musik tanpa animasi hitung mundur mengganggu.
+  * **Badge Sumber & Tipe Lirik**: Pojok kanan-bawah panel lirik menunjukkan provider aktif: `Spicy Lyrics · SYLLABLE`, `lrc.red · SYLLABLE`, `lrclib.net · SYNCED`, dll.
   * **Karaoke 1-Baris Compact di Notch Tertutup**: Pill collapsed menampilkan satu baris lirik aktif dengan animasi slide + fade antar-baris dan **isian progresif ala Dynamic Island** — teks memudar dari abu-abu menjadi putih seirama nyanyian (`ActiveLyricProgress` + `KaraokeClipConverter`), identik dengan isian pada panel besar.
-  * **Pengaturan Tampilan Lirik**: Toggle karaoke-fill, toggle Syllable Sync, input API key Spicy Lyrics, pilihan **bold** baris aktif, dan slider **ukuran teks 10–14** di Pengaturan → Musik.
-  * Animasi geser kartu pemutar musik yang sangat halus saat panel lirik dibuka/ditutup.
+  * **Pengaturan Tampilan Lirik**: Toggle karaoke-fill, toggle Syllable Sync, toggle lrc.red, input API key Spicy Lyrics, pilihan **bold** baris aktif, dan slider **ukuran teks 10–14** di Pengaturan → Musik.
 * **Warna Aksen Dinamis Album**: Opsi menyelaraskan warna aksen notch dengan warna dominan cover album lagu yang sedang berputar.
 
 ### 5. Pusat Kontrol (Control Center - Desain Ulang Modern)
 * **Dark Slate Glass Card Containers**: Tata letak grid kartu modern (`#161622`, border `#28283C`, sudut bulat 11px) dengan jam & kalender tipografi 21pt bold.
+* **In-Notch Wi-Fi Expander**: Pindai, lihat kekuatan sinyal, dan sambungkan jaringan Wi-Fi langsung di dalam kartu notch tanpa membuka aplikasi Windows Settings.
+* **In-Notch Bluetooth Expander**: Pindai dan pasangkan perangkat audio dan aksesoris Bluetooth langsung di dalam kartu notch.
 * **Capsule Sliders**: Slider volume master dan kecerahan layar bergaya kapsul dengan track 6 DIPs, thumb putih bulat interaktif, dan slider kecerahan beraksen kuning hangat (`#FBBF24`).
 * **Pemilih Output Audio Anti-Collapse**: Chip pemilih speaker interaktif dengan dropdown popup yang dilindungi agar notch tidak tertutup sendiri saat memilih perangkat suara.
 * **Ikon Baterai HD Vektor Presisi**: Bodi baterai 22×11 DIPs dengan terminal anoda, persentase tebal 12.5pt, pengisian daya poligon 7-titik tajam tanpa bayangan blur, serta telemetri kapasitas (mAh/Wh) dan watt daya real-time.
-* **Penjajaran Optik Konektivitas**: Ikon Wi-Fi/Ethernet dan Bluetooth diselaraskan tepat di sumbu tengah (x = 8.0 DIP) dengan lencana kecepatan unduh/unggah mikro yang simetris.
-* **Telemetri Hardware & Quick Actions**: Metrik CPU, RAM, dan GPU dengan progress bar kapsul berwarna (Cyan, Amber, Violet) yang terhubung ke Task Manager, serta 4 tombol pintasan aksi cepat berikon outline vektor 1.1 px stroke.
+* **Penjajaran Optik Konektivitas**: Ikon Wi-Fi/Ethernet dan Bluetooth diselaraskan tepat di sumbu tengah (x = 8.0 DIP) dengan lencana status yang simetris.
+* **Telemetri Hardware & Quick Actions**: Metrik CPU, RAM, dan GPU yang terhubung ke Task Manager, serta tombol pintasan aksi cepat (Airplane Mode, Keep Awake, Dark Mode, Mic Mute, Eye Breaks, Screenshot, Lock).
 
 ### 6. Informasi Cuaca & Prakiraan 7 Hari
 * **Kondisi Real-Time**: Menampilkan suhu, kelembapan, kecepatan angin, indeks UV, dan curah hujan.
@@ -125,10 +126,11 @@ Seluruh dokumentasi proyek berada di folder `docs/` ini. Dokumen modul fitur ada
 
 ### 12. Maskot Interaktif & Pet Companion (Pure Vector Mascots)
 * **100% Vektor Murni & Tajam**: Tidak menggunakan GIF bitmap buram, sepenuhnya dirender dengan grafis vektor XAML yang tajam di semua resolusi dan DPI scaling.
-* **Tiga Pilihan Karakter Eksklusif**:
+* **Empat Pilihan Karakter Eksklusif**:
   * **Pastel Mochi (V2)**: Karakter kelinci pastel lavender lembut dengan animasi tubuh elastis (*squash & stretch*), 3 set mata ekspresif, pipi merona (*blush*), partikel mengambang (not musik, huruf Z tidur, bintang kelap-kelip), dan kilatan blitz kamera.
   * **Astro Mascot**: Astronot berhelm putih glossy dengan visor navy dan mata amber menyala, headphone groove reaktif, flash kamera, serta 8 badge reaksi yang sama.
   * **Egg Mascot**: Telur putih minimalis dengan pipi merona dan lengan vektor yang melambai saat sapaan startup, lengkap dengan seluruh reaksi badge dan ekspresi.
+  * **Notch Eyes**: Sepasang mata digital minimalis adaptif (compact & native pill) yang melirik kursor, berkedip, bergoyang dengan equalizer tempo musik, pose tidur Z, dan bereaksi terhadap seluruh event notifikasi.
 * **Kehadiran Dinamis Lintas Widget**:
   * **Di Widget Jam**: Berdiri manis di samping indikator baterai di bilah collapsed.
   * **Di Widget Musik**: Ikut bergoyang dengan headphone terpasang dan not balok melayang saat lagu diputar di Spotify/YouTube.
@@ -143,8 +145,8 @@ Seluruh dokumentasi proyek berada di folder `docs/` ini. Dokumen modul fitur ada
   * 🌙 **Adzan**: Bulan sabit dan bintang emas berkedip dengan pose khidmat.
   * ⏰ **Alarm**: Goncangan getar cepat jam weker dan pupil mata panik menggemaskan.
   * 🔔 **Notifikasi**: Lonceng emas berayun kiri-kanan.
-* **Fisika Gaze & Interaktivitas**: Pupil mata melirik kursor mouse secara dinamis (*gaze physics*), interval kedipan acak dengan peluang kedipan ganda (*double-blink*), klik mouse untuk mengelus (*happy bounce*), dan tidur otomatis setelah ±5 menit tidak ada gerakan kursor. Saat musik berputar, maskot mempertahankan ekspresi yang sama (headphone & goyangan) baik di notch tertutup maupun panel penuh.
-* **Sapaan Startup**: Saat Kuri dijalankan, maskot tampil di tengah notch dan melambai (Egg) selama ±3 detik, lalu meluncur ke posisi pet collapsed sambil jam, cuaca, dan baterai fade-in. Sapaan otomatis dibatalkan bila notch dibuka, disembunyikan, atau masuk mode slim bar.
+* **Fisika Gaze & Interaktivitas**: Pupil mata melirik kursor mouse secara dinamis (*gaze physics*), interval kedipan acak dengan peluang kedipan ganda (*double-blink*), klik mouse untuk mengelus (*happy bounce*), dan tidur otomatis setelah ±5 menit tidak ada gerakan kursor.
+* **Sapaan Startup**: Saat Kuri dijalankan, maskot tampil di tengah notch dan melambai (Egg) selama ±3 detik, lalu meluncur ke posisi pet collapsed sambil jam, cuaca, dan baterai fade-in.
 
 ### 13. Efisiensi Memori Ekstrem (Konsumsi RAM Ringan ~54 MB)
 * **Pengurangan RAM Hingga 75%**: Dari kondisi awal ~245 MB dipangkas menjadi hanya **~54 MB – 62 MB** saat memutar musik aktif.
@@ -160,24 +162,29 @@ Seluruh dokumentasi proyek berada di folder `docs/` ini. Dokumen modul fitur ada
 
 ### 15. Animasi Masuk saat Startup
 * **Mendarat Halus**: Saat Kuri dijalankan, notch tidak lagi muncul statis — notch meluncur turun dari tepi atas monitor (400 ms) dengan pop skala lembut berporos atas-tengah (460 ms `BackEase`), fade-in badan notch (280 ms), lalu konten menyusul fade-in (240 ms).
-* **Sapaan Maskot**: Bila Pet Companion aktif, konten notch digantikan sapaan maskot melambai di tengah (3 detik) yang bergeser ke posisi pet dan memudar sambil konten fade-in; tanpa pet, konten langsung fade-in seperti biasa.
-* **Sekali per Proses**: Entrance hanya diputar pada kemunculan pertama; saat masuk fullscreen (slim bar) atau notch disembunyikan, animasi dilewati dan transisi normal yang berlaku.
+* **Sapaan Maskot**: Konten notch digantikan sapaan maskot melambai di tengah (3 detik) yang bergeser ke posisi pet dan memudar sambil konten fade-in.
 
 ### 16. Download Monitor (Unduhan Browser & Aplikasi)
-* **Deteksi Universal**: Memantau file parsial `.crdownload`, `.part`, `.partial`, `.opdownload`, dan `.download` di folder Downloads serta folder kustom Chrome/Edge/Brave/Vivaldi/Opera/Firefox.
-* **Pil & Panel**: Pil di bawah notch menampilkan label `Downloading...`, lalu `terunduh / total | kecepatan` (mis. `12.4 MB / 30.0 MB | 1.8 MB/s`) plus garis progres tipis; ringkasan agregat (persen, ukuran, kecepatan) dengan tombol buka folder di baris tambahan Control Center. Klik pil membuka panel.
-* **Persen Akurat untuk Browser Chromium**: Total ukuran dibaca read-only dari tabel `downloads` di History Chrome/Edge/Brave/Vivaldi/Opera (tanpa URL/riwayat); sumber lain (Firefox/aplikasi) tetap menampilkan ukuran terunduh + kecepatan.
-* **Tanpa Beban Saat Idle**: Timer polling hanya hidup selama ada unduhan (1 detik aktif, 5 detik saat dijeda); toast `📥` muncul saat unduhan selesai. Bisa dimatikan lewat toggle **Download Monitor**.
+* **Deteksi Universal**: Memantau file parsial `.crdownload`, `.part`, `.partial`, `.opdownload`, dan `.download` di folder Downloads serta folder kustom browser Chromium/Firefox.
+* **Alternasi Konten Notch Tertutup (Keputusan 99 & 100)**: Saat notch tertutup, tampilan unduhan bergantian mulus dengan widget jam/musik (`CollapsedDownloadHost`), menampilkan nama berkas asli dari SQLite Chromium, persentase/kecepatan, garis progres 2px di bibir bawah, serta **ikon download animasi bergerak** (*bobbing pulse arrow*).
+* **Sub-Notch Khusus Expanded**: Pil gantung di bawah notch hanya muncul saat notch dibuka (*Expanded*) agar tidak mengotori tampilan minimalis notch tertutup.
+* **Persen Akurat Chromium**: Total ukuran dibaca read-only dari tabel `downloads` History Chromium/Edge/Brave/Vivaldi/Opera.
 
 ### 17. Shelf & Phone Share: Transfer File Modern
-* **Shelf Persisten**: Isi shelf tersimpan di `shelf.json` dan selamat dari restart aplikasi; file yang dipindah/dihapus dari luar ditandai redup dengan status "hilang" (`IsMissing`) alih-alih lenyap diam-diam.
-* **Overlay Drop 3 Target**: Seret file ke notch → pilih **Simpan di Shelf**, **Tambahkan ke Dock**, atau **Konversi Gambar** (JPG↔PNG; PNG/BMP/GIF → JPG latar putih kualitas 92, file asli tak tersentuh, hasil `-converted` di folder sumber, dengan toast ringkasan).
-* **Hapus Setelah Drag**: Opsi Pengaturan agar item shelf otomatis terangkat dari daftar setelah berhasil diseret keluar (perilaku clipboard-manager klasik).
-* **Phone Share (Berbagi ke HP)**: Klik tombol `HP` di slide Shelf → notch memunculkan **kode QR**; pindai dari HP (satu jaringan Wi-Fi) tanpa aplikasi tambahan untuk:
-  * **Mengirim file dari HP ke PC** — mendarat otomatis di Shelf (folder tujuan dapat diatur, default `Downloads\Kuri Shelf`), dengan proteksi nama file tercadang, anti-duplikasi retry browser, dan batas 2 GB.
-  * **Mengunduh file Shelf ke HP** lewat daftar "File di PC Anda".
-  * **Mengirim teks/link dari HP** — langsung masuk ke clipboard PC dengan toast pratinjau.
-  * Server HTTP lokal berjalan di **port acak + token acak per sesi**, mati sendiri setelah 15 menit idle, dan bisa dihentikan satu klik dari panel. Halaman web HP ikut berbahasa EN/ID.
+* **Shelf Persisten**: Isi shelf tersimpan di `shelf.json` dan selamat dari restart aplikasi; file yang dipindah/dihapus dari luar ditandai redup dengan status "hilang" (`IsMissing`).
+* **Overlay Drop 3 Target**: Seret file ke notch → pilih **Simpan di Shelf**, **Tambahkan ke Dock**, atau **Konversi Gambar** (JPG↔PNG; PNG/BMP/GIF → JPG latar putih kualitas 92).
+* **Hapus Setelah Drag**: Opsi agar item shelf otomatis terangkat dari daftar setelah berhasil diseret keluar.
+* **Phone Share (Berbagi ke HP)**: Kode QR instan untuk transfer file & clipboard dua arah antara HP dan PC melalui jaringan Wi-Fi lokal tanpa kabel atau server cloud eksternal.
+
+### 18. Screen Time (Waktu Layar) & Pelacakan Aktivitas Aplikasi
+* **Pelacakan Detik-demi-Detik**: Memantau durasi penggunaan aplikasi aktif di latar depan (*foreground window*) secara akurat dan hemat daya.
+* **Deteksi Diam Cerdas (*Idle Exclusion*)**: Waktu saat pengguna meninggalkan komputer (> ambang batas idle, default 120 detik) otomatis tidak dihitung.
+* **Histogram 24-Jam & 5 Aplikasi Teratas**: Kartu Bento-Box menampilkan distribusi batang aktivitas per-jam (00:00 - 23:00) dan daftar 5 aplikasi paling sering dipakai lengkap dengan ikon, durasi, dan persentase.
+* **Auto-Import dari Poni**: Migrasi otomatis data riwayat waktu layar dari Poni ke Kuri secara transparan.
+
+### 19. Notifikasi Dua Tingkat & Unified Hardware HUD
+* **Two-Tiered Dropdown Island Notifications**: Intersepsi notifikasi Windows native (`wpndatabase.db` via `winsqlite3.dll`) tanpa UWP. Notifikasi meluncur di baris bawah (Tier 2 / Row 1) tanpa menghentikan atau menimpa pemutaran musik dan lirik lagu di Tier 1 (Row 0).
+* **Unified Hardware HUD**: Panel kapsul 290 DIPs di notch tertutup yang memberikan visualisasi seketika saat tombol Volume Master, Kecerahan Layar, Caps Lock, atau Num Lock ditekan, dengan auto-dismiss 1.6 detik.
 
 ---
 

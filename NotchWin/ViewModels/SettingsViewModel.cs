@@ -656,7 +656,7 @@ namespace NotchWin.ViewModels
         {
             "True OLED Black",
             "Tinted Glass",
-            "Fluent Mica / Acrylic"
+            "Liquid Glass (Acrylic)"
         };
 
 
@@ -762,7 +762,7 @@ namespace NotchWin.ViewModels
                 SelectedMaterial = mat switch
                 {
                     "TintedGlass" => "Tinted Glass",
-                    "Acrylic" => "Fluent Mica / Acrylic",
+                    "Acrylic" => "Liquid Glass (Acrylic)",
                     _ => "True OLED Black"
                 };
                 ThemeManager.CurrentMaterial = mat;
@@ -1156,7 +1156,7 @@ namespace NotchWin.ViewModels
             string code = value switch
             {
                 "Tinted Glass" => "TintedGlass",
-                "Fluent Mica / Acrylic" => "Acrylic",
+                "Liquid Glass (Acrylic)" or "Fluent Mica / Acrylic" => "Acrylic",
                 _ => "OLED"
             };
             ThemeManager.ApplyMaterial(code);
@@ -1768,7 +1768,7 @@ namespace NotchWin.ViewModels
                     NotchMaterial = SelectedMaterial switch
                     {
                         "Tinted Glass" => "TintedGlass",
-                        "Fluent Mica / Acrylic" => "Acrylic",
+                        "Liquid Glass (Acrylic)" or "Fluent Mica / Acrylic" => "Acrylic",
                         _ => "OLED"
                     },
                     CustomAccentColorHex = CustomAccentColorHex,

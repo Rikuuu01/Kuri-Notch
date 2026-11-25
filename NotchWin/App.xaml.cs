@@ -14,6 +14,7 @@ namespace NotchWin
         private const string WakeEventName = "Local\\NotchWin_WakeEvent_56ab85f1";
         private static EventWaitHandle? _wakeEvent;
         private static RegisteredWaitHandle? _registeredWaitHandle;
+        private static NotchWindow? _activeNotchWindow;
 
         public static string LogDirectory { get; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -39,7 +40,7 @@ namespace NotchWin
                     Path.Combine(LogDirectory, isAutostartHelper ? "autostart-task-.log" : "notchwin-.log"),
                     rollingInterval: RollingInterval.Day,
                     outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-                    buffered: true,
+                    buffered: false,
                     flushToDiskInterval: TimeSpan.FromSeconds(2),
                     fileSizeLimitBytes: 20 * 1024 * 1024,
                     rollOnFileSizeLimit: true,
@@ -129,11 +130,17 @@ namespace NotchWin
             try
             {
                 var settingsService = new Services.SettingsService();
+                Services.ThemeManager.IsAccentColorEnabled = settingsService.CurrentSettings.IsAccentColorEnabled;
+                Services.ThemeManager.CustomAccentColorHex = string.IsNullOrWhiteSpace(settingsService.CurrentSettings.CustomAccentColorHex)
+                    ? "#3B82F6"
+                    : settingsService.CurrentSettings.CustomAccentColorHex;
+                Services.ThemeManager.CurrentMaterial = settingsService.CurrentSettings.NotchMaterial ?? "OLED";
                 Services.ThemeManager.ApplyAccentColor(settingsService.CurrentSettings.AccentColor);
                 Services.FontScaleService.Initialize(settingsService.CurrentSettings.FontScale);
 
                 Log.Information("Initializing NotchWindow...");
                 var window = new NotchWindow();
+                _activeNotchWindow = window;
                 MainWindow = window;
 
                 window.Closed += (s, args) =>
@@ -207,14 +214,17 @@ namespace NotchWin
                 try
                 {
                     Log.Information("Wake signal received from secondary instance. Expanding Notch Window.");
-                    if (MainWindow is NotchWindow notchWindow)
+                    var targetWindow = _activeNotchWindow ?? (MainWindow as NotchWindow);
+                    Log.Information("TargetWindow found: {HasWindow}, ViewModel: {HasVm}", targetWindow != null, targetWindow?.ViewModel != null);
+                    if (targetWindow != null)
                     {
-                        notchWindow.Show();
-                        notchWindow.Activate();
-                        if (notchWindow.DataContext is ViewModels.NotchViewModel vm)
-                        {
-                            vm.Expand();
-                        }
+                        targetWindow.Show();
+                        targetWindow.Activate();
+                        targetWindow.ViewModel?.Expand(isLock: true);
+                    }
+                    else
+                    {
+                        Log.Warning("Could not find active NotchWindow to expand.");
                     }
                 }
                 catch (Exception ex)

@@ -430,12 +430,34 @@ DynamicNotchWindows/
 
 ---
 
-### 🔮 Fase 19: Rencana Pengembangan Masa Depan (Roadmap Berikutnya)
+### 📥 Fase 19: Penyempurnaan Unduhan, Lirik lrc.red, Maskot Notch Eyes & Expander Jaringan (Selesai - Keputusan 99-101)
 
-- [ ] **Integrasi Kalender & Google Calendar / Outlook**:
-  - Kartu agenda harian untuk menampilkan meeting/jadwal terdekat.
-- [ ] **Widget Pemantau Kinerja Hardware Mendalam (Hardware Monitor)**:
-  - Grafik mini penggunaan CPU, GPU, RAM, dan kecepatan unduh/unggah jaringan secara real-time.
+- [x] **Alternasi Unduhan pada Collapsed Notch (Keputusan 99)**:
+  - Tampilan unduhan menggantikan isi notch collapsed secara bersiklus (*Normal -> Download -> Timer*) tanpa pil gantung.
+  - Membaca `target_path` riil dari basis data SQLite Chromium History (menampilkan `ubuntu-22.04.iso` alih-alih `Unconfirmed N`).
+  - Sub-notch pil gantung (`DownloadSubNotchPill`) hanya muncul saat notch dibuka (*Expanded*).
+- [x] **Animasi Dinamis Ikon Unduhan (Keputusan 100)**:
+  - Dekomposisi geometri ikon unduhan: wadah baki statis + anak panah bergerak (*bobbing pulse* translasi Y vertikal) dengan `QuadraticEase`.
+  - Berjalan efisien hanya saat elemen terlihat (`IsVisible=True`), mati saat tersembunyi (0% idle power).
+- [x] **Integrasi Lirik lrc.red & Pemilih In-Place (Keputusan 101)**:
+  - Pengambilan lirik Apple Music TTML via API `lrc.red` dengan pencarian paralel bersama Spicy Lyrics dan LRCLIB.
+  - UI pemilih versi lirik in-place (`LyricsPickerView`) di dalam kontainer lirik menggantikan popup mengambang.
+  - Responsivitas media 0ms dengan UI optimistik, non-blocking relay commands, dan fallback Win32 virtual hardware keys (`VK_MEDIA_*`).
+- [x] **Maskot Ke-4: Notch Eyes (`NotchEyesControl`)**:
+  - Sepasang mata digital dinamis dengan mode adaptif (compact & native pill), eye blink, BPM music dance, sleep Z, dan reaksi seluruh 8 badge sistem.
+- [x] **In-Notch Wi-Fi & Bluetooth Inline Expanders**:
+  - Pindai, lihat kekuatan sinyal, masukkan password Wi-Fi, dan pasangkan perangkat Bluetooth langsung di dalam kartu notch tanpa meluncurkan Windows Settings.
+
+---
+
+### 🔮 Fase 20: Rencana Pengembangan Masa Depan (Roadmap Berikutnya)
+
+- [ ] **Multi-Monitor Independent Notch**:
+  - Menampilkan notch independen di monitor sekunder.
+- [ ] **Custom Community Pet Avatar Importer**:
+  - Mengimpor avatar vektor atau animasi kustom komunitas (.SVG / .Lottie).
+- [ ] **Spotify Canvas Background**:
+  - Dukungan latar animasi video kanvas Spotify saat lagu berputar.
 - [ ] **Dukungan Plugin / Ekstensi Modular**:
   - API terbuka bagi komunitas untuk membuat slide widget pihak ketiga sendiri.
 
@@ -444,18 +466,11 @@ DynamicNotchWindows/
 ## 🎯 Definition of Done (Status Saat Ini)
 
 - [x] Build Release berhasil 100% tanpa error (`0 Error(s)`).
-
-- [x] Penggunaan CPU idle stabil mendekati 0% dan konsumsi RAM efisien.
-
+- [x] Penggunaan CPU idle stabil mendekati 0% dan konsumsi RAM efisien (~54 MB – 62 MB).
 - [x] Tidak mencuri fokus aplikasi kerja atau game (`WS_EX_NOACTIVATE`).
-
-- [x] Otomatis sembunyi saat game atau video berlayar penuh (*fullscreen detection*).
-
-- [x] Tampilan notch tertutup memiliki pemisah garis rapi, suhu cuaca, jam, dan lirik beranimasi fluida.
-
-- [x] Dock shortcut dan Shelf file bekerja mulus dengan drag-and-drop.
-
-- [x] Installer setup v0.2.0 Inno Setup Universal dan paket portabel siap pakai.
-
-- [x] Dokumentasi lengkap terbarui: [README.md](README.md), [CARA-MENJALANKAN.md](CARA-MENJALANKAN.md), dan [DECISIONS.md](DECISIONS.md).
+- [x] Otomatis sembunyi saat game atau video berlayar penuh (*fullscreen detection*) atau bertransformasi ke Slim Bar 6px.
+- [x] 11 Modul navbar lengkap: Home, Control, Media, Weather, Prayer, Water, Note, Clipboard, Timer, Shelf, Screen Time.
+- [x] Dua tingkat notifikasi pulau (Row 0 media, Row 1 toast) dan Unified Hardware HUD.
+- [x] Empat karakter maskot vektor murni interaktif (Pastel Mochi, Astro Mascot, Egg Mascot, Notch Eyes).
+- [x] Dokumentasi lengkap terbarui: [README.md](README.md), [CARA-MENJALANKAN.md](CARA-MENJALANKAN.md), [00 s/d 16 Dokumen Modul](00-arsitektur-dan-notch-core.md), dan [DECISIONS.md](DECISIONS.md).
 

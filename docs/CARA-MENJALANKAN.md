@@ -261,7 +261,64 @@ dotnet run --project NotchWin\NotchWin.csproj -c Release
 2. **Ukuran & Bold Lirik**: Ubah slider **ukuran teks lirik** (10–14) dan toggle **bold** → panel lirik expanded langsung berubah; baris aktif = basis + 2.5.
 3. **Glow Outline Timer**: Start timer Pomodoro → notch tertutup menampilkan garis cahaya tipis emerald menyusut di sepanjang outline; jalankan stopwatch → garis berputar tiap detik (bukan 20×/detik). Memicu alert (mis. timer selesai) → cahaya berjalan keliling maks 20 detik. Matikan kedua toggle Pengaturan → garis lenyap, konsumsi CPU tetap sama.
 4. **Adzan Snooze**: Set pengingat sholat (atau tunggu waktunya) → saat adzan, **banner Home** muncul persisten (tidak hilang sendiri). Klik **Tunda** → suara berhenti, banner kembali ±5 menit kemudian; klik **Hentikan** → banner & suara lenyap total.
-5. **Status Bluetooth Radio**: Di Pusat Kontrol, baris Bluetooth menampilkan perangkat audio BT aktif, `Bluetooth Ready` (radio nyala) atau `Bluetooth Off` (radio mati) — state dibaca via WinRT radio + polling 8 detik dan saat `WM_DEVICECHANGE`. Ubah radio dari Windows Settings → toast `Bluetooth Aktif/Nonaktif` muncul. (Perintah toggle `QuickToggleBluetoothCommand` sudah tersedia di ViewModel tetapi **belum dipasangkan ke tombol UI** — jangan diuji sebagai tombol.)
+5. **Status Bluetooth Radio**: Di Pusat Kontrol, baris Bluetooth menampilkan perangkat audio BT aktif, `Bluetooth Ready` (radio nyala) atau `Bluetooth Off` (radio mati) — state dibaca via WinRT radio + polling 8 detik dan saat `WM_DEVICECHANGE`. Ubah radio dari Windows Settings → toast `Bluetooth Aktif/Nonaktif` muncul.
+
+---
+
+### 20. Menguji Screen Time (Waktu Layar)
+1. Buka notch dan klik tab terakhir di navbar (**Tab 10: Ikon Grafik Waktu Layar**).
+2. Perhatikan tata letak Bento-Box:
+   - **Kotak Kiri**: Menampilkan total durasi waktu layar hari ini (`TotalTimeTodayText`), jumlah peralihan antar-aplikasi (`XX app switches`), lencana `Exclude Idle`, dan histogram 24 batang jam (00:00 - 23:00) dengan tinggi batang proporsional.
+   - **Kotak Kanan**: Daftar 5 aplikasi teratas lengkap dengan ikon asli aplikasi, durasi aktif, persentase, dan bar kemajuan berwarna.
+3. Beralih ke aplikasi lain (misal VS Code atau Chrome) selama 1-2 menit, lalu buka kembali tab Waktu Layar: durasi aplikasi dan histogram jam akan bertambah secara real-time.
+4. Uji coba **Deteksi Diam (*Idle Exclusion*)**: Tinggalkan mouse dan keyboard selama > ambang batas idle (default 120 detik) di Pengaturan. Perhatikan bahwa waktu tidak dihitung ke aplikasi saat komputer ditinggalkan.
+
+---
+
+### 21. Menguji Notifikasi Windows Dua Tingkat (Two-Tiered Toast)
+1. Putar musik di Spotify atau YouTube sehingga baris lirik aktif berjalan di bilah notch.
+2. Kirim pesan uji coba ke WhatsApp / Telegram atau picu notifikasi sistem Windows (misal unduhan selesai).
+3. **Verifikasi Kritis**:
+   - Notch memanjang ke bawah membentuk baris kedua (**Tier 2 / Row 1**).
+   - Teks lirik dan cover album di **Tier 1 / Row 0** tetap berputar dan berjalan lancar tanpa terhenti atau tertutup!
+   - Dropdown menampilkan ikon merek aplikasi, nama pengirim tebal, isi pesan, dan timestamp "now".
+   - Setelah beberapa detik (`NotificationDurationSeconds`), dropdown meluncur naik kembali secara halus.
+
+---
+
+### 22. Menguji Unified Hardware HUD (Volume, Kecerahan, Caps Lock, Num Lock)
+1. Pastikan notch dalam keadaan tertutup (*collapsed*).
+2. Tekan tombol hardware **Volume Up** / **Volume Down** pada keyboard atau laptop:
+   - Notch langsung bertransisi menjadi kapsul 290 DIPs menampilkan ikon Speaker, slider kapsul volume, dan angka level volume.
+3. Tekan tombol **Brightness Up** / **Brightness Down** pada keyboard:
+   - Notch menampilkan ikon Matahari, slider kapsul kecerahan kuning hangat, dan angka persentase.
+4. Tekan tombol **Caps Lock** atau **Num Lock**:
+   - Notch menampilkan ikon ISO panah Caps / Keypad NumLock dengan lencana status tegas `ON` / `OFF` (atau `Aktif` / `Mati`).
+5. Lepaskan tombol: setelah 1.6 detik tanpa interaksi, notch otomatis kembali ke tampilan normal (lirik, jam, atau cuaca).
+
+---
+
+### 23. Menguji Expander Wi-Fi & Bluetooth In-Notch
+1. Buka notch $\rightarrow$ buka tab **Pusat Kontrol** (Slide 1).
+2. Klik tombol chevron panah kanan `>` pada ubin **Wi-Fi**:
+   - Kartu daftar jaringan Wi-Fi meluncur terbuka tepat di bawah baris ubin tanpa keluar ke Windows Settings.
+   - Klik tombol **Pindai Ulang** (`RefreshWifiCommand`) untuk memperbarui daftar sinyal.
+   - Klik tombol chevron `>` kembali untuk menutup kartu.
+3. Klik tombol chevron `>` pada ubin **Bluetooth**:
+   - Kartu daftar perangkat Bluetooth meluncur terbuka dengan status perangkat aktif/terputus.
+
+---
+
+### 24. Menguji Alternasi Unduhan Collapsed & Ikon Animasi
+1. Unduh berkas besar di Google Chrome atau Microsoft Edge.
+2. Biarkan notch tertutup (*collapsed*):
+   - Perhatikan tidak ada pil sub-notch yang menggantung di bawah notch.
+   - Isi notch bergantian secara halus menggantikan jam/musik dengan tampilan unduhan:
+     - **Ikon unduhan beranimasi**: anak panah meluncur turun dan naik secara lembut (*bobbing pulse*).
+     - Nama target berkas asli dari Chromium SQLite (e.g. `ubuntu-22.04.iso`).
+     - Persentase unduhan dan kecepatan transfer real-time.
+     - Progress bar aksen 2px di bibir bawah notch.
+3. Buka notch (*Expanded*): pil sub-notch meluncur turun di bawah notch hanya saat expanded.
 
 ---
 

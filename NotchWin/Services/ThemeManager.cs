@@ -354,15 +354,30 @@ namespace NotchWin.Services
 
                     lightBrush.Freeze();
 
-                    byte cardAlpha = CurrentMaterial switch
+                    var cardBgColor = CurrentMaterial switch
                     {
-                        "Acrylic" => 135,
-                        "TintedGlass" => 165,
-                        _ => 220
+                        "Acrylic" => Color.FromArgb(178, 16, 20, 32),
+                        "TintedGlass" => Color.FromArgb(195, 14, 16, 24),
+                        _ => Color.FromRgb(0x12, 0x12, 0x1C)
                     };
-                    var cardBrush = new SolidColorBrush(Color.FromArgb(cardAlpha, 14, 16, 22));
-
+                    var cardBrush = new SolidColorBrush(cardBgColor);
                     cardBrush.Freeze();
+
+                    var cardBorderColor = CurrentMaterial switch
+                    {
+                        "Acrylic" => Color.FromArgb(58, 255, 255, 255),
+                        "TintedGlass" => Color.FromArgb(40, 255, 255, 255),
+                        _ => Color.FromRgb(0x22, 0x22, 0x32)
+                    };
+                    var cardBorderBrush = new SolidColorBrush(cardBorderColor);
+                    cardBorderBrush.Freeze();
+
+                    double sheenOpacity = CurrentMaterial switch
+                    {
+                        "Acrylic" => 1.0,
+                        "TintedGlass" => 0.30,
+                        _ => 0.0
+                    };
 
 
 
@@ -379,6 +394,10 @@ namespace NotchWin.Services
                     app.Resources["NotchBackgroundBrush"] = bgBrush;
 
                     app.Resources["NotchCardBackgroundBrush"] = cardBrush;
+
+                    app.Resources["NotchCardBorderBrush"] = cardBorderBrush;
+
+                    app.Resources["NotchLiquidGlassSheenOpacity"] = sheenOpacity;
 
                     app.Resources["PlayPauseGradientBrush"] = playBrush;
 
@@ -419,25 +438,52 @@ namespace NotchWin.Services
                         EndPoint = new Point(0.5, 1),
                         GradientStops = new GradientStopCollection
                         {
-                            new GradientStop(Color.FromArgb(235, 0, 0, 0), 0.0),
-                            new GradientStop(Color.FromArgb(242, 0, 0, 0), 0.35),
-                            new GradientStop(Color.FromArgb(250, 0, 0, 0), 0.70),
-                            new GradientStop(Color.FromArgb(255, 0, 0, 0), 1.0)
+                            new GradientStop(Color.FromArgb(205, 14, 16, 22), 0.0),
+                            new GradientStop(Color.FromArgb(215, 10, 12, 18), 0.35),
+                            new GradientStop(Color.FromArgb(228, 10, 12, 18), 0.70),
+                            new GradientStop(Color.FromArgb(238, 16, 20, 28), 1.0)
+                        }
+                    };
+
+                    strokeBrush = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0.5, 0),
+                        EndPoint = new Point(0.5, 1),
+                        GradientStops = new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromArgb(95, 0xFF, 0xFF, 0xFF), 0.0),
+                            new GradientStop(Color.FromArgb(45, 0xB8, 0xC4, 0xDC), 0.35),
+                            new GradientStop(Color.FromArgb(35, 0x90, 0xA0, 0xBC), 0.70),
+                            new GradientStop(Color.FromArgb(75, 0xD0, 0xDC, 0xF0), 1.0)
                         }
                     };
                 }
                 else if (CurrentMaterial == "Acrylic")
                 {
+                    // Liquid Glass (Acrylic): rich frosted crystal translucency (~82% opacity) + crisp specular rim
                     bgBrush = new LinearGradientBrush
                     {
                         StartPoint = new Point(0.5, 0),
                         EndPoint = new Point(0.5, 1),
                         GradientStops = new GradientStopCollection
                         {
-                            new GradientStop(Color.FromArgb(215, 0, 0, 0), 0.0),
-                            new GradientStop(Color.FromArgb(230, 0, 0, 0), 0.35),
-                            new GradientStop(Color.FromArgb(242, 0, 0, 0), 0.70),
-                            new GradientStop(Color.FromArgb(255, 0, 0, 0), 1.0)
+                            new GradientStop(Color.FromArgb(208, 26, 31, 44), 0.0),
+                            new GradientStop(Color.FromArgb(198, 14, 18, 28), 0.30),
+                            new GradientStop(Color.FromArgb(210, 12, 16, 26), 0.70),
+                            new GradientStop(Color.FromArgb(226, 22, 28, 42), 1.0)
+                        }
+                    };
+
+                    strokeBrush = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0.5, 0),
+                        EndPoint = new Point(0.5, 1),
+                        GradientStops = new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromArgb(185, 0xFF, 0xFF, 0xFF), 0.0),
+                            new GradientStop(Color.FromArgb(80, 0xD7, 0xE4, 0xFF), 0.30),
+                            new GradientStop(Color.FromArgb(55, 0xBE, 0xD2, 0xF0), 0.70),
+                            new GradientStop(Color.FromArgb(140, 0xEB, 0xF5, 0xFF), 1.0)
                         }
                     };
                 }
@@ -456,21 +502,21 @@ namespace NotchWin.Services
                             new GradientStop(Color.FromRgb(0x00, 0x00, 0x00), 1.0)
                         }
                     };
-                }
 
-                // Zero glow on edges: completely transparent stroke
-                strokeBrush = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0.5, 0),
-                    EndPoint = new Point(0.5, 1),
-                    GradientStops = new GradientStopCollection
+                    // Zero glow on edges: completely transparent stroke
+                    strokeBrush = new LinearGradientBrush
                     {
-                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.0),
-                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.35),
-                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.70),
-                        new GradientStop(Color.FromArgb(0, 0, 0, 0), 1.0)
-                    }
-                };
+                        StartPoint = new Point(0.5, 0),
+                        EndPoint = new Point(0.5, 1),
+                        GradientStops = new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.0),
+                            new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.35),
+                            new GradientStop(Color.FromArgb(0, 0, 0, 0), 0.70),
+                            new GradientStop(Color.FromArgb(0, 0, 0, 0), 1.0)
+                        }
+                    };
+                }
 
                 strokeBrush.Freeze();
                 bgBrush.Freeze();
@@ -529,17 +575,17 @@ namespace NotchWin.Services
             }
             else if (CurrentMaterial == "Acrylic")
             {
-                // Fluent Mica/Acrylic: softer translucent frosted diffusion (~70% alpha)
+                // Liquid Glass (Acrylic) with Accent tint: rich frosted glass (~82% opacity) + bright specular rim
                 bgBrush = new LinearGradientBrush
                 {
                     StartPoint = new Point(0.5, 0),
                     EndPoint = new Point(0.5, 1),
                     GradientStops = new GradientStopCollection
                     {
-                        new GradientStop(Color.FromArgb(175, 16, 18, 24), 0.0),
-                        new GradientStop(Color.FromArgb(185, (byte)Math.Clamp(primary.R * 0.12 + 10, 0, 255), (byte)Math.Clamp(primary.G * 0.12 + 10, 0, 255), (byte)Math.Clamp(primary.B * 0.12 + 14, 0, 255)), 0.35),
-                        new GradientStop(Color.FromArgb(200, (byte)Math.Clamp(primary.R * 0.30 + 12, 0, 255), (byte)Math.Clamp(primary.G * 0.30 + 12, 0, 255), (byte)Math.Clamp(primary.B * 0.30 + 18, 0, 255)), 0.70),
-                        new GradientStop(Color.FromArgb(220, (byte)Math.Clamp(light.R * 0.58 + 20, 0, 255), (byte)Math.Clamp(light.G * 0.58 + 20, 0, 255), (byte)Math.Clamp(light.B * 0.58 + 25, 0, 255)), 1.0)
+                        new GradientStop(Color.FromArgb(208, 24, 29, 42), 0.0),
+                        new GradientStop(Color.FromArgb(202, (byte)Math.Clamp(primary.R * 0.14 + 12, 0, 255), (byte)Math.Clamp(primary.G * 0.14 + 14, 0, 255), (byte)Math.Clamp(primary.B * 0.14 + 22, 0, 255)), 0.35),
+                        new GradientStop(Color.FromArgb(214, (byte)Math.Clamp(primary.R * 0.30 + 14, 0, 255), (byte)Math.Clamp(primary.G * 0.30 + 16, 0, 255), (byte)Math.Clamp(primary.B * 0.30 + 24, 0, 255)), 0.70),
+                        new GradientStop(Color.FromArgb(228, (byte)Math.Clamp(light.R * 0.50 + 20, 0, 255), (byte)Math.Clamp(light.G * 0.50 + 22, 0, 255), (byte)Math.Clamp(light.B * 0.50 + 30, 0, 255)), 1.0)
                     }
                 };
 
@@ -549,8 +595,8 @@ namespace NotchWin.Services
                     EndPoint = new Point(0.5, 1),
                     GradientStops = new GradientStopCollection
                     {
-                        new GradientStop(Color.FromArgb(90, 0xFF, 0xFF, 0xFF), 0.0),
-                        new GradientStop(Color.FromArgb(50, 0x30, 0x35, 0x40), 0.35),
+                        new GradientStop(Color.FromArgb(195, 0xFF, 0xFF, 0xFF), 0.0),
+                        new GradientStop(Color.FromArgb(90, 0xD7, 0xE4, 0xFF), 0.35),
                         new GradientStop(strokeMid, 0.70),
                         new GradientStop(strokeEnd, 1.0)
                     }

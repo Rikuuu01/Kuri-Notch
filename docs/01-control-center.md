@@ -13,18 +13,21 @@ Pusat Kontrol menggunakan estetika *Dark Glass Slate Minimalis* modern yang ring
 Disusun dalam 5 kolom simetris selebar 584px dengan ubin membulat (`CornerRadius="12"`, tinggi 46px):
 
 * **Baris 1**:
-  1. **Wi-Fi (Split Tile)**:
+  1. **Wi-Fi (Split Tile & In-Notch Expander)**:
      - Kiri: Tombol toggle radio Wi-Fi dengan ikon gelombang sinyal (putih saat pasif, hitam saat aktif).
      - Pembatas vertikal halus (`Width="1"`).
-     - Kanan: Tombol chevron (`>`) untuk membuka daftar jaringan nirkabel Windows (`ms-availablenetworks:`).
+     - Kanan: Tombol chevron (`>`) untuk membuka **In-Notch Wi-Fi Expander** (`IsWifiExpanded`).
+     - **Kartu Expander Wi-Fi In-Notch**: Menampilkan daftar jaringan nirkabel di sekitar langsung di dalam notch tanpa membuka Windows Settings. Dilengkapi tombol Pindai Ulang (`RefreshWifiCommand`), badge kekuatan sinyal, indikator keamanan/gembok, form input sandi untuk koneksi instan, serta tombol jalan pintas ke Pengaturan Wi-Fi Windows.
      - Label status bawah: Menampilkan SSID jaringan aktif atau status Wi-Fi (`WifiStatusLabel`).
-  2. **Bluetooth (Split Tile)**:
+  2. **Bluetooth (Split Tile & In-Notch Expander)**:
      - Kiri: Tombol toggle radio Bluetooth dengan latar aksen sky blue `#38BDF8` dan ikon gelap `#09090B` saat aktif.
      - Pembatas vertikal halus.
-     - Kanan: Tombol chevron (`>`) membuka pengaturan Bluetooth Windows (`ms-settings:bluetooth`).
+     - Kanan: Tombol chevron (`>`) untuk membuka **In-Notch Bluetooth Expander** (`IsBluetoothExpanded`).
+     - **Kartu Expander Bluetooth In-Notch**: Menampilkan daftar perangkat Bluetooth (audio, mouse/keyboard, smartphone) langsung di dalam notch dengan tombol Pindai Ulang (`RefreshBluetoothCommand`), status baterai perangkat (jika didukung), status koneksi aktif/terputus, dan tombol pintas ke Pengaturan Bluetooth Windows.
      - Label status bawah: Menampilkan nama perangkat atau status Bluetooth (`BluetoothStatusLabel`, e.g. "Not connected").
   3. **Airplane Mode (Single Tile)**:
      - Ikon pesawat siluet putih. Latar aktif berubah menjadi sky blue `#38BDF8`.
+     - Toggle internal sistem tanpa membuka paksa Windows Settings.
      - Label bawah: `Airplane mode`.
   4. **Keep Awake (Single Tile)**:
      - Ikon cangkir kopi dengan uap hangat.
@@ -52,8 +55,8 @@ Disusun dalam 5 kolom simetris selebar 584px dengan ubin membulat (`CornerRadius
      - Ikon gembok keamanan.
      - Mengunci komputer secara instan via `LockWorkStation()`.
      - Label bawah: `Lock`.
-  5. **Slot Kosong**:
-     - Kolom ke-5 sengaja dibiarkan kosong untuk estetika minimalis sesuai desain referensi.
+  5. **Slot Kosong / Task Manager**:
+     - Kolom ke-5 dicadangkan untuk peluncur Task Manager atau estetika minimalis.
 
 ---
 

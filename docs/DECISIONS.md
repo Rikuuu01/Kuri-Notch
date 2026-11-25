@@ -1225,3 +1225,217 @@ Dokumen ini mencatat keputusan teknis, arsitektur, dan desain yang diambil selam
      - **Pembesaran Hit Target**: Area sentuh/klik tombol media pada Overview Card diperbesar dari 26×26 px menjadi 32×32 px (Play/Pause 34×34 px) dengan efek hover dan press yang reaktif.
 - **Hasil**:
   Pengambilan lirik jauh lebih kaya dengan dukungan lrc.red, pemilihan versi lirik terasa terintegrasi rapi tanpa popup melayang, dan tombol pemutar media merespons seketika dengan latensi 0ms.
+
+---
+
+### Keputusan 102: Eliminasi Glitch Visual Saat Membuka Notch pada Konfigurasi Single Display & Ketahanan Multi-Monitor
+
+- **Tanggal**: 2026-11-20
+- **Konteks**:
+  1. Pengguna melaporkan adanya *glitch*, kedipan/sobekan visual (*screen tearing/blitting flash*), dan *stutter* ketika membuka/meng-expand notch, khususnya saat monitor kedua tidak dipakai (hanya tersisa 1 monitor aktif).
+  2. Pengguna meminta pengujian menyeluruh terhadap seluruh fungsi tampilan notch.
+- **Akar Masalah (Root Cause)**:
+  1. **Layered Window Bit Blitting Artifact**: Saat notch beralih dari status collapsed ke expanded, tinggi window overlay WPF dinaikkan dari `180px` ke `880px` via Win32 `SetWindowPos`. Karena pemanggilan tidak menyertakan flag `SWP_NOCOPYBITS (0x0100)`, DWM (Desktop Window Manager) meregangkan pixel lama (180px) untuk mengisi tinggi baru (880px) sebelum render pass WPF pertama selesai digambar, menimbulkan robekan visual (stretching tearing/ghosting).
+  2. **Badai Pemosisi HWND Berulang (Cascading SetWindowPos Loop)**: Saat `SetWindowPos` mengubah ukuran window overlay, Win32 mengirim pesan `WM_DPICHANGED` (pesan 736) ke `WndProc`. Handler sebelumnya langsung memanggil `PositionOnMonitor(force: true)` tanpa memverifikasi apakah DPI benar-benar berubah. Hal ini memicu 3 pemanggilan `SetWindowPos` beruntun dalam rentang 85ms (`PhysH=880`).
+  3. **Evaluasi Prematur Geometri pada `WM_NCHITTEST` & Spurious MouseLeave**: Pada `WM_NCHITTEST` (pesan 132), lebar efektif dihitung dari `PillContainer.ActualWidth`. Selama animasi mengembang (expand), `ActualWidth` masih berada pada ukuran 260px sampai arrange pass WPF selesai. Bila kursor berada di luar 260px (misal di lebar target 620px), kursor dianggap berada di luar notch (`_wasCursorInsideNotch = false`). Hal ini memicu `ViewModel.OnMouseLeave()`, yang menjadwalkan timer collapse 200ms dan langsung menciutkan notch kembali secara mendadak saat sedang dibuka.
+  4. **Target Monitor Usang pada Pengaturan (Stale Monitor Setting)**: Ketika monitor sekunder dilepas/mati, konfigurasi `"TargetMonitorDeviceName": "\\\\.\\DISPLAY2"` tetap tersimpan, menyebabkan `DisplayService` terus-menerus jatuh ke fallback monitor utama tanpa pernah menyelaraskan berkas pengaturan.
+  5. **Hit-Testing Dropdown Notifikasi Collapsed Tembus Layar**: Elemen `CollapsedNotificationDropdownHost` yang melayang di bawah pill collapsed sebelumnya tidak terdaftar dalam pengecekan `WM_NCHITTEST`, sehingga klik pada kartu notifikasi tembus (*click-through*) ke aplikasi di belakangnya.
+- **Implementasi**:
+  1. **Integrasi Flag `SWP_NOCOPYBITS` pada Pemosisi Win32 (`NativeMethods.cs` & `NotchWindow.xaml.cs`)**:
+     - Menambahkan konstanta `SWP_NOCOPYBITS = 0x0100` ke `NativeMethods.cs`.
+     - Menggabungkan flag `SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOCOPYBITS` pada setiap panggilan `SetWindowPos`. DWM kini mengabaikan bit buffer lama saat jendela overlay diperbesar, menjamin tampilan selalu mulus tanpa ghosting.
+  2. **Pemberantasan Redundant Positioning Loop & Re-entrancy Guard**:
+     - Menambahkan boolean guard `_isPositioning` pada `PositionOnMonitor`.
+     - Mengecek koordinat dan dimensi HWND eksisting via `NativeMethods.GetWindowRect`. Bila window sudah berada pada `(PhysX, PhysY, PhysW, PhysH)` target, pemanggilan `SetWindowPos` dilewati dan hanya memastikan z-order topmost.
+     - Menyaring pesan `WM_DPICHANGED` (736) di `WndProc`: jika nilai `DpiScale` tidak berubah (`Math.Abs(scaleDiff) < 0.001`), abaikan pemosisian paksa dan teruskan event ke visual tree WPF.
+  3. **Hit-Testing Geometri Target Notch & Peredam MouseLeave Semu**:
+     - Pada `WM_NCHITTEST`, menghitung lebar efektif berdasarkan target ekspansi `Math.Max(PillContainer.ActualWidth, targetW + 24.0)` dan memvalidasi batas fisik window `(windowCenterX - halfWidth s/d windowCenterX + halfWidth)`. Kursor di seluruh area animasi pembukaan selalu terbaca valid.
+     - Memperbarui `PillBorder_MouseLeave`: Mengabaikan event WPF `MouseLeave` saat `CurrentState == NotchState.Expanded` dan menyerahkan validasi batas sepenuhnya pada `WM_NCHITTEST`.
+  4. **Sanitasi Konfigurasi Monitor Otomatis**:
+     - Menambahkan fungsi sanitasi monitor pada `NotchViewModel`: Jika monitor yang tersimpan tidak ditemukan dalam daftar monitor aktif (misal monitor kedua dicabut), target otomatis diarahkan ke monitor utama (`\\.\DISPLAY1`) dan disimpan ke `settings.json`.
+  5. **Hit-Testing Kartu Dropdown Notifikasi Collapsed**:
+     - Menambahkan pengujian batas `CollapsedNotificationDropdownHost` pada `WM_NCHITTEST`, memastikan kartu pemberitahuan dapat diklik, di-hover, dan diinteraksikan secara responsif tanpa tembus ke window lain.
+- **Hasil**:
+  Glitch pembukaan notch teratasi 100%. Transisi membuka dan menutup pada 1 monitor berjalan sangat halus (60fps), tidak ada flickering atau stretching buffer DWM, penanganan multi-monitor tangguh terhadap monitor yang terputus, dan seluruh fungsi interaktif notch (media, kontrol, cuaca, notifikasi, HUD) beroperasi dengan sempurna.
+
+---
+
+### Keputusan 103: Rekalibrasi Tinggi Menu Notch Expanded Mengakomodasi Navigation Dock & Sudut Lengkung Bawah
+
+- **Tanggal**: 2026-11-20
+- **Konteks**:
+  Pengguna melaporkan adanya beberapa menu/slide di notch yang bagian bawahnya terpotong (*clipped*) saat dibuka.
+- **Akar Masalah (Root Cause)**:
+  1. **Integrasi Permanen Navigation Dock (`NavDockHost`) Menghabiskan 36px**: Ketika Navigation Dock diintegrasikan secara permanen di `ExpandedContentGrid` (Row 1), dock mengonsumsi tinggi 28px + margin 8px = 36px. Di atasnya, header notch mengonsumsi ~24px dan margin grid mengonsumsi 12px (total 76px *overhead* vertikal sebelum konten slide di Row 2).
+  2. **Konstanta Ketinggian Slide Usang**: Konstanta ketinggian di `NotchViewModel.cs` masih memakai nilai lama sebelum dock navigasi diintegrasikan. Karena `Grid Row="2"` memiliki `ClipToBounds="True"`, tinggi slide yang tidak memperhitungkan overhead 76px ini terpotong di bagian bawah.
+  3. **Lengkungan Sudut Bawah Notch (`ExpandedCornerRadius = 22px`)**: Kurva notch di bagian bawah memiliki radius 22px yang melengkung ke dalam. Elemen apa pun yang jaraknya kurang dari ~14-20px dari tepi bawah jendela notch akan terpotong oleh path batas lengkungan notch.
+- **Implementasi**:
+  Menyesuaikan target ketinggian semua slide di `NotchViewModel.cs` agar seluruh konten dan dock pintasan memiliki *breathing room* vertikal yang cukup (margin bebas 14-24px di atas lengkungan kurva 22px):
+  1. **Home**: Dinaikkan dari `236.0px` menjadi `264.0px` (`ExpandedHomeHeight`). App Shortcut Dock (42px) kini tampil penuh tanpa terpotong. Saat notifikasi aktif, tinggi menjadi `320.0px` (+56px).
+  2. **Pusat Kontrol (Control Center)**: Dinaikkan dari `304.0px` menjadi `318.0px` (`ExpandedControlCenterHeight`), dan menjadi `350.0px` saat ada unduhan aktif (`+32px`).
+  3. **Sedang Memutar (Media Player)**: Dinaikkan dari `232.0px` menjadi `248.0px` (`ExpandedMediaHeight`), dan menjadi `326.0px` saat picker lirik terbuka.
+  4. **Cuaca (Weather)**: Dinaikkan dari `286.0px` menjadi `300.0px` (`ExpandedWeatherHeight`). Kartu detail BMKG (208px) memiliki jarak aman 14px di atas kurva bawah.
+  5. **Jadwal Sholat (Prayer)**: Dinaikkan dari `216.0px` menjadi `234.0px` (`ExpandedPrayerHeight`). Kartu 6 waktu sholat (136px) memiliki jarak aman 20px dari tepi bawah.
+  6. **Pengingat Minum (Hydration)**: Dinaikkan dari `216.0px` menjadi `234.0px` (`ExpandedWaterHeight`). Tombol aksi +150ml/+250ml/+500ml tampil utuh dan nyaman diakses.
+  7. **Catatan (Note)**: Dinaikkan dari `274.0px` menjadi `286.0px` (`ExpandedNoteHeight`).
+  8. **Riwayat Clipboard**: Dinaikkan dari `274.0px` menjadi `286.0px` (`ExpandedClipboardHeight`).
+  9. **Timer & Stopwatch**: Dinaikkan dari `216.0px` menjadi `234.0px` (`ExpandedTimerHeight`). Tombol preset dan lap tampil rapi tanpa terpotong.
+  10. **Shelf & Phone Share**: Dinaikkan dari `216.0px` menjadi `234.0px` (`ExpandedShelfHeight`), dan `294.0px` saat panel kode QR Phone Share dibuka.
+  11. **Default Expanded Height**: Ditetapkan ke `264.0px` (`ExpandedHeight`).
+- **Hasil**:
+  Semua 11 slide/menu pada notch kini tampil proporsional dan elegan dengan ruang napas vertikal yang bersih di atas lengkungan kurva notch tanpa ada satu pun teks, tombol, atau kartu yang terpotong.
+
+---
+
+### Keputusan 104: Perbaikan False-Positive Indikator Privasi (Dot Mikrofon & Kamera Menyala Terus Menerus)
+
+- **Tanggal**: 2026-11-24
+- **Konteks**:
+  Pengguna melaporkan indikator privasi (dot) di notch menyala terus-menerus padahal mikrofon (dan kamera) sedang tidak digunakan oleh aplikasi apa pun.
+- **Akar Masalah (Root Cause)**:
+  1. **Deteksi Sensor Kamera Menggunakan Jumlah Perangkat, Bukan Status Streaming**:
+     Pada `PrivacyService.cs`, implementasi callback `IMFSensorActivitiesReportCallback.OnActivitiesReport(IMFSensorActivitiesReport report)` sebelumnya hanya mengecek:
+     `report.GetCount(out uint count); bool active = count > 0;`
+     Di Media Foundation Windows, `report.GetCount` mengembalikan **jumlah perangkat sensor/kamera yang ada** (misal webcam fisik atau virtual camera seperti Camo Studio), *bukan* jumlah stream yang sedang aktif. Karena ada 1 kamera terdeteksi di sistem (`count = 1`), `active` selalu bernilai `true`, sehingga `_isCameraActiveFromSensor = true` terkunci selamanya. Akibatnya, `IsCameraInUse = true` dan `IsPrivacyActive = true` terus aktif tanpa pernah mati.
+  2. **Penggunaan Audio Meter Hardware Input Level Sebagai Indikator Mikrofon**:
+     Pada `CheckMicrophoneCapture()`, terdapat logika:
+     `if (meter != null && meter.MasterPeakValue > 0.005f) isCapturing = true;`
+     Ini adalah kekeliruan fatal: `AudioMeterInformation.MasterPeakValue` membaca getaran suara fisik di membran mikrofon (noise ruangan, ketukan keyboard, atau musik yang diputar melalui speaker laptop yang terpantul ke mic). Ketika pengguna memutar musik atau berbicara, level input mic melebihi 0.5% (`0.005f`), sehingga mic dianggap sedang direkam oleh aplikasi dan dot mikrofon (oranye) menyala. Indikator privasi seharusnya hanya mendeteksi apakah ada **aplikasi perangkat lunak yang sedang merekam**, bukan apakah ada suara di udara.
+  3. **Sesi Audio Tanpa Filter Proses**:
+     Sesi audio pada capture device tidak menyaring sesi sistem (`IsSystemSoundsSession` atau PID `0`) dan tidak memverifikasi apakah proses pemegang sesi masih hidup (`!p.HasExited`), sehingga sesi audio zombie dari aplikasi yang sudah ditutup dapat menahan status capturing.
+- **Implementasi**:
+  1. **Pemeriksaan Streaming Nyata via `IMFSensorProcessActivity`**:
+     - Mendefinisikan antarmuka COM `IMFSensorActivityReport` (`3E8C4BE1-A8C2-4528-90DE-2851BDE5FEAD`) dan `IMFSensorProcessActivity` (`39DC7F4A-B141-4719-813C-A7F46162A2B8`).
+     - Mengiterasi seluruh sensor report dan memanggil `actReport.GetProcessActivity(p, out procAct)`.
+     - Memverifikasi status streaming nyata melalui `procAct.GetStreamingState(out bool isStreaming)`. Jika `isStreaming == false` (misal Camo Studio berjalan di latar tanpa membuka preview/stream), kamera dianggap tidak aktif.
+  2. **Pembersihan Logika Deteksi Mikrofon**:
+     - Menghapus pengecekan `MasterPeakValue > 0.005f` sepenuhnya. Suara speaker laptop dan kebisingan sekitar tidak akan pernah lagi memicu indikator privasi.
+     - Memastikan hanya sesi audio aktif dengan PID valid (`pid > 0`, `!s.IsSystemSoundsSession`) dan proses yang benar-benar masih berjalan (`!p.HasExited`) yang dianggap sebagai rekaman mikrofon aktif.
+  3. **Penyaringan Crash Registry Stale Entry**:
+     - Menambahkan validasi batas waktu (maksimal 12 jam) pada `LastUsedTimeStart` di `ConsentStore` Windows untuk mencegah status usang dari aplikasi UWP yang mengalami crash.
+  4. **Peningkatan UX Tooltip**:
+     - Menambahkan tooltip informatif pada dot oranye ("Mikrofon sedang digunakan oleh aplikasi") dan dot hijau ("Kamera sedang digunakan oleh aplikasi") serta mengaktifkan `IsHitTestVisible="True"` pada header expanded agar pengguna dapat mengarahkan kursor untuk melihat status persis.
+- **Hasil**:
+  Dot privasi kamera dan mikrofon kini 100% akurat. Dot mati sepenuhnya saat tidak ada aplikasi yang mengakses kamera/mikrofon, dan hanya menyala saat ada aplikasi yang benar-benar melakukan streaming audio/video (misal Discord call, Zoom, Meet, atau perekam suara).
+
+---
+
+### Keputusan 105: Penambahan Tombol Hide Notch Manual (Mode Slim Bar) di Samping Tombol Pin
+
+- **Tanggal**: 2026-11-25
+- **Konteks**:
+  Pengguna menginginkan tombol khusus di header expanded notch — tepat di samping tombol Pin — untuk menyembunyikan notch secara manual dengan perilaku yang persis sama seperti *hide fullscreen* (menyusut menjadi Slim Bar tipis di tepi atas layar).
+- **Implementasi**:
+  1. **State `IsManualSlimHidden` & Command `ToggleManualSlimHideCommand` (`NotchViewModel.cs`)**:
+     - Menambahkan properti observasi `IsManualSlimHidden` beserta `HideToolTipText` (`Hide.ToSlim` / `Hide.Restore` pada `LocalizationService.cs`).
+     - Menggeneralisasi `IsNotchVisible` dan `IsSlimBarVisible` agar mencakup kondisi `IsManualSlimHidden` bersama `IsFullscreenActive`, serta mengizinkan *hover-peek* 3 detik (`OpenSlimBarPeek()`) untuk bekerja mulus saat mode hide manual aktif.
+     - Saat tombol ditekan di desktop: melepas status pin (`IsLockedExpanded = false`), menutup panel (`Collapse()`), mengaktifkan `IsManualSlimHidden = true`, dan memicu `VisibilityChanged` sehingga notch langsung bermorph menjadi garis tipis `FullscreenSlimBarHost` (220×6 px, 100% click-through).
+     - Saat sedang *peek* dari mode *fullscreen*, menekan tombol ini langsung menyingkirkan peek dan mengembalikan slim bar fullscreen tanpa mengunci status setelah fullscreen berakhir.
+     - Saat sudah dalam `IsManualSlimHidden == true` dan pengguna membuka panel via hover-peek lalu menekan tombol lagi, status dikembalikan ke mode normal permanen (`IsManualSlimHidden = false`). Akses Tampilkan/Sembunyikan via System Tray juga membersihkan `IsManualSlimHidden`.
+     - Menambahkan penjagaan pada `OnMouseEnter()` dan `Expand()` agar kursor yang masih berada di area header sesaat setelah tombol ditekan tidak menghentikan animasi collapse/morph.
+  2. **Tombol Header XAML (`NotchWindow.xaml`)**:
+     - Menempatkan `HideNotchButton` tepat di sebelah kanan tombol `Pin` dengan ikon vektor `Path` mata tercoret (*eye-off*) saat normal, dan berubah menjadi ikon mata penuh berwarna aksen (`AccentLightBrush`) saat mode *manual hide* aktif.
+- **Hasil**:
+  Pengguna kini dapat langsung menyembunyikan notch kapan saja lewat satu klik di samping tombol Pin. Notch mengecil halus menjadi garis tipis di atas layar persis seperti perilaku *hide fullscreen*, bisa diintip (*hover-peek* 3 detik) atau dikembalikan lagi menjadi permanen dengan mudah.
+
+---
+
+### Keputusan 106: Hover-Peek Instan pada Hide Manual, Watchdog MouseLeave Akurat, & Perbaikan Perilaku Unpin
+
+- **Tanggal**: 2026-11-25
+- **Konteks**:
+  Setelah menguji tombol Hide manual (`IsManualSlimHidden`) dan tombol Pin, pengguna melaporkan tiga masalah/kebutuhan UX:
+  1. Saat Hide manual aktif di desktop (`!IsFullscreenActive`), tidak perlu menunggu 3 detik ketika mengarahkan kursor ke slim bar (sedangkan saat fullscreen asli tetap harus menunggu 3 detik agar tidak mengganggu game/video).
+  2. Setelah tombol Hide dinyalakan lalu dimatikan kembali (`IsManualSlimHidden` kembali `false`), notch kadang macet tetap terbuka meskipun kursor sudah dipindahkan ke luar area notch.
+  3. Saat tombol **Pin** dimatikan (`IsLockedExpanded = false`), notch langsung menutup diri seketika padahal kursor masih berada di dalam area notch (baru saja mengklik tombol Pin). Seharusnya notch tetap terbuka sampai pengguna menggerakkan kursor keluar dari notch.
+- **Akar Masalah (Root Cause)**:
+  1. `SlimBarHoverTimer_Tick` memaksa jeda `SlimBarHoverOpenMs` (`3000 ms`) untuk semua kondisi slim bar tanpa membedakan hide manual desktop vs fullscreen.
+  2. `IsCursorOverNotch()` memeriksa kotak pembatas persegi `PillContainer` (termasuk ruang kosong di sudut lengkung 22px dan margin ear), sehingga saat kursor keluar melewati tepi sudut lengkung, `PillBorder_MouseLeave` menganggap kursor masih di dalam dan mengabaikan event leave. Setelah itu jika kursor langsung masuk ke window aplikasi lain di luar bounds, `WM_NCHITTEST` juga tidak lagi diterima oleh `NotchWindow`, membuat notch macet terbuka. Selain itu, `UpdateWindowVisibility()` memanggil `AnimateVisibility(true)` berulang pada notch yang sudah terbuka saat Hide dimatikan.
+  3. `OnIsLockedExpandedChanged(false)` langsung memanggil `ScheduleDelayedCollapse()` tanpa memeriksa apakah kursor masih berada di dalam notch.
+- **Implementasi**:
+  1. **Hover-Peek Instan untuk Hide Manual (`SlimBarHoverTimer_Tick` di `NotchWindow.xaml.cs`)**:
+     - Bila `ViewModel.IsManualSlimHidden && !ViewModel.IsFullscreenActive`, hover pada slim bar langsung memanggil `ViewModel.OpenSlimBarPeek()` seketika tanpa menunggu 3 detik.
+     - Saat `ViewModel.IsFullscreenActive == true`, jeda 3 detik beserta animasi pengisian skala tetap berlaku penuh.
+  2. **Deteksi Batas Kurva Akurat & Expanded Hover Watchdog (`NotchWindow.xaml.cs`)**:
+     - Memperbarui `IsCursorOverNotch()` agar mengecek kurva aktual `NotchBackgroundPath.Data.FillContains(...)` serta batas elemen sub-notch dan kartu notifikasi yang aktif, sehingga tidak salah menganggap ruang kosong di luar sudut lengkung sebagai bagian dalam notch.
+     - Menambahkan `_expandedHoverWatchdog` (150ms, hanya aktif saat `CurrentState == NotchState.Expanded` atau `IsSlimBarPeekActive`) untuk memverifikasi posisi fisik kursor secara berkala melalui `GetCursorPos` tanpa me-reset timer collapse yang sudah berjalan (`IsCollapsePending` / `IsSlimBarPeekClosePending`).
+     - Melewati pemanggilan ulang `AnimateVisibility(true)` pada `UpdateWindowVisibility()` jika notch sudah dalam keadaan terlihat saat keluar dari peek/hide manual.
+  3. **Perbaikan Unpin (`IsCursorOverNotchCheck` pada `NotchViewModel.cs`)**:
+     - Pada `OnIsLockedExpandedChanged(false)`, mengevaluasi `IsCursorOverNotchCheck?.Invoke()`. Jika kursor masih berada di dalam notch, timer collapse dibatalkan agar notch tetap terbuka; notch baru akan menutup saat kursor digerakkan keluar dari area notch.
+  4. **Toggle Hide Tetap Terbuka Hingga Kursor Keluar (`ToggleManualSlimHide` di `NotchViewModel.cs`)**:
+     - Saat pengguna menekan tombol Hide sementara kursor berada di dalam notch terbuka (`CurrentState == NotchState.Expanded`), `ToggleManualSlimHide()` menyalakan `IsManualSlimHidden = true` + `IsSlimBarPeekActive = true` (ikon mata berubah menjadi warna aksen), melepas pin jika aktif, namun **membiarkan notch tetap terbuka**. Begitu kursor digerakkan keluar dari notch, `OnMouseLeave()` menutup panel dan melakukan morph mulus ke *Slim Bar*.
+     - Menambahkan token guard (`token.IsCancellationRequested`) sebelum membersihkan CTS di `ScheduleDelayedCollapse` dan `ScheduleSlimBarPeekClose`.
+- **Hasil**:
+  Mengintip slim bar saat hide manual terasa instan dan responsif (sementara mode fullscreen tetap aman menunggu 3 detik), menekan Hide atau mematikan Pin membiarkan notch tetap terbuka dengan nyaman sampai kursor keluar, dan notch tidak pernah lagi macet terbuka setelah toggle Hide.
+
+---
+
+### Keputusan 107: Pop-Out Notifikasi Otomatis Saat Mode Hide Manual (Slim Bar) Aktif
+
+- **Tanggal**: 2026-11-25
+- **Konteks**:
+  Pengguna melaporkan bahwa ketika toggle Hide manual (`IsManualSlimHidden`) dinyalakan sehingga notch menyusut menjadi Slim Bar, notifikasi yang masuk tidak terlihat di layar karena `PillContainer` sedang disembunyikan. Pengguna menginginkan agar notifikasi tetap bisa tampil meskipun notch sedang dalam mode Hide manual.
+- **Implementasi**:
+  1. **Properti `IsManualHideNotificationPeek` (`NotchViewModel.cs`)**:
+     - Menambahkan kondisi `IsManualHideNotificationPeek => IsManualSlimHidden && !IsFullscreenActive && (IsNotificationDropdownActive || (Notification?.IsWaterAlarm == true));`.
+     - Menyertakan kondisi ini ke dalam `IsNotchVisible` dan `IsSlimBarVisible`:
+       - Saat mode Hide manual aktif di desktop dan notifikasi masuk (`IsNotificationDropdownActive == true` atau alarm minum aktif), `IsSlimBarVisible` seketika menjadi `false` dan `IsNotchVisible` menjadi `true`.
+       - Saat aplikasi fullscreen aktif (`IsFullscreenActive == true`), notifikasi tetap tidak menyela layar agar fokus game/video tetap terjaga.
+  2. **Sinkronisasi `VisibilityChanged` Pada Kemunculan & Penutupan Notifikasi**:
+     - Menambahkan `VisibilityChanged?.Invoke()` di `OnIsNotificationDropdownActiveChanged`, `ShowWaterAlarmNotification`, dan `DismissWaterAlarmCore` saat `IsManualSlimHidden && !IsFullscreenActive && !IsSlimBarPeekActive`.
+     - Saat notifikasi muncul, Slim Bar melakukan morph keluar menjadi pulau notifikasi (`420×100`); begitu timer notifikasi habis atau diklik pengguna (antrean kosong), notch otomatis melakukan morph kembali menjadi Slim Bar tipis.
+  3. **Integrasi Ekspansi Dari Notifikasi (`Expand`)**:
+     - Jika pengguna mengklik/menghover bagian atas kartu notifikasi tersebut untuk membuka notch penuh saat masih dalam mode Hide manual, `IsSlimBarPeekActive = true` otomatis diaktifkan sehingga notch tetap terbuka sampai kursor keluar.
+- **Hasil**:
+  Meskipun notch disembunyikan menjadi garis tipis lewat tombol Hide, seluruh notifikasi (Windows toast seperti WhatsApp/Discord, pengingat sholat, timer/alarm, download selesai, clipboard, dll.) tetap muncul elegan lalu kembali menyusut menjadi Slim Bar dengan sendirinya.
+
+---
+
+### Keputusan 108: Perapian Tata Letak & Perbaikan Bug Menyeluruh Tab Screen Time & Posture Monitor
+
+- **Tanggal**: 2026-11-25
+- **Konteks**:
+  Pengguna meminta untuk merapikan tampilan tab Screen Time (`SlideScreenTimeCard` + `SittingCardContainer`) serta memeriksa dan memperbaiki seluruh kode terkait bagian Screen Time dan monitor duduk.
+- **Temuan Audit Kode & Visual**:
+  1. **Nama Aplikasi Pergi ke Tengah (`NotchWindow.xaml`)**: Pada Bento kanan *Most Used Apps*, `<TextBlock MaxWidth="150" />` di dalam `StackPanel` tanpa `HorizontalAlignment="Left"` menyebabkan kotak teks 150px terpusat di kolom `*` sehingga nama aplikasi bergeser menjauh dari titik kategori dan tepi kiri progress bar. Progress bar juga dibatasi `Width="130"` statis.
+  2. **Skala Satuan Histogram 24-Jam Keliru (`ScreenTimeViewModel.cs` & `NotchWindow.xaml`)**: ViewModel menghasilkan `HeightPercent` `0..100` (persen), tetapi XAML mengikat langsung ke `Height` (piksel) dengan `MaxHeight="32"`. Akibatnya setiap jam dengan durasi $\ge 32\%$ dari jam tersibuk terjepit rata di tinggi 32px, disertai ruang kosong di atas grafik dan label jam (`06`, `18`) memakai `Margin="52,0,0,0"` statis yang meleset dari kolom `UniformGrid`.
+  3. **Judul Ganda `"SCREEN TIME"` & Teks Hardcoded (`LocalizationService.cs` & `NotchWindow.xaml`)**: Key `Sedentary.Title` bahasa Inggris bernilai `"SCREEN TIME"`, menggandakan judul kartu kiri atas. Kartu postur juga memuat string hardcoded bahasa Inggris (`"Standard: 45m"`, `"Stand"`, `"Snooze 2m"`).
+  4. **Command Tombol Posture Monitor Mati (`NotchWindow.xaml` & `WaterTrackerViewModel.cs`)**: Tombol *Stand* terikat ke `Water.ConfirmStoodUpCommand` (tidak ada; seharusnya `Water.ResetSittingCommand`) dan tombol *Snooze 2m* terikat ke `Water.SnoozeAlarmCommand` (tidak ada; seharusnya `Water.SnoozeCommand`), sehingga kedua tombol tidak bereaksi saat ditekan.
+  5. **Sitting Time Terhenti Saat Water Reminder Mati (`WaterTrackerService.cs` & `NotchViewModel.cs`)**: `ApplySettings` memanggil `_waterService.StopReminder()` yang membunuh `_tickerTimer`, sehingga seluruh penghitung duduk dan statistik postur pada tab Screen Time membeku di `0m` / `45:00` apabila pengingat minum air dimatikan.
+  6. **Race Condition Thread & Beban UI (`ScreenTimeService.cs` & `ScreenTimeViewModel.cs`)**: `GetTodayData()` mengembalikan referensi kamus `Apps`/`Categories` langsung ke UI thread sementara timer 1 detik memodifikasinya di latar belakang; UI juga melakukan `Refresh()` tiap detik meskipun notch sedang tertutup atau berada di tab lain.
+- **Implementasi & Perbaikan**:
+  1. **Perbaikan Visual & Binding `SlideScreenTimeCard` (`NotchWindow.xaml`)**:
+     - Memberi `HorizontalAlignment="Left"` dan lebar responsif kolom pada nama aplikasi *Most Used Apps*, serta mengganti progress bar tetap dengan `ProgressBar` responsif penuh (`Minimum="0" Maximum="100" Value="{Binding PercentOfTotal}"`) dan tooltip kategori terlokalisasi (`AppTooltip`).
+     - Mengikat tinggi batang histogram ke `BarHeight` (skala proporsional hingga `42.0` DIPs tanpa clamp `32px`), menyatukan label jam `00`, `06`, `12`, `18`, `23` ke dalam `UniformGrid` 24 kolom agar sejajar presisi tepat di bawah batang jam terkait, serta mengganti ikon kosong `&#x23F3;` dengan vektor murni.
+     - Memperbaiki command tombol **Stand** (`Water.ResetSittingCommand`) dan **Snooze 2m** (`Water.SnoozeCommand`), melokalisasi seluruh label/tooltip, menyeimbangkan baris kanan kartu postur (`Next break` + badge countdown `45:00`), memperjelas pembatas vertikal (`#26263A`), dan menampilkan interval target dinamis (`Water.StandardIntervalText`).
+  2. **Perbaikan Backend & Siklus Hidup (`ScreenTimeService.cs`, `ScreenTimeViewModel.cs`, `WaterTrackerService.cs`, `NotchViewModel.cs`)**:
+     - Mengembalikan salinan snapshot aman (`CloneDayData`) pada `ScreenTimeService.GetTodayData()` / `GetDayData()` di dalam `lock (_lock)`, memperbaiki aritmetika wraparound `unchecked(win32Ticks - lii.dwTime)`, menghapus duplikasi logika kategori dengan memanggil `ScreenTimeCategories.Categorize`, serta menambahkan guard `_isDisposed` dan reset `_lastActiveExe` saat nonaktif/clear history.
+     - Menambahkan `ScreenTimeViewModel.IsUiActive` yang dikelola oleh `NotchViewModel.UpdateSlideTelemetryState()` & `Collapse()` agar pembaruan koleksi UI 1-detik hanya berjalan saat tab Screen Time terbuka.
+     - Memisahkan flag `_isReminderEnabled` pada `WaterTrackerService` sehingga `StopReminder()` menonaktifkan pop-up alarm air tanpa mematikan pelacakan durasi duduk untuk kartu Posture Monitor, menambahkan sinkronisasi `UpdateInterval` di `ApplySettings`, lock `_stateLock`, serta `Dispose()` di `NotchViewModel.Shutdown()`.
+  3. **Lokalisasi (`LocalizationService.cs`)**:
+     - Mengubah EN `Sedentary.Title` menjadi `"POSTURE MONITOR"`, memperjelas `Sedentary.StatsDesc`, serta menambahkan `Sedentary.StandardTarget`, `Sedentary.NextBreak`, `Sedentary.StandButton`, `Sedentary.StandTooltip`, `Sedentary.SnoozeButton`, dan `Sedentary.SnoozeTooltip` (EN & ID).
+- **Hasil**:
+  Seluruh tampilan tab Screen Time dan Posture Monitor kini simetris, rata kiri/sejajar rapi, histogram 24-jam akurat secara visual tanpa kliping 32px, kedua tombol *Stand* dan *Snooze 2m* berfungsi normal, pelacakan duduk tetap berjalan konsisten, dan aman dari race condition antar-thread.
+
+---
+
+### Keputusan 109: Perbaikan Sinkronisasi Tema/Material & Transformasi Material Acrylic Menjadi Liquid Glass
+
+- **Tanggal**: 2026-11-25
+- **Konteks**:
+  Pengguna melaporkan bahwa perubahan tema/material latar belakang notch tidak tampak ter-apply, dan meminta agar material **Acrylic** dibuat bergaya **Liquid Glass** (kaca cair transparan dengan kilau tepi spekular).
+- **Akar Masalah (*Root Cause*)**:
+  1. Pada `ThemeManager.CreateGradientBrushes`, ketika `IsAccentColorEnabled == false` (pengaturan default/minimalis pengguna), blok kondisi tersebut mengabaikan transparansi material kaca (`Acrylic` diisi hitam pekat alpha `215–255`, `TintedGlass` alpha `235–255`) dan memaksa `NotchStrokeBrush` bernilai transparan total (`Alpha = 0`). Akibatnya ketiga material (`OLED`, `TintedGlass`, `Acrylic`) tampak nyaris identik (hitam pekat tanpa bingkai kaca).
+  2. `App.xaml.cs` memanggil `ApplyAccentColor()` pada startup sebelum menyinkronkan `IsAccentColorEnabled`, `CustomAccentColorHex`, dan `CurrentMaterial` dari `settings.json`; `NotchViewModel.ApplySettings()` juga tidak menyinkronkan `ThemeManager.CustomAccentColorHex`.
+  3. Kartu Bento internal di dalam slide tidak menggunakan `NotchCardBackgroundBrush` / `NotchCardBorderBrush`, sehingga menutupi efek tembus pandang latar belakang notch.
+- **Implementasi**:
+  1. **Sinkronisasi Startup & Pengaturan (`App.xaml.cs`, `NotchViewModel.cs`)**:
+     - Menyinkronkan `IsAccentColorEnabled`, `CustomAccentColorHex`, dan `CurrentMaterial` sebelum `ApplyAccentColor()` dijalankan di awal maupun saat `ApplySettings()`.
+  2. **Efek Liquid Glass pada Material `Acrylic` (`ThemeManager.cs`, `App.xaml`, `NotchWindow.xaml`, `NotchWindow.xaml.cs`)**:
+     - Memberi tubuh kristal transparan pada `Acrylic` (`Alpha 128–178`, baik saat aksen mati maupun menyala) dan bingkai refraksi spekular putih es (`NotchStrokeBrush`, `Alpha 185–195` di bagian atas dan pantulan di bagian bawah).
+     - Menambahkan layer kilau kaca diagonal `NotchLiquidGlassSheenPath` yang mengikuti geometri kurva `NotchBackgroundPath.Data` secara dinamis dengan opasitas dikontrol `NotchLiquidGlassSheenOpacity` (`1.0` untuk Acrylic, `0.30` untuk TintedGlass, `0.0` untuk OLED).
+     - Menambahkan `NotchCardBorderBrush` serta memperbarui `NotchCardBackgroundBrush` agar kartu Bento di dalam notch (`SlideScreenTimeCard`, `SittingCardContainer`) ikut menjadi kaca frosted transparan saat mode `Acrylic` / `TintedGlass`.
+  3. **Pembaruan Label Pengaturan (`SettingsViewModel.cs`, `LocalizationService.cs`)**:
+     - Mengganti label opsi menjadi `"Liquid Glass (Acrylic)"` dengan kompatibilitas penuh terhadap nilai `"Acrylic"` / `"Fluent Mica / Acrylic"` yang tersimpan.
+- **Hasil**:
+  Seluruh material (`True OLED Black`, `Tinted Glass`, `Liquid Glass (Acrylic)`) dan warna aksen kini langsung terlihat nyata baik saat aksen aktif maupun nonaktif, dan mode `Acrylic` menampilkan estetika Liquid Glass dengan transparansi kristal, pantulan kilau diagonal, serta bingkai kaca spekular yang tajam.

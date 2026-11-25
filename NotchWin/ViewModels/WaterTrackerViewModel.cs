@@ -66,6 +66,9 @@ namespace NotchWin.ViewModels
         private string _breaksCountTodayText = "0x";
 
         [ObservableProperty]
+        private string _standardIntervalText = "Target: 45m";
+
+        [ObservableProperty]
         private string _statusMessage = "Stay hydrated while staying focused 💧";
 
         public bool CanUndo => _waterService.State.LastAddedMl > 0;
@@ -142,6 +145,7 @@ namespace NotchWin.ViewModels
 
             SittingProgress = Math.Clamp(sitting.TotalMinutes / interval, 0.0, 1.0);
             IsUserIdle = _waterService.IsUserIdle;
+            StandardIntervalText = LocalizationService.Instance.Get("Sedentary.StandardTarget", interval);
 
             IsAlarmActive = _waterService.IsAlarmActive;
             if (IsAlarmActive)
@@ -153,6 +157,11 @@ namespace NotchWin.ViewModels
             {
                 StatusMessage = LocalizationService.Instance["Water.StatusStandby"];
                 SittingStatusText = LocalizationService.Instance["Sedentary.StatusStandby"];
+            }
+            else if (sitting.TotalMinutes >= interval)
+            {
+                StatusMessage = LocalizationService.Instance["Water.StatusWarning"];
+                SittingStatusText = LocalizationService.Instance["Sedentary.StatusOverdue"];
             }
             else if (sitting.TotalMinutes >= interval * 0.75)
             {

@@ -62,6 +62,21 @@ namespace NotchWin.ViewModels
             _activeFontSize = _baseFontSize + 2.5;
             _useBold = useBold;
 
+            // Responsive font sizing for long lyrics to ensure full visibility without truncation
+            if (!string.IsNullOrEmpty(Text))
+            {
+                if (Text.Length > 44)
+                {
+                    _activeFontSize = Math.Max(10.5, _baseFontSize - 1.0);
+                    _baseFontSize = Math.Max(9.5, _baseFontSize - 2.0);
+                }
+                else if (Text.Length > 34)
+                {
+                    _activeFontSize = Math.Max(12.0, _baseFontSize + 0.5);
+                    _baseFontSize = Math.Max(10.5, _baseFontSize - 1.0);
+                }
+            }
+
             FontSize = IsActive ? _activeFontSize : _baseFontSize;
             FontWeight = IsActive && _useBold ? FontWeights.Bold : FontWeights.Normal;
         }

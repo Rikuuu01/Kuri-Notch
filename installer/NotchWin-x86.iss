@@ -2,8 +2,8 @@
 ; Supports Windows 10 (32-bit and 64-bit via WoW64)
 
 #define MyAppName "Kuri"
-#define MyAppVersion "1.2"
-#define MyAppVersionInfo "1.2.0.0"
+#define MyAppVersion "1.3"
+#define MyAppVersionInfo "1.3.0.0"
 #define MyAppPublisher "Dynamic Notch Project"
 #define MyAppURL "https://github.com/notchwin"
 #define MyAppExeName "NotchWin.exe"

@@ -103,25 +103,44 @@ Kelompok toggle berikut lahir bersama fitur-fitur v1.1+ dan disimpan di `setting
 - **Notch Outline Glow** (tab Notch/Tampilan — [08-timer-dan-stopwatch.md](08-timer-dan-stopwatch.md), Keputusan 78):
   - `IsNotchTimerGlowEnabled` (default `true`): garis cahaya sisa waktu timer/pomodoro & detik stopwatch di outline notch tertutup.
   - `IsNotchAlertGlowEnabled` (default `true`): cahaya berjalan keliling outline saat alert tampil (maks 20 detik).
-- **Tampilan Lirik & Spicy Lyrics** (tab Musik — [02-music-player-dan-lirik.md](02-music-player-dan-lirik.md)):
+- **Tampilan Lirik & Provider (tab Musik — [02-music-player-dan-lirik.md](02-music-player-dan-lirik.md)):**
   - `IsLyricsKaraokeEnabled` (default `true`) — isian progresif karaoke pada pill collapsed & baris aktif panel.
   - `IsSyllableSyncEnabled` (default `true`) — sinkronisasi suku kata presisi kata-demi-kata via Spicy Lyrics & TTML.
+  - `IsLrcRedEnabled` (default `true`) — provider lirik sinkron Apple Music TTML via basis data terbuka lrc.red.
   - `SpicyLyricsApiKey` (default `""`) — token pengembang dari `developers.spicylyrics.org` untuk pencarian tanpa batas pustaka lagu lengkap.
   - `LyricsBold` (default `true`) — baris aktif tebal.
   - `LyricsTextSize` (slider `10–14`, default `12.0`) — ukuran basis baris lirik; baris aktif = basis + 2.5.
+- **Notifikasi Windows (tab Sistem & Perilaku — [16-notifikasi-windows-dan-hud.md](16-notifikasi-windows-dan-hud.md)):**
+  - `IsWindowsNotificationSyncEnabled` (default `true`) — sinkronisasi notifikasi toast native Windows (WhatsApp, Telegram, Browser) via intersepsi SQLite `wpndatabase.db`.
+  - `NotificationDurationSeconds` (slider `2–10`, default `3`) — durasi tampilnya banner pulau notifikasi.
 - **Shelf & Phone Share** (tab khusus — [09-shelf-dan-dock.md](09-shelf-dan-dock.md) & [14-phone-share.md](14-phone-share.md)):
   - `ShelfRemoveAfterDrag` (default `false`): item shelf otomatis terhapus dari daftar setelah berhasil di-drag keluar dari notch.
   - `IsPhoneShareEnabled` (default `true`): menampilkan tombol `HP` di slide Shelf; mematikan toggle saat server berjalan langsung memanggil `PhoneShare.Stop()`.
   - `PhoneFolder` (default kosong = `<Downloads>\Kuri Shelf`): folder tujuan file yang diunggah dari HP, dipilih via dialog `FolderBrowser` (`BrowsePhoneFolderCommand`).
+- **Pet Companion** (tab Pet Companion — [11-mochi-notch-pet.md](11-mochi-notch-pet.md)):
+  - `IsPetEnabled` (default `true`): menyalakan/mematikan maskot interaktif di notch.
+  - `PetStyle` (default `PastelMochi`): pilihan 4 maskot vektor murni (`PastelMochi`, `AstroMascot`, `EggMascot`, `NotchEyes`).
 - **Penjagaan registrasi**: setiap properti baru `AppSettings` WAJIB didaftarkan pada konstruksi `new AppSettings { ... }` di `SettingsViewModel.SaveCurrentSettingsAsync()` dan `ResetToDefaultsAsync()`; tanpa itu nilainya hilang diam-diam saat save/reset (kesalahan yang sudah tiga kali terjadi di proyek ini).
 
 ### 11. Pengaturan Kustomisasi Modul Navbar (`NavbarModules` - Keputusan 97)
-Kategori baru **🧭 Modul Navbar** di sidebar Pengaturan memungkinkan pengguna mengatur susunan tata letak menu notch mirip fitur kustomisasi pada aplikasi Poni:
-- **10 Modul Standar**: Home (`home`), Control Center (`control`), Media Player (`media`), Weather (`weather`), Prayer Times (`prayer`), Water & Posture (`water`), Quick Notes (`note`), Clipboard History (`clipboard`), Timer & Stopwatch (`timer`), Drop Shelf & Phone Share (`shelf`).
+Kategori **🧭 Modul Navbar** di sidebar Pengaturan memungkinkan pengguna mengatur susunan tata letak menu notch mirip fitur kustomisasi pada aplikasi Poni:
+- **11 Modul Standar**: Home (`home`), Control Center (`control`), Media Player (`media`), Weather (`weather`), Prayer Times (`prayer`), Water & Posture (`water`), Quick Notes & Tasks (`note`), Clipboard History (`clipboard`), Timer & Stopwatch (`timer`), Drop Shelf & Phone Share (`shelf`), dan Screen Time (`screentime`).
 - **Pemindahan Urutan (Reorder)**: Tombol panah stepper `▲` dan `▼` di sebelah kiri kartu modul untuk memindahkan posisi modul ke kiri atau ke kanan pada navbar notch.
 - **Aktifkan / Nonaktifkan (Enable / Disable)**: Sakelar toggle `FluentToggleSwitch` untuk menyembunyikan atau menampilkan tab modul. Modul `home` (Beranda/Dashboard) terkunci permanen (`CanDisable = false`) sebagai jangkar utama.
 - **Tombol Pulihkan Urutan**: Tombol `↺ Pulihkan Urutan` di pojok kanan atas untuk mengembalikan susunan dan status modul ke urutan bawaan pabrikan dalam 1-klik.
 - **Sinkronisasi Dinamis**: Perubahan modul disimpan secara persisten di `AppSettings.NavbarModules` dan langsung diadaptasi oleh `NotchWindow.SyncNavbarModuleConfiguration()` secara real-time tanpa jeda atau perlu me-restart aplikasi.
+
+### 12. Pengaturan Screen Time (Waktu Layar)
+Terletak di bawah daftar Modul Navbar pada Kategori 6:
+- **Aktifkan Waktu Layar (`IsScreenTimeEnabled`)**: Menyalakan atau mematikan pemantauan aplikasi latar depan di background.
+- **Ambang Batas Waktu Diam (`ScreenTimeIdleSeconds`)**: Slider penyesuaian toleransi kursor/keyboard diam (30 detik hingga 300 detik, default 120 detik) sebelum waktu layar otomatis dikecualikan (*idle exclusion*).
+- **Bersihkan Riwayat Waktu Layar (`ClearScreenTimeHistoryCommand`)**: Menghapus isi berkas `%APPDATA%\NotchWin\screentime.json`.
+
+### 13. Pemeriksaan Pembaruan (OTA Updates)
+Kategori ke-7 di sidebar Pengaturan:
+- **Pemeriksaan Manual**: Tombol *Check for Updates* untuk memeriksa versi rilis terbaru di GitHub secara seketika.
+- **Changelog Viewer**: Menampilkan ringkasan catatan rilis (*release notes*) versi baru.
+- **Tombol Pembaruan Instan**: Mengunduh dan menerapkan pembaruan secara otomatis (silent update).
 
 ---
 

@@ -19,10 +19,11 @@ Modul ini menangani integrasi pemutar musik sistem Windows (GSMTC), lirik lagu k
   - [LyricsCandidateViewModel.cs](../NotchWin/ViewModels/LyricsCandidateViewModel.cs) (baris popup pemilih versi)
   - [NotchViewModel.cs](../NotchWin/ViewModels/NotchViewModel.cs)
 - **Services & Models**:
-  - [MediaService.cs](../NotchWin/Services/MediaService.cs) (GSMTC WinRT listener)
-  - [LyricsService.cs](../NotchWin/Services/LyricsService.cs) (lrclib HTTP client, LRC parser & candidate aggregator)
+  - [MediaService.cs](../NotchWin/Services/MediaService.cs) (GSMTC WinRT listener & Win32 VK_MEDIA key fallback)
+  - [LyricsService.cs](../NotchWin/Services/LyricsService.cs) (Multi-provider aggregator & candidate scorer)
+  - [ILrcRedLyricsService.cs](../NotchWin/Services/ILrcRedLyricsService.cs) & [LrcRedLyricsService.cs](../NotchWin/Services/LrcRedLyricsService.cs) (Provider lrc.red Apple Music TTML & ISRC resolver)
   - [ITtmlLyricsService.cs](../NotchWin/Services/ITtmlLyricsService.cs) (Kontrak TTML syllable provider)
-  - [TtmlLyricsService.cs](../NotchWin/Services/TtmlLyricsService.cs) (Apple Music TTML XML parser & syllable timing extractor)
+  - [TtmlLyricsService.cs](../NotchWin/Services/TtmlLyricsService.cs) (Spicy Lyrics developer API & mirror parser)
   - [AlbumColorExtractor.cs](../NotchWin/Services/AlbumColorExtractor.cs) (Color quantization album art)
   - [LyricsModel.cs](../NotchWin/Models/LyricsModel.cs)
 - **Converters**:
@@ -45,6 +46,11 @@ Modul ini menangani integrasi pemutar musik sistem Windows (GSMTC), lirik lagu k
   - Ketika lagu di-pause atau berhenti selama ≥ 3 detik, pill notch dalam status collapsed secara otomatis beralih kembali ke mode tanpa media (`WidgetType.Clock`) dengan ukuran ringkas (250px).
   - **Data Pemutar Musik Tetap Ada di Dalam Notch**: Seluruh metadata lagu (`Title`, `Artist`, `Thumbnail`, seekbar `Position`, dan lirik) **tetap dipertahankan di dalam memori**. Saat notch di-expand ke Slide 1 (Sedang Memutar), tampilan pemutar musik tetap utuh dan siap diputar kembali.
   - Saat musik kembali diputar (`IsPlaying = true`), notch collapsed langsung kembali menampilkan mini-player media secara instan.
+- **Responsivitas Ekstrem Kontrol Media (0ms Latency - Keputusan 101)**:
+  - **Optimistic UI State**: Menekan tombol Play/Pause langsung mengubah properti `IsPlaying = !IsPlaying;` di thread UI secara instan tanpa menunggu jeda 300–1000ms dari round-trip event SMTC Windows.
+  - **Non-blocking Concurrent Execution**: Tombol `TogglePlayPauseCommand`, `PreviousCommand`, dan `NextCommand` dikonfigurasi dengan `[RelayCommand(AllowConcurrentExecutions = true)]` sehingga tombol tidak pernah terblokir atau mengabaikan klik cepat pengguna saat IPC berlangsung.
+  - **Fallback Virtual Key Hardware Win32 (`VK_MEDIA_*`)**: Jika sesi SMTC null, tertunda, atau gagal, `MediaService` secara otomatis menyimulasikan tombol multimedia hardware Windows (`VK_MEDIA_PLAY_PAUSE`, `VK_MEDIA_NEXT_TRACK`, `VK_MEDIA_PREV_TRACK`) via `keybd_event`, menjamin media selalu merespons.
+  - **Pembesaran Area Sentuh**: Target klik tombol media berukuran nyaman 32×32 px (Play/Pause 34×34 px) dengan efek hover sirkular halus.
 - Menampilkan visualizer gelombang audio (`MusicVisualizer`) yang bergerak saat musik aktif berputar.
 
 ### 2. Lirik Lagu Sinkron (Karaoke Real-Time)
@@ -83,29 +89,25 @@ Modul ini menangani integrasi pemutar musik sistem Windows (GSMTC), lirik lagu k
   - **Text Size** (`AppSettings.LyricsTextSize`, slider `10–14`, default `12.0`): ukuran baris non-aktif; baris aktif = `base + 2.5`. Diterapkan lewat `LyricsLineViewModel.Configure(baseFontSize, useBold)` yang di-clamp `Math.Clamp(base, 10, 14)` dan langsung menyegarkan seluruh baris yang tampil ( collapsed memakai FontSize 12 SemiBold tetap sesuai desain pill).
   - Semua nilai di auto-save ke `settings.json` dan langsung berlaku tanpa restart.
 
-### 3. Pemilih Versi Lirik (Lyrics Version Picker)
-- **Vektorisasi Glif Dropdown Lirik (Keputusan 75)**: Seluruh glif teks pada tombol pemilih versi lirik (seperti panah dropdown `▾` dan tanda centang kandidat aktif `✓`) digantikan dengan elemen vektor native `Path` WPF untuk mengeliminasi total kesalahan encoding karakter / mojibake.
-- **Latar Belakang**: lrclib sering menyimpan banyak entri untuk satu judul lagu (versi studio, live, remix, album berbeda). Sebelumnya `LyricsService` hanya mengembalikan satu kandidat terbaik sehingga user tidak punya cara mengganti bila pilihan otomatis salah.
-- **Pengumpulan Semua Kandidat (`GetLyricsCandidatesAsync`)**:
-  - `/api/get` exact dan search #1 (`track_name` + `artist_name`) dijalankan **paralel** (`Task.WhenAll`) pada cache miss, sehingga daftar versi terisi tanpa menambah latensi.
-  - Semua hasil dengan skor > 0 di-dedupe berdasarkan `LrcLibDto.Id` (fallback `TrackName|ArtistName|Duration`), diurutkan skor menurun (tie-break: synced dulu), dan dibatasi maksimal 20 entri.
-  - `AutoCandidateId` memakai presedensi lama: exact synced/instrumental → kandidat search skor tertinggi → strategi search #2/#3 (bila perlu) → exact plain. Auto tidak dihitung ulang dari urutan skor agar pemilihan bawaan tidak berubah.
-- **Cache Kandidat v4**: seluruh daftar kandidat disimpan di `%AppData%\NotchWin\LyricsCache\v4-{sha256}.json` (RAM maksimal 20 lagu). File cache versi lama (v1/v2/v3) otomatis ditinggalkan untuk menghindari struktur model kadaluarsa.
-- **Chip `x/y ▾`, Badge Provider & Popup**: di pojok kanan-bawah panel lirik, di samping badge sumber, muncul chip kecil berisi posisi/pilihan (mis. `2/4`) yang hanya tampil bila kandidat > 1 (`HasLyricsCandidateChoices`). Klik membuka popup (`MinWidth="250" MaxWidth="330"`) berisi baris **Auto (terbaik)** dan daftar semua entri valid:
-  - **Judul Lagu & Subtitle**: `TrackName` dan `ArtistName · AlbumName`.
-  - **Lencana Provider**: Badge berlatar warna khusus yang membedakan asal lirik secara visual:
-    - 🟥 **`Spicy Lyrics`**: Background `#33E11D48` dengan teks `#FDA4AF` untuk lirik presisi TTML suku kata.
-    - ◻️ **`LRCLIB`**: Background `#1AFFFFFF` dengan teks `#94A3B8` untuk lirik baris standar LRCLIB.
-  - **Durasi & Tipe**: Durasi (`m:ss`), tag tipe lirik (`SYLLABLE` beraksen ungu/biru, `SYNCED`, `PLAIN`, atau `INSTRUMENTAL`), serta checkmark vektor pada pilihan aktif. Daftar dibungkus `ScrollViewer` dengan gaya resmi [`ModernSlimScrollViewer`](STYLE-SCROLLBAR.md) (`MaxHeight="180"`).
+### 3. Pemilih Versi Lirik In-Place (In-Place Lyrics Version Picker - Keputusan 101)
+- **Perombakan UI In-Place (Tanpa Popup Mengambang)**:
+  - Mengeliminasi elemen popup mengambang (`LyricsCandidatePopup`) yang rawan masalah HWND z-order dan flicker.
+  - Di dalam bingkai `LyricsContainer`, antarmuka bertransisi mulus antara `LyricsDisplayView` (tampilan lirik berjalan) dan `LyricsPickerView` (daftar pemilih kandidat di tempat yang sama):
+    - **Header Picker**: Tombol kembali `[← Lirik]`, teks judul `Pilih Versi Lirik`, dan tombol silang `[✕]`.
+    - **Pilihan Otomatis**: Opsi `Otomatis (terbaik)` dengan centang vektor aksen.
+    - **Daftar Versi**: Setiap entri menampilkan judul, artis, durasi, tag tipe (`SYLLABLE`, `SYNCED`, `PLAIN`), serta **Lencana Provider**:
+      - 🟧 **`lrc.red`**: Background `#33EF4444` dengan teks coral `#FCA5A5` (lirik suku kata Apple Music TTML via ISRC).
+      - 🟥 **`Spicy Lyrics`**: Background `#33E11D48` dengan teks rose `#FDA4AF` (lirik TTML suku kata presisi).
+      - ◻️ **`LRCLIB`**: Background `#1AFFFFFF` dengan teks slate `#94A3B8` (lirik baris standar LRCLIB).
+    - Memilih salah satu kandidat langsung menerapkan lirik dari cache RAM/disk dan seketika kembali ke tampilan lirik berjalan.
+- **Pengumpulan Semua Kandidat Lirik Paralel (`GetLyricsCandidatesAsync`)**:
+  - `LyricsService` menjalankan pencarian paralel (`Task.WhenAll`) ke **Spicy Lyrics**, **lrc.red**, dan **LRCLIB** saat lagu baru diputar.
+  - Seluruh hasil diskor, dideduplikasi, dan dibatasi maksimal 20 entri.
+- **Cache Kandidat v5**: Disimpan di `%AppData%\NotchWin\LyricsCache\v5-{sha256}.json` (RAM maksimal 20 lagu).
 - **Pilihan Persisten Per Lagu (`LyricsSelection.json`)**:
-  - Memilih versi menyimpan pin `Dictionary<string, int>` di `%AppData%\NotchWin\LyricsSelection.json` dengan kunci `Artist:::Title` (pola sama seperti `SongOffsets.json`).
-  - Saat lagu yang sama diputar lagi (termasuk setelah restart), pin dipakai otomatis. Memilih **Auto** menghapus pin.
-  - Bila pin menunjuk entri yang tidak lagi ada di daftar API, sistem fallback ke Auto tanpa menghapus pin.
+  - Memilih versi menyimpan preferensi di `%AppData%\NotchWin\LyricsSelection.json` dengan kunci `Artist:::Title`. Saat lagu yang sama diputar kembali, pilihan versi pengguna langsung diterapkan otomatis.
 - **Ganti Versi Tanpa Network & Reset State**:
-  - Memilih kandidat hanya menerapkan `LyricsResult` yang sudah di-cache: `ApplyLyricsResult()` selalu mereset `LyricsLines`, indeks baris aktif, teks Previous/Active/Upcoming, dan `_baseLrcOffsetMs` (agar offset bawaan versi synced lama tidak terbawa saat pindah ke versi plain).
-  - Offset kalibrasi manual per lagu (`SongOffsets.json`) tetap berlaku lintas versi.
-- **Guard UI**: popup ditutup saat memilih versi, menutup panel lirik, ganti lagu, panel lirik disembunyikan, dan notch collapse. `PillBorder_MouseLeave` tidak men-collapse notch selama popup terbuka; handler `Popup.Closed` mengevaluasi ulang kondisi kursor agar collapse tetap normal setelah klik luar atau memilih versi.
-- **Popup di Atas Panel (Topmost per-HWND)**: window `Popup` WPF adalah HWND terpisah yang tidak ikut dipaksa topmost, sementara window notch di-`SetWindowPos(HWND_TOPMOST)` berkala oleh topmost keeper. Karena itu, saat `Opened` popup mengambil HWND-nya (`PresentationSource.FromVisual(popup.Child)`) dan memanggil `WindowStyleHelper.EnsureTopmost`, lalu keeper meng-assert ulang HWND popup setelah setiap assert notch selama popup terbuka (`_lyricsVersionPopupHwnd`). Tanpa ini, dropdown tertutup piksel opaque panel notch yang diperluas.
+  - Memilih kandidat hanya menerapkan `LyricsResult` yang sudah di-cache tanpa request jaringan ulang. `ApplyLyricsResult()` selalu mereset indeks baris aktif, teks lirik, dan basis offset. Offset kalibrasi manual per lagu (`SongOffsets.json`) tetap berlaku lintas versi.
 
 ### 4. Logika Lirik Aktif vs Tidak Aktif
 - **Tombol Toggle Lirik (`LyricsToggleButton`)**:

@@ -23,6 +23,7 @@
 
     <Window.Resources>
         <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <converters:EqualityToVisibilityConverter x:Key="EqToVis"/>
         <converters:EqualityToBooleanConverter x:Key="EqToBool"/>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
@@ -304,7 +305,7 @@
                                             Margin="0,4,0,4"
                                             Padding="3">
                                         <Border.Effect>
-                                            <DropShadowEffect Color="#000000" BlurRadius="12" ShadowDepth="4" Opacity="0.5"/>
+                                            <DropShadowEffect Color="#000000" BlurRadius="12" ShadowDepth="4" Opacity="0.5" RenderingBias="Performance"/>
                                         </Border.Effect>
                                         <ScrollViewer SnapsToDevicePixels="True" Style="{StaticResource ModernSlimScrollViewer}">
                                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />

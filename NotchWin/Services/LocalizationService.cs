@@ -188,6 +188,10 @@ namespace NotchWin.Services
 
             ["Pin.Unpin"] = "Unpin Notch (auto-collapses on mouse leave)",
 
+            ["Hide.ToSlim"] = "Hide Notch to slim bar",
+
+            ["Hide.Restore"] = "Restore Notch (exit hide mode)",
+
             ["Volume.Mute"] = "Muted",
 
             ["Hud.Volume"] = "Volume",
@@ -443,7 +447,7 @@ namespace NotchWin.Services
 
             ["Water.StatusStandby"] = "Idle - Timer paused 💤",
 
-            ["Sedentary.Title"] = "SCREEN TIME",
+            ["Sedentary.Title"] = "POSTURE MONITOR",
 
             ["Sedentary.SittingTime"] = "Sitting Time",
 
@@ -451,7 +455,7 @@ namespace NotchWin.Services
 
             ["Sedentary.StatsHeader"] = "DAILY ACTIVITY STATS",
 
-            ["Sedentary.StatsDesc"] = "Screen time recorded while active",
+            ["Sedentary.StatsDesc"] = "Active sitting time recorded today",
 
             ["Sedentary.ClickToFlip"] = "Click for daily stats",
 
@@ -464,6 +468,18 @@ namespace NotchWin.Services
             ["Sedentary.StandBreaks"] = "Stand Breaks",
 
             ["Sedentary.BreaksUnit"] = "{0}x Breaks",
+
+            ["Sedentary.StandardTarget"] = "Target: {0}m",
+
+            ["Sedentary.NextBreak"] = "Next break",
+
+            ["Sedentary.StandButton"] = "Stand",
+
+            ["Sedentary.StandTooltip"] = "Confirm you stood up / took a break",
+
+            ["Sedentary.SnoozeButton"] = "Snooze 2m",
+
+            ["Sedentary.SnoozeTooltip"] = "Postpone break reminder for 2 minutes",
 
             ["Sedentary.StatusOptimal"] = "Posture optimal",
 
@@ -712,7 +728,7 @@ namespace NotchWin.Services
 
             ["Settings.NotchMaterialTitle"] = "Notch Background Material",
 
-            ["Settings.NotchMaterialDesc"] = "Choose visual material: True OLED Black, Tinted Glass, or Fluent Mica/Acrylic",
+            ["Settings.NotchMaterialDesc"] = "Choose visual material: True OLED Black, Tinted Glass, or Liquid Glass (Acrylic)",
 
             ["Settings.CustomHexTitle"] = "Custom Accent Color (HEX)",
 
@@ -1087,6 +1103,10 @@ namespace NotchWin.Services
 
             ["Pin.Unpin"] = "Buka Kunci Notch (otomatis mengecil saat mouse keluar)",
 
+            ["Hide.ToSlim"] = "Sembunyikan Notch (mode garis tipis)",
+
+            ["Hide.Restore"] = "Tampilkan Notch Kembali",
+
             ["Volume.Mute"] = "Senyap",
 
             ["Hud.Volume"] = "Volume",
@@ -1342,7 +1362,7 @@ namespace NotchWin.Services
 
             ["Water.StatusStandby"] = "Kursor diam - Timer dijeda 💤",
 
-            ["Sedentary.Title"] = "PENGINGAT DUDUK",
+            ["Sedentary.Title"] = "MONITOR POSTUR",
 
             ["Sedentary.SittingTime"] = "Waktu Duduk",
 
@@ -1350,7 +1370,7 @@ namespace NotchWin.Services
 
             ["Sedentary.StatsHeader"] = "STATISTIK DUDUK HARIAN",
 
-            ["Sedentary.StatsDesc"] = "Lama waktu aktif depan layar",
+            ["Sedentary.StatsDesc"] = "Durasi duduk aktif hari ini",
 
             ["Sedentary.ClickToFlip"] = "Klik untuk statistik harian",
 
@@ -1363,6 +1383,18 @@ namespace NotchWin.Services
             ["Sedentary.StandBreaks"] = "Frekuensi Berdiri",
 
             ["Sedentary.BreaksUnit"] = "{0}x Berdiri",
+
+            ["Sedentary.StandardTarget"] = "Target: {0}m",
+
+            ["Sedentary.NextBreak"] = "Istirahat dlm",
+
+            ["Sedentary.StandButton"] = "Berdiri",
+
+            ["Sedentary.StandTooltip"] = "Konfirmasi sudah berdiri / peregangan",
+
+            ["Sedentary.SnoozeButton"] = "Tunda 2m",
+
+            ["Sedentary.SnoozeTooltip"] = "Tunda pengingat selama 2 menit",
 
             ["Sedentary.StatusOptimal"] = "Postur duduk aman",
 
@@ -1583,7 +1615,7 @@ namespace NotchWin.Services
 
             ["Settings.NotchMaterialTitle"] = "Material Latar Belakang Notch",
 
-            ["Settings.NotchMaterialDesc"] = "Pilih material visual: True OLED Black, Tinted Glass, atau Fluent Mica/Acrylic",
+            ["Settings.NotchMaterialDesc"] = "Pilih material visual: True OLED Black, Tinted Glass, atau Liquid Glass (Acrylic)",
 
             ["Settings.CustomHexTitle"] = "Warna Aksen Kustom (HEX)",
 

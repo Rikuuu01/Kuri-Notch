@@ -237,6 +237,7 @@ public partial class NotchWindow : Window
 	private double _lastAnimatedTargetWidth = double.NaN;
 	private double _lastAnimatedTargetHeight = double.NaN;
 	private double _lastAnimatedTargetRadius = double.NaN;
+	private TextBlock? _collapsedLyricMeasureProbe;
 
 
 
@@ -261,6 +262,7 @@ public partial class NotchWindow : Window
 	private bool _slimBarHoverTriggered;
 	private const int SlimBarHoverOpenMs = 3000;
 	private const int SlimBarHoverExitGraceMs = 240;
+	private readonly DispatcherTimer _expandedHoverWatchdog = new() { Interval = TimeSpan.FromMilliseconds(150) };
 	private const int SlimBarMorphGrowMs = 360;
 	private const int SlimBarMorphTotalMs = 440;
 
@@ -425,6 +427,7 @@ public partial class NotchWindow : Window
 
 
 	private string? _lastPositionedMonitor;
+	private bool _isPositioning;
 
 
 
@@ -537,9 +540,8 @@ public partial class NotchWindow : Window
 
 
 	private bool _isLyricSlotA = true;
-	private bool _collapsedLyricsWidthRetryQueued;
 	// Lebar minimum area lirik di pill; baris yang lebih panjang membuat notch ikut melebar.
-	private const double MinCollapsedLyricTextWidth = 100.0;
+	private const double MinCollapsedLyricTextWidth = 60.0;
 
 
 
@@ -1307,6 +1309,7 @@ public partial class NotchWindow : Window
 		InitializeComponent();
 		_slimBarHoverTimer.Tick += SlimBarHoverTimer_Tick;
 		_notchToSlimMorphDelayTimer.Tick += NotchToSlimMorphDelayTimer_Tick;
+		_expandedHoverWatchdog.Tick += ExpandedHoverWatchdog_Tick;
 
 
 
@@ -1315,6 +1318,7 @@ public partial class NotchWindow : Window
 
 
 		ViewModel = new NotchViewModel();
+		ViewModel.IsCursorOverNotchCheck = IsCursorOverNotch;
 
 		ViewModel.Shelf.Items.CollectionChanged += OnShelfItemsCollectionChanged;
 
@@ -1405,6 +1409,11 @@ public partial class NotchWindow : Window
 
 		};
 
+		ViewModel.CollapsedWidthAdjustmentRequested += (object? _, double targetWidth) =>
+		{
+			Dispatcher.Invoke(() => AnimateCollapsedWidthAdjustment(targetWidth));
+		};
+
 
 
 		ViewModel.WidgetHost.ActiveWidgetChanged += (object? _, WidgetType widgetType) =>
@@ -1488,6 +1497,7 @@ public partial class NotchWindow : Window
 				UpdateWindowVisibility();
 				UpdateDownloadSubNotchVisibility();
 				SyncNotchOutlineFx();
+				SyncExpandedHoverWatchdog();
 
 
 
@@ -1617,45 +1627,16 @@ public partial class NotchWindow : Window
 
 
 
-			if (PrivacyOverlayHost != null)
-
-
-
-
-
-
-
+			if (PrivacyOverlayHost != null && ViewModel.IsPrivacyActive)
 			{
-
-
-
-
-
-
-
 				PrivacyOverlayHost.Visibility = Visibility.Visible;
-
-
-
-
-
-
-
 				PrivacyOverlayHost.Opacity = 1.0;
-
-
-
-
-
-
-
 			}
 
-
-
-
-
-
+			if (CollapsedWidgetsContainer != null)
+			{
+				CollapsedWidgetsContainer.Margin = new Thickness(0);
+			}
 
 			if (ExpandedPrivacyOverlayHost != null)
 
@@ -2118,89 +2099,19 @@ public partial class NotchWindow : Window
 
 
 			if (e.PropertyName == "IsCollapsedLyricsActive")
-
-
-
-
-
-
-
 			{
-
-
-
-
-
-
-
 				Dispatcher.Invoke(() =>
-
-
-
-
-
-
-
 				{
-
-
-
-
-
-
-
-					if (ViewModel.Media.IsCollapsedLyricsActive && !ViewModel.Media.IsActiveLyricInterlude)
-
-
-
-
-
-
-
-					{
-
-
-
-
-
-
-
-						ResetCollapsedLyricText(ViewModel.Media.CollapsedDisplayLyricText, ViewModel.Media.CurrentLyricIndex);
-
-
-
-
-
-
-
-					}
-					else
-					{
-						ViewModel.SetCollapsedLyricsWidthOverride(null);
-					}
-
-
-
-
-
-
-
+					TransitionCollapsedLyrics(ViewModel.Media.IsCollapsedLyricsActive);
 				});
-
-
-
-
-
-
-
 			}
-
-
-
-
-
-
-
+			else if (e.PropertyName == nameof(MediaViewModel.DisplayTitle))
+			{
+				Dispatcher.Invoke(() =>
+				{
+					OnCollapsedTitleChanged();
+				});
+			}
 			else if (e.PropertyName == nameof(MediaViewModel.IsLyricsVersionPickerOpen))
 			{
 				Dispatcher.Invoke(() =>
@@ -2265,6 +2176,9 @@ public partial class NotchWindow : Window
 
 
 		};
+
+		// Initialize initial state of collapsed lyrics / title-artist
+		TransitionCollapsedLyrics(ViewModel.Media.IsCollapsedLyricsActive, immediate: true);
 
 
 
@@ -3427,7 +3341,8 @@ public partial class NotchWindow : Window
 
 		// Transisi slim bar -> notch (peek atau keluar fullscreen) memakai morph
 		// yang sama agar bentuk bar benar-benar tumbuh menjadi badan notch.
-		bool morphToNotch = _isSlimBarMode && ViewModel.IsNotchVisible;
+		bool wasSlimBarMode = _isSlimBarMode;
+		bool morphToNotch = wasSlimBarMode && ViewModel.IsNotchVisible;
 		ExitSlimBarMode(morphToNotch);
 
 		if (morphToNotch)
@@ -3437,7 +3352,7 @@ public partial class NotchWindow : Window
 				SchedulePostMorphHoverCheck();
 			}
 		}
-		else
+		else if (!ViewModel.IsNotchVisible || wasSlimBarMode || !IsPillVisiblyShown() || _isHiding)
 		{
 			AnimateVisibility(ViewModel.IsNotchVisible);
 		}
@@ -4061,6 +3976,13 @@ public partial class NotchWindow : Window
 		}
 
 		_slimBarHoverLastInsideTick = now;
+		if (ViewModel.IsManualSlimHidden && !ViewModel.IsFullscreenActive)
+		{
+			_slimBarHoverTriggered = true;
+			StopSlimBarHover(resetScale: false);
+			ViewModel.OpenSlimBarPeek();
+			return;
+		}
 		if (!_slimBarHoverCharging)
 		{
 			_slimBarHoverCharging = true;
@@ -4212,9 +4134,85 @@ public partial class NotchWindow : Window
 			return false;
 		}
 	}
+	private void SyncExpandedHoverWatchdog()
+	{
+		bool shouldWatch = IsLoaded
+			&& ViewModel != null
+			&& ViewModel.IsNotchVisible
+			&& !ViewModel.IsSlimBarVisible
+			&& (ViewModel.CurrentState == NotchState.Expanded || ViewModel.IsSlimBarPeekActive);
+
+		if (shouldWatch)
+		{
+			if (!_expandedHoverWatchdog.IsEnabled)
+			{
+				_expandedHoverWatchdog.Start();
+			}
+		}
+		else if (_expandedHoverWatchdog.IsEnabled)
+		{
+			_expandedHoverWatchdog.Stop();
+		}
+	}
+
+	private void ExpandedHoverWatchdog_Tick(object? sender, EventArgs e)
+	{
+		if (!IsLoaded || ViewModel == null || !ViewModel.IsNotchVisible || ViewModel.IsSlimBarVisible
+			|| (ViewModel.CurrentState != NotchState.Expanded && !ViewModel.IsSlimBarPeekActive))
+		{
+			_expandedHoverWatchdog.Stop();
+			return;
+		}
+
+		if (ViewModel.IsLockedExpanded
+			|| _isContextMenuOpen
+			|| _wasAutoExpandedByDrag
+			|| ViewModel.IsSliderDragging
+			|| (ViewModel.Volume?.IsDevicePickerOpen ?? false)
+			|| (ViewModel.Media?.IsLyricsVersionPickerOpen ?? false)
+			|| _slimBarMorphToNotchActive
+			|| _notchToSlimMorphActive)
+		{
+			return;
+		}
+
+		if (!IsCursorOverNotch())
+		{
+			bool shouldNotify = _wasCursorInsideNotch
+				|| (!ViewModel.IsCollapsePending && !ViewModel.IsSlimBarPeekClosePending);
+
+			_wasCursorInsideNotch = false;
+
+			if (shouldNotify)
+			{
+				ViewModel.OnMouseLeave();
+			}
+		}
+	}
+
+	private static bool IsPointInsideElement(FrameworkElement? el, NativeMethods.POINT cursor, double pad = 0.0)
+	{
+		if (el == null || !el.IsVisible || el.ActualWidth <= 0.0 || el.ActualHeight <= 0.0)
+		{
+			return false;
+		}
+
+		try
+		{
+			Point topLeft = el.PointToScreen(new Point(-pad, -pad));
+			Point bottomRight = el.PointToScreen(new Point(el.ActualWidth + pad, el.ActualHeight + pad));
+			return cursor.X >= topLeft.X && cursor.X <= bottomRight.X
+				&& cursor.Y >= topLeft.Y && cursor.Y <= bottomRight.Y;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
 	private bool IsCursorOverNotch()
 	{
-		if (PillContainer == null || !PillContainer.IsVisible)
+		if (PillContainer == null || !PillContainer.IsVisible || PillContainer.Opacity < 0.05)
 		{
 			return false;
 		}
@@ -4226,10 +4224,30 @@ public partial class NotchWindow : Window
 
 		try
 		{
-			Point topLeft = PillContainer.PointToScreen(new Point(0.0, 0.0));
-			Point bottomRight = PillContainer.PointToScreen(new Point(PillContainer.ActualWidth, PillContainer.ActualHeight));
-			return cursor.X >= topLeft.X && cursor.X <= bottomRight.X
-				&& cursor.Y >= topLeft.Y && cursor.Y <= bottomRight.Y;
+			if (NotchBackgroundPath?.Data != null && ContentHost != null && ContentHost.IsVisible)
+			{
+				Point bgPt = NotchBackgroundPath.PointFromScreen(new Point(cursor.X, cursor.Y));
+				if (NotchBackgroundPath.Data.FillContains(bgPt, 3.0, ToleranceType.Absolute))
+				{
+					return true;
+				}
+			}
+			else if (IsPointInsideElement(ContentHost, cursor, pad: 2.0))
+			{
+				return true;
+			}
+
+			if (_isTimerSubNotchShowing && IsPointInsideElement(TimerSubNotchPill, cursor, pad: 2.0)) return true;
+			if (_isStopwatchSubNotchShowing && IsPointInsideElement(StopwatchSubNotchPill, cursor, pad: 2.0)) return true;
+			if (_isDownloadSubNotchShowing && IsPointInsideElement(DownloadSubNotchPill, cursor, pad: 2.0)) return true;
+			if (_isNotificationSubNotchShowing && IsPointInsideElement(NotificationSubNotchPill, cursor, pad: 2.0)) return true;
+
+			if (ViewModel?.IsNotificationDropdownActive == true && IsPointInsideElement(CollapsedNotificationDropdownHost, cursor, pad: 2.0))
+			{
+				return true;
+			}
+
+			return false;
 		}
 		catch
 		{
@@ -4411,6 +4429,7 @@ public partial class NotchWindow : Window
 			_slimBarMorphToNotchActive = false;
 			if (ViewModel == null || !ViewModel.IsNotchVisible)
 			{
+				PillContainer.IsHitTestVisible = true;
 				return;
 			}
 			PillScaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, null);
@@ -5599,230 +5618,61 @@ public void ApplyNotchScale(double scale, bool animate = true)
 	}
 
 	private void PositionOnMonitor(bool force = false)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
+		if (_isPositioning) return;
+		_isPositioning = true;
 		try
-
-
-
-
-
-
-
 		{
-
-
-
-
-
-
-
 			MonitorDetails targetMonitor = ViewModel.DisplayService.GetTargetMonitor(ViewModel.SettingsService.CurrentSettings.TargetMonitorDeviceName);
 
-
-
-
-
-
-
 			if (force || !(_lastPositionedMonitor == targetMonitor.DeviceName) || !IsLoaded)
-
-
-
-
-
-
-
 			{
-
-
-
-
-
-
-
 				_lastPositionedMonitor = targetMonitor.DeviceName;
 				InvalidateSlimBarHoverRect();
 
-
-
-
-
-
-
 				int num = (int)targetMonitor.Bounds.Left;
-
-
-
-
-
-
-
 				int num2 = (int)targetMonitor.Bounds.Width;
-
-
-
-
-
-
-
 				int num3 = (int)targetMonitor.Bounds.Top;
-
-
-
-
-
-
-
 				double num4 = ((targetMonitor.DpiScale > 0.0) ? targetMonitor.DpiScale : 1.0);
-
-
-
-
-
-
-
 				int num5 = (int)Math.Round(Width * num4);
-
-
-
-
-
-
-
 				int num6 = (int)Math.Round(Height * num4);
-
-
-
-
-
-
-
 				int num7 = num + (num2 - num5) / 2;
-
-
-
-
-
-
-
 				int num8 = num3;
-
-
-
-
-
-
-
 				nint handle = new WindowInteropHelper(this).Handle;
-
-
-
-
-
-
-
 				if (handle != IntPtr.Zero)
-
-
-
-
-
-
-
 				{
+					if (NativeMethods.GetWindowRect(handle, out NativeMethods.RECT currentRect))
+					{
+						bool alreadyAtTarget = currentRect.Left == num7 &&
+						                       currentRect.Top == num8 &&
+						                       currentRect.Width == num5 &&
+						                       currentRect.Height == num6;
+						if (alreadyAtTarget)
+						{
+							WindowStyleHelper.EnsureTopmost(handle);
+							return;
+						}
+					}
 
+					uint swpFlags = NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_SHOWWINDOW | NativeMethods.SWP_NOCOPYBITS;
+					NativeMethods.SetWindowPos(handle, NativeMethods.HWND_TOPMOST, num7, num8, num5, num6, swpFlags);
 
-
-
-
-
-
-					NativeMethods.SetWindowPos(handle, NativeMethods.HWND_TOPMOST, num7, num8, num5, num6, 80u);
-
-
-
-
-
-
-
+					// Keep WPF's Left and Top synchronized with Win32 coordinates in DIPs
+					Left = num7 / num4;
+					Top = num8 / num4;
 				}
 
-
-
-
-
-
-
 				Log.Information("PositionOnMonitor: Target={Monitor} ({Device}), Bounds=[L:{ScreenLeft}, T:{ScreenTop}, W:{ScreenWidth}, H:{ScreenHeight}], Scale={Scale}, Placed at PhysX={PhysX}, PhysY={PhysY}, PhysW={PhysW}, PhysH={PhysH}", targetMonitor.DisplayName, targetMonitor.DeviceName, num, num3, num2, targetMonitor.Bounds.Height, num4, num7, num8, num5, num6);
-
-
-
-
-
-
-
 			}
-
-
-
-
-
-
-
 		}
-
-
-
-
-
-
-
 		catch (Exception exception)
-
-
-
-
-
-
-
 		{
-
-
-
-
-
-
-
 			Log.Warning(exception, "Failed to position notch window on monitor, falling back to primary screen");
-
-
-
-
-
-
-
 		}
-
-
-
-
-
-
-
+		finally
+		{
+			_isPositioning = false;
+		}
 	}
 
 
@@ -6084,6 +5934,38 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 			NotchBackgroundPath.Data = data;
+
+
+
+
+
+
+
+			if (NotchLiquidGlassSheenPath != null)
+
+
+
+
+
+
+
+			{
+
+
+
+
+
+
+
+				NotchLiquidGlassSheenPath.Data = data;
+
+
+
+
+
+
+
+			}
 
 
 
@@ -6680,31 +6562,18 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		case 736:
-
-
-
-
-
-
-
-			handled = true;
-
-
-
-
-
-
-
-			PositionOnMonitor(force: true);
-
-
-
-
-
-
-
+		case 736: // WM_DPICHANGED
+		{
+			int newDpiX = (short)(((long)wParam) & 0xFFFF);
+			double newDpiScale = (newDpiX > 0) ? (newDpiX / 96.0) : 1.0;
+			MonitorDetails currentMon = ViewModel.DisplayService.GetTargetMonitor(ViewModel.SettingsService.CurrentSettings.TargetMonitorDeviceName);
+			if (Math.Abs(currentMon.DpiScale - newDpiScale) > 0.01)
+			{
+				PositionOnMonitor(force: true);
+			}
+			handled = false;
 			return IntPtr.Zero;
+		}
 
 
 
@@ -7768,77 +7637,63 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 				}
 
-				if (NotchBackgroundPath.Data.FillContains(hitPoint) | flag)
-
-
-
-
-
-
-
+				if (!flag && CollapsedNotificationDropdownHost != null && CollapsedNotificationDropdownHost.Visibility == Visibility.Visible && (ViewModel?.IsNotificationDropdownActive == true))
 				{
-
-
-
-
-
-
-
-					if (!_wasCursorInsideNotch)
-
-
-
-
-
-
-
+					try
 					{
-
-
-
-
-
-
-
-						_wasCursorInsideNotch = true;
-
-
-
-
-
-
-
+						Point pointNotifCard = CollapsedNotificationDropdownHost.PointFromScreen(point);
+						if (pointNotifCard.X >= 0.0 && pointNotifCard.X <= CollapsedNotificationDropdownHost.ActualWidth &&
+						    pointNotifCard.Y >= 0.0 && pointNotifCard.Y <= CollapsedNotificationDropdownHost.ActualHeight)
+						{
+							flag = true;
+						}
 					}
-
-
-
-
-
-
-
-					handled = true;
-
-
-
-
-
-
-
-					return new IntPtr(1);
-
-
-
-
-
-
-
+					catch
+					{
+					}
 				}
 
+				double effectiveNotchHeight = (ViewModel?.CurrentState == NotchState.Expanded)
+					? Math.Max(NotchHeight, ViewModel.TargetHeight)
+					: Math.Max(NotchHeight, ViewModel?.TargetHeight ?? 32.0);
 
+				double targetW = (ViewModel?.TargetWidth > 0) ? ViewModel.TargetWidth : 620.0;
+				double effectivePillWidth = (ViewModel?.CurrentState == NotchState.Expanded)
+					? Math.Max(PillContainer.ActualWidth, targetW + 24.0)
+					: ((PillContainer.ActualWidth > 0.0) ? PillContainer.ActualWidth : ((ViewModel?.TargetWidth ?? 260.0) + 24.0));
 
+				Point windowPt;
+				try
+				{
+					windowPt = this.PointFromScreen(point);
+				}
+				catch
+				{
+					windowPt = hitPoint;
+				}
 
+				double windowCenterX = Width / 2.0;
+				double halfWidth = (effectivePillWidth / 2.0) + 12.0;
+				bool isInsideByWindow = (windowPt.X >= windowCenterX - halfWidth &&
+				                         windowPt.X <= windowCenterX + halfWidth &&
+				                         windowPt.Y >= -4.0 &&
+				                         windowPt.Y <= effectiveNotchHeight + 8.0);
 
+				bool isInside = isInsideByWindow
+					|| (NotchBackgroundPath?.Data != null && NotchBackgroundPath.Data.FillContains(hitPoint))
+					|| (hitPoint.X >= -6.0 && hitPoint.X <= effectivePillWidth + 6.0 && hitPoint.Y >= -4.0 && hitPoint.Y <= effectiveNotchHeight + 8.0);
 
+				if (isInside | flag)
+				{
+					if (!_wasCursorInsideNotch)
+					{
+						_wasCursorInsideNotch = true;
+						Log.Information("[NCHITTEST] Cursor entered notch area: State={State}, Widget={Widget}, Pt=({X:0.0},{Y:0.0})",
+							ViewModel?.CurrentState, ViewModel?.WidgetHost?.CurrentWidgetType, hitPoint.X, hitPoint.Y);
+					}
+					handled = true;
+					return new IntPtr(1);
+				}
 
 				if (_wasCursorInsideNotch)
 
@@ -7992,6 +7847,27 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
+	private void AnimateCollapsedWidthAdjustment(double targetWidth)
+	{
+		if (ViewModel == null || ViewModel.CurrentState != NotchState.Collapsed)
+		{
+			return;
+		}
+
+		if (Math.Abs(NotchWidth - targetWidth) < 0.5)
+		{
+			return;
+		}
+
+		_lastAnimatedTargetWidth = targetWidth;
+		TimeSpan duration = TimeSpan.FromMilliseconds(220);
+		var animation = new DoubleAnimation(targetWidth, duration)
+		{
+			EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+		};
+		BeginAnimation(NotchWidthProperty, animation);
+	}
+
 	private void AnimateToCurrentState()
 
 
@@ -8132,9 +8008,14 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
-		bool isNotifActive = ViewModel.WidgetHost.CurrentWidgetType == WidgetType.Notification && ViewModel.WidgetHost.IsTransientActive;
+		bool isNotifActive = (ViewModel.WidgetHost.CurrentWidgetType == WidgetType.Notification && ViewModel.WidgetHost.IsTransientActive)
+			|| (ViewModel != null && ViewModel.IsNotificationDropdownActive);
 
 		AnimateNotificationSubNotch(flag2 && isNotifActive);
+		if (!flag2 && ViewModel != null && ViewModel.IsNotificationDropdownActive)
+		{
+			AnimateNotificationDropdown(true);
+		}
 		AnimateTimerSubNotch(ViewModel?.TimerStopwatch?.IsTimerRunning ?? false);
 		AnimateStopwatchSubNotch(ViewModel?.TimerStopwatch?.IsStopwatchRunning ?? false);
 		UpdateDownloadSubNotchVisibility();
@@ -9700,37 +9581,23 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void PillBorder_MouseEnter(object sender, MouseEventArgs e)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
-
 		_wasCursorInsideNotch = true;
+		Log.Information("[NotchHover] PillBorder_MouseEnter: State={State}, Widget={Widget}",
+			ViewModel?.CurrentState, ViewModel?.WidgetHost?.CurrentWidgetType);
 
-
-
-
-
-
+		if (ViewModel != null && ViewModel.IsNotificationDropdownActive && PillContainer != null)
+		{
+			// If cursor is on the top notch pill area (not interacting with the lower dropdown card), expand notch cleanly
+			var pos = e.GetPosition(PillContainer);
+			if (pos.Y <= 38.0)
+			{
+				ViewModel.Expand(isLock: false);
+				return;
+			}
+		}
 
 		ViewModel.OnMouseEnter();
-
-
-
-
-
-
-
 	}
 
 	private void DevicePickerPopup_Opened(object? sender, EventArgs e)
@@ -9874,62 +9741,27 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	private void PillBorder_MouseLeave(object sender, MouseEventArgs e)
-
-
-
-
-
-
-
 	{
-
-
-
-
-
-
+		// Bila kursor secara fisik masih berada di dalam area notch (misal event semu saat transisi kontrol anak), abaikan.
+		if (IsCursorOverNotch())
+		{
+			return;
+		}
 
 		_wasCursorInsideNotch = false;
 
-
-
-
-
-
-
 		if (!_isContextMenuOpen && !(ViewModel?.Media?.IsLyricsVersionPickerOpen ?? false) && !(ViewModel?.Volume?.IsDevicePickerOpen ?? false) && !(ViewModel?.IsSliderDragging ?? false))
-
-
-
-
-
-
-
 		{
-
-
-
-
-
-
-
-			ViewModel.OnMouseLeave();
-
-
-
-
-
-
-
+			ViewModel?.OnMouseLeave();
 		}
-
-
-
-
-
-
-
 	}
+
+
+
+
+
+
+
 
 
 
@@ -9947,6 +9779,14 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 	private void PillBorder_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 	{
+		if (e.Handled) return;
+		e.Handled = true;
+
+		Log.Information("[NotchClick] PillBorder_MouseLeftButtonDown: State={State}, IsLocked={Locked}, Widget={Widget}",
+			ViewModel?.CurrentState, ViewModel?.IsLockedExpanded, ViewModel?.WidgetHost?.CurrentWidgetType);
+
+		if (ViewModel == null) return;
+
 		if (ViewModel.CurrentState == NotchState.Collapsed)
 		{
 			if (ViewModel.IsCollapsedDownloadPhaseActive && ViewModel.Download?.HasActiveDownloads == true)
@@ -9970,6 +9810,18 @@ public void ApplyNotchScale(double scale, bool animate = true)
 			}
 
 			ViewModel.OnPillClicked();
+		}
+		else
+		{
+			// When already expanded, clicking the top pill area collapses it
+			if (PillContainer != null)
+			{
+				var pt = e.GetPosition(PillContainer);
+				if (pt.Y <= 38.0)
+				{
+					ViewModel.Collapse();
+				}
+			}
 		}
 	}
 
@@ -10595,7 +10447,18 @@ public void ApplyNotchScale(double scale, bool animate = true)
 			{
 				if (ViewModel != null)
 				{
-					AnimateNotificationDropdown(ViewModel.IsNotificationDropdownActive);
+					if (ViewModel.CurrentState == NotchState.Expanded)
+					{
+						AnimateNotificationSubNotch(ViewModel.IsNotificationDropdownActive);
+					}
+					else
+					{
+						AnimateNotificationDropdown(ViewModel.IsNotificationDropdownActive);
+					}
+					if (!ViewModel.IsNotificationDropdownActive && IsCursorOverNotch())
+					{
+						ViewModel.OnMouseEnter();
+					}
 				}
 			});
 		}
@@ -10616,6 +10479,7 @@ public void ApplyNotchScale(double scale, bool animate = true)
 				}
 				AnimateTimerSubNotch(ViewModel?.TimerStopwatch?.IsTimerRunning ?? false);
 				AnimateStopwatchSubNotch(ViewModel?.TimerStopwatch?.IsStopwatchRunning ?? false);
+				SyncExpandedHoverWatchdog();
 			});
 		}
 
@@ -10738,29 +10602,14 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 	{
-
-
-
-
-
-
-
 		AnimatePrivacyOverlay(PrivacyOverlayHost, PrivacyOverlayTranslate, show);
-
-
-
-
-
-
-
 		AnimatePrivacyOverlay(ExpandedPrivacyOverlayHost, ExpandedPrivacyOverlayTranslate, show);
 
-
-
-
-
-
-
+		if (CollapsedWidgetsContainer != null)
+		{
+			CollapsedWidgetsContainer.BeginAnimation(FrameworkElement.MarginProperty, null);
+			CollapsedWidgetsContainer.Margin = new Thickness(0);
+		}
 	}
 
 
@@ -17100,6 +16949,137 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 
 
+	private bool? _currentCollapsedLyricsActive = null;
+
+	private void OnCollapsedTitleChanged()
+	{
+		if (MediaCollapsedTitleArtistHost == null) return;
+
+		// If Title & Artist is currently visibly showing in collapsed notch, provide a subtle soft crossfade rather than a harsh jump
+		if (_currentCollapsedLyricsActive == false && MediaCollapsedTitleArtistHost.Visibility == Visibility.Visible && MediaCollapsedTitleArtistHost.Opacity > 0.5)
+		{
+			var crossFade = new DoubleAnimation(0.35, 1.0, TimeSpan.FromMilliseconds(220))
+			{
+				EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+			};
+			MediaCollapsedTitleArtistHost.BeginAnimation(UIElement.OpacityProperty, crossFade);
+		}
+	}
+
+	private void TransitionCollapsedLyrics(bool isLyricsActive, bool immediate = false)
+	{
+		if (MediaCollapsedTitleArtistHost == null || MediaCollapsedLyricsHost == null)
+		{
+			return;
+		}
+
+		if (!immediate && _currentCollapsedLyricsActive.HasValue && _currentCollapsedLyricsActive.Value == isLyricsActive)
+		{
+			return;
+		}
+		_currentCollapsedLyricsActive = isLyricsActive;
+
+		if (immediate)
+		{
+			MediaCollapsedTitleArtistHost.BeginAnimation(UIElement.OpacityProperty, null);
+			MediaCollapsedLyricsHost.BeginAnimation(UIElement.OpacityProperty, null);
+
+			if (isLyricsActive)
+			{
+				MediaCollapsedTitleArtistHost.Visibility = Visibility.Collapsed;
+				MediaCollapsedTitleArtistHost.Opacity = 0.0;
+				MediaCollapsedLyricsHost.Visibility = Visibility.Visible;
+				MediaCollapsedLyricsHost.Opacity = 1.0;
+				if (ViewModel?.Media != null)
+				{
+					if (!ViewModel.Media.IsActiveLyricInterlude)
+					{
+						ResetCollapsedLyricText(ViewModel.Media.CollapsedDisplayLyricText, ViewModel.Media.CurrentLyricIndex);
+					}
+					else
+					{
+						ResetCollapsedLyricText(string.Empty, -1);
+						ViewModel.SetCollapsedLyricsWidthOverride(null);
+					}
+				}
+			}
+			else
+			{
+				MediaCollapsedTitleArtistHost.Visibility = Visibility.Visible;
+				MediaCollapsedTitleArtistHost.Opacity = 1.0;
+				MediaCollapsedLyricsHost.Visibility = Visibility.Collapsed;
+				MediaCollapsedLyricsHost.Opacity = 0.0;
+				ViewModel?.SetCollapsedLyricsWidthOverride(null);
+			}
+			return;
+		}
+
+		if (isLyricsActive)
+		{
+			// Pre-set lyric text cleanly before fade in
+			if (ViewModel?.Media != null)
+			{
+				if (!ViewModel.Media.IsActiveLyricInterlude)
+				{
+					ResetCollapsedLyricText(ViewModel.Media.CollapsedDisplayLyricText, ViewModel.Media.CurrentLyricIndex);
+				}
+				else
+				{
+					ResetCollapsedLyricText(string.Empty, -1);
+					ViewModel.SetCollapsedLyricsWidthOverride(null);
+				}
+			}
+
+			// Smooth FADE OUT of Title & Artist
+			var fadeOut = new DoubleAnimation(MediaCollapsedTitleArtistHost.Opacity, 0.0, TimeSpan.FromMilliseconds(220))
+			{
+				EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+			};
+			fadeOut.Completed += (s, e) =>
+			{
+				if (_currentCollapsedLyricsActive == true)
+				{
+					MediaCollapsedTitleArtistHost.Visibility = Visibility.Collapsed;
+				}
+			};
+			MediaCollapsedTitleArtistHost.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+
+			// Smooth FADE IN of Lyrics (pure fade without vertical slide)
+			MediaCollapsedLyricsHost.Visibility = Visibility.Visible;
+			var fadeIn = new DoubleAnimation(MediaCollapsedLyricsHost.Opacity, 1.0, TimeSpan.FromMilliseconds(260))
+			{
+				EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+			};
+			MediaCollapsedLyricsHost.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+		}
+		else
+		{
+			// Smooth FADE OUT of Lyrics
+			var fadeOut = new DoubleAnimation(MediaCollapsedLyricsHost.Opacity, 0.0, TimeSpan.FromMilliseconds(200))
+			{
+				EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+			};
+			fadeOut.Completed += (s, e) =>
+			{
+				if (_currentCollapsedLyricsActive == false)
+				{
+					MediaCollapsedLyricsHost.Visibility = Visibility.Collapsed;
+				}
+			};
+			MediaCollapsedLyricsHost.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+
+			// Smooth FADE IN of Title & Artist
+			MediaCollapsedTitleArtistHost.Visibility = Visibility.Visible;
+			var fadeIn = new DoubleAnimation(MediaCollapsedTitleArtistHost.Opacity, 1.0, TimeSpan.FromMilliseconds(240))
+			{
+				EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+			};
+			MediaCollapsedTitleArtistHost.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+			ViewModel?.SetCollapsedLyricsWidthOverride(null);
+		}
+	}
+
 	private void UpdateCollapsedLyricsWidth(string? lyricText)
 	{
 		if (ViewModel == null)
@@ -17113,24 +17093,8 @@ public void ApplyNotchScale(double scale, bool animate = true)
 			return;
 		}
 
-		if (CollapsedLyricTextA == null || CollapsedLyricsContainer == null)
+		if (CollapsedLyricTextA == null)
 		{
-			return;
-		}
-
-		double containerWidth = CollapsedLyricsContainer.ActualWidth;
-		double notchWidth = (ContentHost != null && ContentHost.ActualWidth > 0.0) ? ContentHost.ActualWidth : NotchWidth;
-		if (containerWidth <= 0.0 || notchWidth <= 0.0)
-		{
-			if (!_collapsedLyricsWidthRetryQueued)
-			{
-				_collapsedLyricsWidthRetryQueued = true;
-				Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(delegate
-				{
-					_collapsedLyricsWidthRetryQueued = false;
-					UpdateCollapsedLyricsWidth(ViewModel?.Media.CollapsedDisplayLyricText);
-				}));
-			}
 			return;
 		}
 
@@ -17138,31 +17102,34 @@ public void ApplyNotchScale(double scale, bool animate = true)
 
 		double MeasureWidth(string text, double fontSize)
 		{
-			TextBlock probe = new TextBlock
+			if (_collapsedLyricMeasureProbe == null)
 			{
-				FontFamily = textBlock.FontFamily,
-				FontSize = fontSize,
-				FontStyle = textBlock.FontStyle,
-				FontWeight = textBlock.FontWeight,
-				FontStretch = textBlock.FontStretch,
-				Text = text,
-				TextWrapping = TextWrapping.NoWrap
-			};
-			TextOptions.SetTextFormattingMode(probe, TextOptions.GetTextFormattingMode(textBlock));
-			TextOptions.SetTextRenderingMode(probe, TextOptions.GetTextRenderingMode(textBlock));
-			probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-			return probe.DesiredSize.Width;
+				_collapsedLyricMeasureProbe = new TextBlock
+				{
+					FontFamily = textBlock.FontFamily,
+					FontStyle = textBlock.FontStyle,
+					FontWeight = textBlock.FontWeight,
+					FontStretch = textBlock.FontStretch,
+					TextWrapping = TextWrapping.NoWrap
+				};
+				TextOptions.SetTextFormattingMode(_collapsedLyricMeasureProbe, TextOptions.GetTextFormattingMode(textBlock));
+				TextOptions.SetTextRenderingMode(_collapsedLyricMeasureProbe, TextOptions.GetTextRenderingMode(textBlock));
+			}
+			_collapsedLyricMeasureProbe.FontSize = fontSize;
+			_collapsedLyricMeasureProbe.Text = text;
+			_collapsedLyricMeasureProbe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+			return _collapsedLyricMeasureProbe.DesiredSize.Width;
 		}
 
 		double mainWidth = MeasureWidth(lyricText, textBlock.FontSize);
 
-		double measuredChrome = (containerWidth > 0.0 && notchWidth > containerWidth) ? (notchWidth - containerWidth) : 0.0;
-		double dynamicChrome = 104.0;
-		if (ViewModel.ShowWeatherInCollapsedNotch) dynamicChrome += 68.0;
-		if (ViewModel.ShowBatteryInCollapsedNotch && ViewModel.Battery?.HasBattery == true) dynamicChrome += 68.0;
-		if (ViewModel.ShowPetInCollapsedNotch && ViewModel.IsPetEnabled) dynamicChrome += 34.0;
-		double chrome = Math.Max(dynamicChrome, measuredChrome);
-		double targetWidth = chrome + Math.Max(MinCollapsedLyricTextWidth, mainWidth) + 14.0;
+		double dynamicChrome = 92.0;
+		if (ViewModel.ShowWeatherInCollapsedNotch) dynamicChrome += 50.0;
+		if (ViewModel.ShowBatteryInCollapsedNotch && ViewModel.Battery?.HasBattery == true) dynamicChrome += 48.0;
+		if (ViewModel.ShowPetInCollapsedNotch && ViewModel.IsPetEnabled) dynamicChrome += 26.0;
+
+		double targetWidth = dynamicChrome + Math.Max(MinCollapsedLyricTextWidth, mainWidth) + 16.0;
+		targetWidth = Math.Min(targetWidth, NotchViewModel.MaxCollapsedLyricsWidth);
 		ViewModel.SetCollapsedLyricsWidthOverride(targetWidth);
 	}
 
@@ -19358,143 +19325,105 @@ public void ApplyNotchScale(double scale, bool animate = true)
 		_isNotificationSubNotchShowing = show;
 
 		if (show)
-
 		{
-
 			NotificationSubNotchPill.Visibility = Visibility.Visible;
-
 			DoubleAnimation animation = new DoubleAnimation
-
 			{
-
-				From = NotificationSubNotchAnimTranslate.Y < -5.0 ? NotificationSubNotchAnimTranslate.Y : -28.0,
-
+				From = NotificationSubNotchAnimTranslate.Y < -5.0 ? NotificationSubNotchAnimTranslate.Y : -30.0,
 				To = 0.0,
-
 				Duration = TimeSpan.FromMilliseconds(380.0),
-
 				EasingFunction = new BackEase
-
 				{
-
 					Amplitude = 0.18,
-
 					EasingMode = EasingMode.EaseOut
-
 				}
-
 			};
 
 			DoubleAnimation animation2 = new DoubleAnimation
-
 			{
-
 				From = NotificationSubNotchPill.Opacity < 0.2 ? NotificationSubNotchPill.Opacity : 0.0,
-
 				To = 1.0,
-
 				Duration = TimeSpan.FromMilliseconds(220.0),
-
 				EasingFunction = new CubicEase
-
 				{
-
 					EasingMode = EasingMode.EaseOut
-
 				}
-
 			};
 
 			NotificationSubNotchAnimTranslate.BeginAnimation(TranslateTransform.YProperty, animation);
-
 			NotificationSubNotchPill.BeginAnimation(UIElement.OpacityProperty, animation2);
-
 			return;
-
 		}
 
-
-
 		DoubleAnimation doubleAnimation = new DoubleAnimation
-
 		{
-
 			From = NotificationSubNotchAnimTranslate.Y,
-
-			To = -28.0,
-
+			To = -30.0,
 			Duration = TimeSpan.FromMilliseconds(240.0),
-
 			EasingFunction = new CubicEase
-
 			{
-
 				EasingMode = EasingMode.EaseIn
-
 			}
-
 		};
 
 		DoubleAnimation animation3 = new DoubleAnimation
-
 		{
-
 			From = NotificationSubNotchPill.Opacity,
-
 			To = 0.0,
-
 			Duration = TimeSpan.FromMilliseconds(180.0),
-
 			EasingFunction = new CubicEase
-
 			{
-
 				EasingMode = EasingMode.EaseIn
-
 			}
-
 		};
 
 		animation3.Completed += (object? s, EventArgs e) =>
-
 		{
-
 			if (!_isNotificationSubNotchShowing)
-
 			{
-
 				NotificationSubNotchPill.Visibility = Visibility.Collapsed;
-
 			}
-
 		};
 
 		NotificationSubNotchAnimTranslate.BeginAnimation(TranslateTransform.YProperty, doubleAnimation);
-
 		NotificationSubNotchPill.BeginAnimation(UIElement.OpacityProperty, animation3);
-
 	}
 
+	private void NotificationSubNotchPill_MouseEnter(object sender, MouseEventArgs e)
+	{
+		ViewModel?.PauseNotificationDropdownTimer();
+		ViewModel?.CancelPendingCollapse();
+	}
 
+	private void NotificationSubNotchPill_MouseLeave(object sender, MouseEventArgs e)
+	{
+		ViewModel?.ResumeNotificationDropdownTimer();
+		if (!PillContainer.IsMouseOver && !IsCursorOverNotch())
+		{
+			ViewModel?.OnMouseLeave();
+		}
+	}
 
 	private void NotificationSubNotchPill_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-
 	{
-
-		e.Handled = true;
-
-		if (ViewModel?.Notification?.IsWaterAlarm == true)
-
+		if (e.OriginalSource is DependencyObject dep && FindVisualParent<System.Windows.Controls.Button>(dep) != null)
 		{
-
+			// Let the Button handle the click event
 			return;
-
 		}
 
-		AnimateNotificationSubNotch(false);
+		if (ViewModel?.Notification?.IsWaterAlarm == true)
+		{
+			return;
+		}
 
-		ViewModel?.WidgetHost?.DismissTransient();
+		if (ViewModel?.IsUpdateDownloading == true)
+		{
+			return;
+		}
 
+		e.Handled = true;
+		ViewModel?.DismissOrAdvanceNotification();
 	}
 
 	private void AnimateNotificationDropdown(bool show)
@@ -23352,37 +23281,12 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 				Point hitPoint = PillContainer.PointFromScreen(new Point(lpPoint.X, lpPoint.Y));
-
-
-
-
-
-
-
-				if (!(_wasCursorInsideNotch = NotchBackgroundPath?.Data != null && NotchBackgroundPath.Data.FillContains(hitPoint)))
-
-
-
-
-
-
-
+				double effectiveH = Math.Max(NotchHeight, ViewModel.TargetHeight);
+				bool inside = (NotchBackgroundPath?.Data != null && NotchBackgroundPath.Data.FillContains(hitPoint))
+					|| (hitPoint.X >= -6.0 && hitPoint.X <= PillContainer.ActualWidth + 6.0 && hitPoint.Y >= -4.0 && hitPoint.Y <= effectiveH + 8.0);
+				if (!(_wasCursorInsideNotch = inside))
 				{
-
-
-
-
-
-
-
 					ViewModel.OnMouseLeave();
-
-
-
-
-
-
-
 				}
 
 
@@ -23560,37 +23464,12 @@ private void DropTargetDock_Drop(object sender, DragEventArgs e)
 
 
 				Point hitPoint = PillContainer.PointFromScreen(new Point(lpPoint.X, lpPoint.Y));
-
-
-
-
-
-
-
-				if (!(_wasCursorInsideNotch = NotchBackgroundPath?.Data != null && NotchBackgroundPath.Data.FillContains(hitPoint)))
-
-
-
-
-
-
-
+				double effectiveH = Math.Max(NotchHeight, ViewModel.TargetHeight);
+				bool inside = (NotchBackgroundPath?.Data != null && NotchBackgroundPath.Data.FillContains(hitPoint))
+					|| (hitPoint.X >= -6.0 && hitPoint.X <= PillContainer.ActualWidth + 6.0 && hitPoint.Y >= -4.0 && hitPoint.Y <= effectiveH + 8.0);
+				if (!(_wasCursorInsideNotch = inside))
 				{
-
-
-
-
-
-
-
 					ViewModel.OnMouseLeave();
-
-
-
-
-
-
-
 				}
 
 

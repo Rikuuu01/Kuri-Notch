@@ -438,10 +438,6 @@ namespace NotchWin.ViewModels
 
 
 
-        [NotifyPropertyChangedFor(nameof(FormattedDuration))]
-
-
-
         [NotifyPropertyChangedFor(nameof(FormattedRemaining))]
 
 
@@ -461,6 +457,16 @@ namespace NotchWin.ViewModels
 
 
 
+
+        partial void OnIsPlayingChanged(bool value)
+        {
+            UpdateTimerState();
+        }
+
+        partial void OnHasMediaChanged(bool value)
+        {
+            UpdateTimerState();
+        }
 
         partial void OnPositionChanged(TimeSpan value)
 
@@ -1037,17 +1043,67 @@ namespace NotchWin.ViewModels
 
 
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsCollapsedLyricsActive))]
+        private bool _isSongIntroActive;
+
+        private CancellationTokenSource? _songIntroCts;
+
+        /// <summary>
+        /// Memicu tampilan judul dan artis lagu selama 2 detik di awal musik sebelum berganti ke lirik dengan efek fade.
+        /// </summary>
+        public void TriggerSongIntroTitle()
+        {
+            var appDispatcher = Application.Current?.Dispatcher;
+            if (appDispatcher != null && !appDispatcher.CheckAccess())
+            {
+                appDispatcher.BeginInvoke(TriggerSongIntroTitle);
+                return;
+            }
+
+            _songIntroCts?.Cancel();
+            _songIntroCts?.Dispose();
+            _songIntroCts = null;
+
+            if (!IsLyricsExpanded)
+            {
+                IsSongIntroActive = false;
+                return;
+            }
+
+            IsSongIntroActive = true;
+            var cts = new CancellationTokenSource();
+            _songIntroCts = cts;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(2000, cts.Token);
+                    if (!cts.IsCancellationRequested)
+                    {
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            if (!cts.IsCancellationRequested)
+                            {
+                                IsSongIntroActive = false;
+                            }
+                        });
+                    }
+                }
+                catch (OperationCanceledException) { }
+            });
+        }
+
         public bool IsCollapsedLyricsActive => IsLyricsExpanded 
 
             && HasLyrics 
 
-
-
             && LyricsLines.Count > 0 
 
+            && !IsLoadingLyrics
 
-
-            && !IsLoadingLyrics;
+            && !IsSongIntroActive;
 
 
 
@@ -1214,7 +1270,7 @@ namespace NotchWin.ViewModels
 
 
 
-            _timelineTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
+            _timelineTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(33) };
 
 
 
@@ -1396,6 +1452,13 @@ namespace NotchWin.ViewModels
                     }
                     else
                     {
+                        // Track replay / loop detection: jumped back to start of song (only if duration did NOT change, as duration change indicates a pending track change)
+                        bool isSameDuration = Math.Abs((track.Duration - Duration).TotalSeconds) <= 1.0;
+                        if (isSameDuration && track.Position.TotalSeconds < 2.0 && Position.TotalSeconds > 10.0)
+                        {
+                            TriggerSongIntroTitle();
+                        }
+
                         var currentEst = _baseTrackPosition + _playbackStopwatch.Elapsed;
                         var drift = Math.Abs((currentEst - track.Position).TotalSeconds);
                         // Tightly synchronize playback position: snap if drift exceeds 350ms
@@ -1598,25 +1661,11 @@ namespace NotchWin.ViewModels
 
 
                 if (trackChanged && HasMedia)
-
-
-
                 {
-
-
-
                     _lastLoadedLyricTitle = track.Title ?? string.Empty;
-
-
-
                     _lastLoadedLyricArtist = track.Artist ?? string.Empty;
-
-
-
+                    TriggerSongIntroTitle();
                     _ = FetchLyricsAsync(track.Title ?? string.Empty, track.Artist ?? string.Empty, track.Duration);
-
-
-
                 }
 
 
@@ -1823,12 +1872,12 @@ namespace NotchWin.ViewModels
 
 
 
-            // Rock-solid 60 FPS (16ms) timer when karaoke is active or notch is playing
+            // Smooth 30 FPS (33ms) timer when karaoke is active; 66ms/100ms for collapsed or non-karaoke playback
             double targetIntervalMs = PetCompanionService.Instance.IsNotchExpanded ? 66.0 : 100.0;
             bool isKaraokeActivelyRendering = LyricsKaraokeEnabled && HasLyrics && IsPlaying && !IsCurrentLyricsUntimed;
             if (isKaraokeActivelyRendering)
             {
-                targetIntervalMs = 16.0;
+                targetIntervalMs = 33.0;
             }
             if (Math.Abs(_timelineTimer.Interval.TotalMilliseconds - targetIntervalMs) > 1.0)
             {
@@ -2154,7 +2203,6 @@ namespace NotchWin.ViewModels
                 ResetLyricsCandidates();
                 OnPropertyChanged(nameof(CurrentLyricLine));
                 OnPropertyChanged(nameof(IsActiveLyricInterlude));
-                OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                 OnPropertyChanged(nameof(IsCollapsedLyricsActive));
                 OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                 OnPropertyChanged(nameof(CollapsedDisplayLyricText));
@@ -2169,7 +2217,6 @@ namespace NotchWin.ViewModels
                     LyricsSourceInfo = string.Empty;
                     OnPropertyChanged(nameof(CurrentLyricLine));
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
-                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
                     OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(CollapsedDisplayLyricText));
@@ -2208,7 +2255,6 @@ namespace NotchWin.ViewModels
 
                     OnPropertyChanged(nameof(CurrentLyricLine));
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
-                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
                     OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(CollapsedDisplayLyricText));
@@ -2227,7 +2273,6 @@ namespace NotchWin.ViewModels
                     ResetLyricsCandidates();
                     OnPropertyChanged(nameof(CurrentLyricLine));
                     OnPropertyChanged(nameof(IsActiveLyricInterlude));
-                    OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(IsCollapsedLyricsActive));
                     OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
                     OnPropertyChanged(nameof(CollapsedDisplayLyricText));
@@ -2521,7 +2566,6 @@ namespace NotchWin.ViewModels
 
             OnPropertyChanged(nameof(CurrentLyricLine));
             OnPropertyChanged(nameof(IsActiveLyricInterlude));
-            OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
             OnPropertyChanged(nameof(IsCollapsedLyricsActive));
             OnPropertyChanged(nameof(IsCollapsedKaraokeActive));
             OnPropertyChanged(nameof(CollapsedDisplayLyricText));
@@ -2952,6 +2996,10 @@ namespace NotchWin.ViewModels
 
 
              IsLyricsExpanded = !IsLyricsExpanded;
+            if (IsLyricsExpanded && Position.TotalSeconds <= 2.5)
+            {
+                TriggerSongIntroTitle();
+            }
 
             if (_settingsService?.CurrentSettings != null)
 

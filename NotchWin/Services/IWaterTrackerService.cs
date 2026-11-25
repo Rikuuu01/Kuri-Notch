@@ -22,6 +22,7 @@ namespace NotchWin.Services
         void ResetToday();
         void ResetSitting();
         void UpdateGoal(int goalMl);
+        void UpdateInterval(int intervalMinutes);
         void StartReminder(int intervalMinutes);
         void StopReminder();
         void Snooze(int minutes = 2);

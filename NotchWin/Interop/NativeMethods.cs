@@ -45,6 +45,7 @@ namespace NotchWin.Interop
         public const uint SWP_NOACTIVATE = 0x0010;
         public const uint SWP_SHOWWINDOW = 0x0040;
         public const uint SWP_HIDEWINDOW = 0x0080;
+        public const uint SWP_NOCOPYBITS = 0x0100;
         public const uint SWP_NOOWNERZORDER = 0x0200;
 
         // Notification Icon

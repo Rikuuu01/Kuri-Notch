@@ -101,7 +101,8 @@ namespace NotchWin.Services
 
             try
             {
-                string primaryArtist = cleanArtist.Split(new[] { ',', '&', ';', '/' }, StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+                var artistParts = cleanArtist.Split(new[] { ',', '&', ';', '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string primaryArtist = artistParts.Length > 0 ? artistParts[0].Trim() : string.Empty;
                 var merged = new Dictionary<string, LyricsCandidate>(StringComparer.OrdinalIgnoreCase);
 
                 void Merge(LrcLibDto dto, double score)

@@ -2,7 +2,7 @@
 
 > Indeks seluruh dokumentasi: [README.md](README.md)
 
-Modul ini menampilkan unduhan yang sedang berjalan dari browser dan aplikasi lain. Browser dan aplikasi generik dideteksi lewat *partial file* di folder unduhan. Saat notch mengecil, sebuah pil kecil menggantung di bawah notch; saat notch dibuka, ringkasan unduhan muncul di baris tambahan kartu Control Center, dan saat unduhan selesai muncul toast.
+Modul ini menampilkan unduhan yang sedang berjalan dari browser dan aplikasi lain. Browser dan aplikasi generik dideteksi lewat *partial file* di folder unduhan. Saat notch mengecil (collapsed), tampilan unduhan bergantian secara mulus dengan widget jam/musik (`CollapsedDownloadHost`) menggantikan seluruh isi notch, menampilkan nama target berkas asli dari tabel `downloads` History Chromium (`target_path`), persentase & kecepatan unduhan, garis progres 2px di bibir bawah, dan ikon panah unduhan yang beranimasi bergerak (*bobbing pulse arrow*). Pil sub-notch (`DownloadSubNotchPill`) hanya muncul ketika notch sedang dibuka/diperluas (*Expanded*) agar tidak mengganggu kesederhanaan notch tertutup. Saat unduhan selesai, toast notifikasi muncul.
 
 ---
 
@@ -71,16 +71,26 @@ Modul ini menampilkan unduhan yang sedang berjalan dari browser dan aplikasi lai
 
 ## 🖥️ Tampilan
 
-1. **Pil sub-notch** (`DownloadSubNotchPill`): memakai label lokal `Downloading...` (`Mengunduh...`) menggantikan nama file (nama sementara `Unconfirmed N` tidak bermakna). Satu baris: `42% | 1.8 MB/s` (persen dulu, lalu kecepatan; browser membulatkan dan memakai satu desimal di bawah 10%, mis. `1.5%`; hanya ukuran `12.4 MB` bila total tidak diketahui, mis. Firefox; `Paused` menggantikan kecepatan saat berhenti; multi `+N · 42% | 5.2 MB/s` dengan persen agregat bila semua item punya total). Ukuran byte lengkap tetap ada di tooltip. Garis progres 2 px di tepi bawah pil mengikuti persen. Klik pil membuka notch ke Control Center **tanpa mengunci** expand. Animasi sama dengan pil Timer (turun 380 ms `BackEase`, naik 240 ms). Pil disembunyikan saat fullscreen, slim bar, atau manual hide.
-2. **Strip Control Center**: baris baru di bawah kartu (`Height=24`) berisi ikon, nama file/`+N`, `persen · kecepatan` (ukuran byte hanya di tooltip), tooltip daftar semua unduhan, dan tombol buka folder. Baris otomatis hilang saat tidak ada unduhan sehingga kartu kembali 136 px. Selama unduhan aktif, tinggi panel ditambah `DownloadStripExtraHeight` (32 px) lewat `UpdateGeometryForState` — tanpa ini strip terpotong oleh `ClipToBounds` baris slide (tinggi baris slide hanya ~138 px).
-3. **Toast selesai**: ikon `📥`, judul `Download complete`; mengikuti pipeline notifikasi yang ada (durasi & setting notifikasi).
+1. **Tampilan Notch Tertutup Bergantian (`CollapsedDownloadHost` - Keputusan 99 & 100)**:
+   - Saat notch tertutup/collapsed dan unduhan aktif, notch **tidak memunculkan pil gantung**.
+   - Isi notch bergantian secara siklik (*Jam/Musik -> Download -> Timer*) dengan transisi *spring morphing*.
+   - **Tata Letak**:
+     - Paling kiri: Ikon unduhan vektor dengan **animasi anak panah bergerak** (*animated arrow glyph bobbing* yang meluncur turun dan naik secara lembut dengan `QuadraticEase`).
+     - Di samping ikon: Nama file asli (`Download.PillFileName`), dipecahkan langsung dari `target_path` SQLite Chromium History (e.g. `ubuntu-22.04.iso` alih-alih `Unconfirmed N`).
+     - Paling kanan: Persen dan kecepatan unduhan (`78% · 9.1 MB/s`).
+     - Bibir bawah notch: Garis progress bar aksen 2px.
+   - Klik pada notch saat fase unduhan langsung membuka panel Control Center.
+2. **Pil Sub-Notch Khusus Expanded (`DownloadSubNotchPill`)**:
+   - Pil sub-notch hanya meluncur turun menggantung di bawah notch **ketika notch sedang dibuka (Expanded)**.
+   - Menampilkan ringkasan status unduhan aktif dan persentase.
+3. **Strip Control Center**: Baris di bawah kartu Control Center (`Height=24`) berisi ikon animasi, nama file/`+N`, `persen · kecepatan`, tooltip daftar seluruh unduhan, dan tombol buka folder. Selama unduhan aktif, tinggi panel diperluas dengan `DownloadStripExtraHeight` (32 px).
+4. **Toast Selesai**: Ikon `📥`, judul `Download complete` dengan nama final file unduhan.
 
 ## ⚠️ Batasan
 
 - **Persen** hanya tersedia untuk browser berbasis Chromium (Chrome/Edge/Brave/Vivaldi/Opera) dari DB History; Firefox/aplikasi generik tetap tanpa persen. Bila DB sedang terkunci, persen menyusul pada tick berikutnya.
 - Aplikasi yang menulis langsung ke nama final atau memakai folder temp privat (IDM dan sebagian download manager) tidak terdeteksi.
 - File parsial sisa crash tampil sebagai Paused lalu disembunyikan setelah 10 menit.
-- Nama file asli browser tidak ditampilkan di pil maupun judul strip: diganti label `Downloading...` (`Mengunduh...`) karena Chrome memakai nama sementara `Unconfirmed N` yang menyesatkan. Nama final tetap dipakai pada toast selesai; tooltip daftar unduhan memuat nama apa adanya dari file parsial.
 
 ## 🚫 Panduan Modifikasi Aman (Do's & Don'ts)
 

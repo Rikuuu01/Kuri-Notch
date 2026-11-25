@@ -2,11 +2,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Windows.Threading;
 using System.Threading;
 using NotchWin.Interop;
 using NotchWin.Models;
@@ -22,6 +22,7 @@ namespace NotchWin.Services
         private ScreenTimeStore _store = new();
         private string? _lastActiveExe;
         private int _saveCounter;
+        private volatile bool _isDisposed;
 
         private readonly ConcurrentDictionary<uint, (string ExeName, string FriendlyName, string ExePath, string Category)> _processCache = new();
 
@@ -87,7 +88,7 @@ namespace NotchWin.Services
 
             foreach (var key in _store.Days.Keys)
             {
-                if (DateTime.TryParse(key, out var dt) && dt < cutoff)
+                if (DateTime.TryParseExact(key, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) && dt < cutoff)
                 {
                     toRemove.Add(key);
                 }
@@ -119,8 +120,14 @@ namespace NotchWin.Services
 
         private void OnTrackerTick(object? state)
         {
+            if (_isDisposed)
+            {
+                return;
+            }
+
             if (!IsEnabled)
             {
+                _lastActiveExe = null;
                 return;
             }
 
@@ -129,8 +136,8 @@ namespace NotchWin.Services
             if (NativeMethods.GetLastInputInfo(ref lii))
             {
                 uint win32Ticks = NativeMethods.GetTickCount();
-                uint idleMs = win32Ticks >= lii.dwTime ? (win32Ticks - lii.dwTime) : (uint.MaxValue - lii.dwTime + win32Ticks);
-                if (idleMs >= (uint)(IdleThresholdSeconds * 1000))
+                uint idleMs = unchecked(win32Ticks - lii.dwTime);
+                if (idleMs >= (uint)(Math.Max(10, IdleThresholdSeconds) * 1000))
                 {
                     // User is idle, exclude from screen time
                     return;
@@ -146,7 +153,7 @@ namespace NotchWin.Services
             }
 
             // 3. Resolve Process Info (with PID caching)
-            (string ExeName, string FriendlyName, string ExePath, string Category) procInfo = default;
+            (string ExeName, string FriendlyName, string ExePath, string Category) procInfo = (string.Empty, string.Empty, string.Empty, ScreenTimeCategories.Other);
             if (pid != 0)
             {
                 if (!_processCache.TryGetValue(pid, out procInfo))
@@ -338,58 +345,47 @@ namespace NotchWin.Services
             }
             catch {}
 
-            string category = CategorizeApp(exeName, windowTitle);
+            string category = ScreenTimeCategories.Categorize(exeName, windowTitle);
             return (exeName, friendlyName, exePath, category);
         }
 
-        private static string CategorizeApp(string exeName, string windowTitle)
+        private static DayScreenTimeData CloneDayData(DayScreenTimeData source)
         {
-            string lower = exeName.ToLowerInvariant();
-
-            // 1. Browsers
-            if (lower is "msedge.exe" or "chrome.exe" or "firefox.exe" or "brave.exe" or "opera.exe" or "vivaldi.exe" or "arc.exe" or "zen.exe" or "waterfox.exe" or "tor.exe" or "iexplore.exe")
+            var clone = new DayScreenTimeData
             {
-                // Can inspect windowTitle to see if it's YouTube, GitHub, etc.
-                if (!string.IsNullOrEmpty(windowTitle))
+                Switches = source.Switches
+            };
+
+            if (source.Hours != null)
+            {
+                int len = Math.Min(source.Hours.Length, 24);
+                Array.Copy(source.Hours, clone.Hours, len);
+            }
+
+            if (source.Apps != null)
+            {
+                foreach (var kvp in source.Apps)
                 {
-                    string wtLower = windowTitle.ToLowerInvariant();
-                    if (wtLower.Contains("youtube") || wtLower.Contains("netflix") || wtLower.Contains("twitch") || wtLower.Contains("bilibili") || wtLower.Contains("disney"))
+                    if (kvp.Value == null) continue;
+                    clone.Apps[kvp.Key] = new AppUsageItem
                     {
-                        return ScreenTimeCategories.Entertainment;
-                    }
-                    if (wtLower.Contains("github") || wtLower.Contains("gitlab") || wtLower.Contains("stack overflow") || wtLower.Contains("localhost") || wtLower.Contains("chatgpt") || wtLower.Contains("gemini") || wtLower.Contains("claude"))
-                    {
-                        return ScreenTimeCategories.Development;
-                    }
+                        Name = kvp.Value.Name,
+                        Path = kvp.Value.Path,
+                        Seconds = kvp.Value.Seconds,
+                        Category = kvp.Value.Category
+                    };
                 }
-                return ScreenTimeCategories.Browsing;
             }
 
-            // 2. Development
-            if (lower is "devenv.exe" or "code.exe" or "antigravity.exe" or "cursor.exe" or "idea64.exe" or "pycharm64.exe" or "rider64.exe" or "webstorm64.exe" or "clion64.exe" or "sublime_text.exe" or "notepad++.exe" or "windowsterminal.exe" or "cmd.exe" or "powershell.exe" or "pwsh.exe" or "git-bash.exe" or "wt.exe" or "bash.exe" or "mintty.exe")
+            if (source.Categories != null)
             {
-                return ScreenTimeCategories.Development;
+                foreach (var kvp in source.Categories)
+                {
+                    clone.Categories[kvp.Key] = kvp.Value;
+                }
             }
 
-            // 3. Entertainment / Games / Media
-            if (lower is "spotify.exe" or "vlc.exe" or "wmplayer.exe" or "netflix.exe" or "steam.exe" or "epicgameslauncher.exe" or "mpv.exe" or "kmplayer.exe" or "potplayer64.exe" or "foobar2000.exe" or "musicbee.exe" or "obs64.exe" or "valorant.exe" or "genshinimpact.exe")
-            {
-                return ScreenTimeCategories.Entertainment;
-            }
-
-            // 4. Productivity / Office
-            if (lower is "winword.exe" or "excel.exe" or "powerpnt.exe" or "notion.exe" or "obsidian.exe" or "onenote.exe" or "acrobat.exe" or "acrodr32.exe" or "pdf24.exe" or "slack.exe" or "teams.exe" or "telegram.exe" or "whatsapp.exe" or "discord.exe")
-            {
-                return ScreenTimeCategories.Productivity;
-            }
-
-            // 5. System
-            if (lower is "explorer.exe" or "taskmgr.exe" or "systemsettings.exe" or "searchhost.exe" or "shellexperiencehost.exe" or "applicationframehost.exe" or "pickerhost.exe" or "snippingtool.exe" or "notchwin.exe" or "poni.exe" or "lockapp.exe")
-            {
-                return ScreenTimeCategories.System;
-            }
-
-            return ScreenTimeCategories.Other;
+            return clone;
         }
 
         public DayScreenTimeData? GetTodayData()
@@ -399,7 +395,7 @@ namespace NotchWin.Services
                 string key = DateTime.Now.ToString("yyyy-MM-dd");
                 if (_store.Days.TryGetValue(key, out var dayData))
                 {
-                    return dayData;
+                    return CloneDayData(dayData);
                 }
                 return null;
             }
@@ -412,7 +408,7 @@ namespace NotchWin.Services
                 string key = date.ToString("yyyy-MM-dd");
                 if (_store.Days.TryGetValue(key, out var dayData))
                 {
-                    return dayData;
+                    return CloneDayData(dayData);
                 }
                 return null;
             }
@@ -422,8 +418,8 @@ namespace NotchWin.Services
         {
             lock (_lock)
             {
-                var today = GetTodayData();
-                if (today == null) return 0;
+                string key = DateTime.Now.ToString("yyyy-MM-dd");
+                if (!_store.Days.TryGetValue(key, out var today)) return 0;
 
                 long total = 0;
                 foreach (var app in today.Apps.Values)
@@ -438,8 +434,8 @@ namespace NotchWin.Services
         {
             lock (_lock)
             {
-                var today = GetTodayData();
-                return today?.Switches ?? 0;
+                string key = DateTime.Now.ToString("yyyy-MM-dd");
+                return _store.Days.TryGetValue(key, out var today) ? today.Switches : 0;
             }
         }
 
@@ -448,13 +444,22 @@ namespace NotchWin.Services
             lock (_lock)
             {
                 _store.Days.Clear();
+                _lastActiveExe = null;
                 ForceSave();
             }
-            DataUpdated?.Invoke(this, EventArgs.Empty);
+            if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+            {
+                dispatcher.BeginInvoke(new Action(() => DataUpdated?.Invoke(this, EventArgs.Empty)));
+            }
+            else
+            {
+                DataUpdated?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public void Dispose()
         {
+            _isDisposed = true;
             _trackerTimer?.Dispose();
             ForceSave();
             GC.SuppressFinalize(this);

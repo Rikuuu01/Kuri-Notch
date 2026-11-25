@@ -46,30 +46,31 @@ namespace NotchWin.ViewModels
         public const double ExpandedLyricsWidth = 540.0;
 
         public const double ExpandedWeatherWidth = 620.0;
+        public const double MaxCollapsedLyricsWidth = 420.0;
 
         public const double ExpandedHeight = 264.0;
 
-        public const double ExpandedControlCenterHeight = 304.0;
+        public const double ExpandedControlCenterHeight = 318.0;
 
-        public const double ExpandedMediaHeight = 232.0;
-        public const double ExpandedMediaPickerHeight = 310.0;
-        public const double ExpandedScreenTimeHeight = 356.0;
+        public const double ExpandedMediaHeight = 248.0;
+        public const double ExpandedMediaPickerHeight = 326.0;
+        public const double ExpandedScreenTimeHeight = 374.0;
 
-        public const double ExpandedWeatherHeight = 286.0;
+        public const double ExpandedWeatherHeight = 300.0;
 
-        public const double ExpandedHomeHeight = 236.0;
+        public const double ExpandedHomeHeight = 264.0;
 
-        public const double ExpandedPrayerHeight = 216.0;
+        public const double ExpandedPrayerHeight = 234.0;
 
-        public const double ExpandedWaterHeight = 216.0;
+        public const double ExpandedWaterHeight = 234.0;
 
-        public const double ExpandedNoteHeight = 274.0;
+        public const double ExpandedNoteHeight = 286.0;
 
-        public const double ExpandedClipboardHeight = 274.0;
+        public const double ExpandedClipboardHeight = 286.0;
 
-        public const double ExpandedTimerHeight = 216.0;
+        public const double ExpandedTimerHeight = 234.0;
 
-        public const double ExpandedShelfHeight = 216.0;
+        public const double ExpandedShelfHeight = 234.0;
 
 
 
@@ -209,6 +210,12 @@ namespace NotchWin.ViewModels
 
 
 
+        public Func<bool>? IsCursorOverNotchCheck { get; set; }
+
+        public bool IsCollapsePending => _collapseCts != null;
+
+        public bool IsSlimBarPeekClosePending => _peekCloseCts != null;
+
         partial void OnIsLockedExpandedChanged(bool value)
 
         {
@@ -216,6 +223,18 @@ namespace NotchWin.ViewModels
             if (!value && CurrentState == NotchState.Expanded)
 
             {
+
+                if (IsCursorOverNotchCheck?.Invoke() == true)
+
+                {
+
+                    CancelPendingCollapse();
+
+                    CancelPendingSlimBarPeekClose();
+
+                    return;
+
+                }
 
                 ScheduleDelayedCollapse();
 
@@ -241,6 +260,63 @@ namespace NotchWin.ViewModels
 
             IsLockedExpanded = !IsLockedExpanded;
 
+        }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsNotchVisible))]
+        [NotifyPropertyChangedFor(nameof(IsSlimBarVisible))]
+        [NotifyPropertyChangedFor(nameof(IsFullscreenHidden))]
+        [NotifyPropertyChangedFor(nameof(HideToolTipText))]
+        private bool _isManualSlimHidden;
+
+        public string HideToolTipText => IsManualSlimHidden
+            ? L10n["Hide.Restore"]
+            : L10n["Hide.ToSlim"];
+
+        [RelayCommand]
+        public void ToggleManualSlimHide()
+        {
+            CancelPendingExpand();
+            CancelPendingCollapse();
+            CancelPendingSlimBarPeekClose();
+
+            if (IsManualSlimHidden)
+            {
+                IsManualSlimHidden = false;
+                IsSlimBarPeekActive = false;
+                Log.Information("Manual slim hide deactivated: Notch restored to normal visibility.");
+            }
+            else if (CurrentState == NotchState.Expanded && (IsCursorOverNotchCheck?.Invoke() == true))
+            {
+                // Saat toggle hide dinyalakan, biarkan notch tetap terbuka selama kursor
+                // masih berada di dalam area notch; ketika kursor digerakkan keluar
+                // barulah notch tertutup dan bermorph ke slim bar.
+                IsManualSlimHidden = true;
+                IsSlimBarPeekActive = true;
+                _peekOpenedTick = 0L;
+                if (IsLockedExpanded)
+                {
+                    IsLockedExpanded = false;
+                }
+                Log.Information("Manual slim hide armed: Notch stays open until cursor leaves.");
+            }
+            else if (IsFullscreenActive && IsSlimBarPeekActive)
+            {
+                IsLockedExpanded = false;
+                IsSlimBarPeekActive = false;
+                Collapse();
+                Log.Information("Fullscreen peek dismissed via Hide button.");
+            }
+            else
+            {
+                IsManualSlimHidden = true;
+                IsSlimBarPeekActive = false;
+                IsLockedExpanded = false;
+                Collapse();
+                Log.Information("Manual slim hide activated: Notch will morph to slim bar.");
+            }
+
+            VisibilityChanged?.Invoke(this, EventArgs.Empty);
         }
 
 
@@ -325,12 +401,19 @@ namespace NotchWin.ViewModels
 
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsNotchVisible))]
+        [NotifyPropertyChangedFor(nameof(IsSlimBarVisible))]
         private bool _isNotificationDropdownActive;
 
         partial void OnIsNotificationDropdownActiveChanged(bool value)
         {
             UpdateGeometryForState(CurrentState);
             StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+
+            if (IsManualSlimHidden && !IsFullscreenActive && !IsSlimBarPeekActive)
+            {
+                VisibilityChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         [ObservableProperty]
@@ -1637,27 +1720,35 @@ namespace NotchWin.ViewModels
 
 
 
-        /// <summary>Notch normal hanya tampil jika tidak fullscreen dan tidak manual-hidden.</summary>
+        private bool IsManualHideNotificationPeek => IsManualSlimHidden
+            && !IsFullscreenActive
+            && (IsNotificationDropdownActive || (Notification?.IsWaterAlarm == true));
 
-        public bool IsNotchVisible => (!IsFullscreenActive || IsSlimBarPeekActive) && !IsManuallyHidden;
+        /// <summary>Notch normal hanya tampil jika tidak fullscreen, tidak manual slim-hidden, dan tidak manual-hidden.</summary>
+
+        public bool IsNotchVisible => (!(IsFullscreenActive || IsManualSlimHidden) || IsSlimBarPeekActive || IsManualHideNotificationPeek) && !IsManuallyHidden;
 
 
 
-        /// <summary>Garis tipis tampil saat fullscreen aktif, mode slim aktif, dan tidak manual-hidden.</summary>
+        /// <summary>Garis tipis tampil saat fullscreen/manual slim-hide aktif, mode slim aktif, dan tidak manual-hidden.</summary>
 
-        public bool IsSlimBarVisible => IsFullscreenActive
+        public bool IsSlimBarVisible => (IsFullscreenActive || IsManualSlimHidden)
 
-            && _settingsService.CurrentSettings.IsFullscreenSlimBarEnabled
+            && (IsManualSlimHidden || _settingsService.CurrentSettings.IsFullscreenSlimBarEnabled)
 
             && !IsManuallyHidden
 
-            && !IsSlimBarPeekActive;
+            && !IsSlimBarPeekActive
+
+            && !IsManualHideNotificationPeek;
 
 
 
         /// <summary>Sembunyi total saat fullscreen jika mode slim dimatikan.</summary>
 
         public bool IsFullscreenHidden => IsFullscreenActive
+
+            && !IsManualSlimHidden
 
             && !_settingsService.CurrentSettings.IsFullscreenSlimBarEnabled
 
@@ -1674,6 +1765,7 @@ namespace NotchWin.ViewModels
         public event EventHandler? RequestCloseEvent;
 
         public event EventHandler? StateAnimationRequested;
+        public event EventHandler<double>? CollapsedWidthAdjustmentRequested;
 
         public event EventHandler? VisibilityChanged;
 
@@ -2281,11 +2373,19 @@ namespace NotchWin.ViewModels
 
                     {
 
-                        // Keluar fullscreen: batalkan peek dan kembali ke notch normal.
+                        // Keluar fullscreen: batalkan peek dan kembali ke notch normal
 
-                        IsSlimBarPeekActive = false;
+                        // (kecuali jika sedang dalam mode manual slim-hide).
 
-                        CancelPendingSlimBarPeekClose();
+                        if (!IsManualSlimHidden)
+
+                        {
+
+                            IsSlimBarPeekActive = false;
+
+                            CancelPendingSlimBarPeekClose();
+
+                        }
 
                     }
 
@@ -2312,19 +2412,26 @@ namespace NotchWin.ViewModels
 
 
             // Display changes
-
             _displayService.DisplayConfigurationChanged += (s, e) =>
-
             {
-
                 Application.Current?.Dispatcher.Invoke(() =>
-
                 {
+                    var monitors = _displayService.GetMonitors();
+                    var configured = _settingsService.CurrentSettings.TargetMonitorDeviceName;
+                    if (!string.IsNullOrEmpty(configured) && !monitors.Any(m => string.Equals(m.DeviceName, configured, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var primaryMon = monitors.FirstOrDefault(m => m.IsPrimary) ?? monitors.FirstOrDefault();
+                        if (primaryMon != null)
+                        {
+                            Log.Information("[Display] Target monitor '{Old}' disconnected during display change. Sanitizing to '{New}'",
+                                configured, primaryMon.DeviceName);
+                            _settingsService.CurrentSettings.TargetMonitorDeviceName = primaryMon.DeviceName;
+                            _ = _settingsService.SaveAsync(_settingsService.CurrentSettings);
+                        }
+                    }
 
                     PositionUpdateRequested?.Invoke(this, EventArgs.Empty);
-
                 });
-
             };
 
 
@@ -2682,6 +2789,8 @@ namespace NotchWin.ViewModels
 
                 OnPropertyChanged(nameof(PinToolTipText));
 
+                OnPropertyChanged(nameof(HideToolTipText));
+
             };
 
 
@@ -2831,6 +2940,9 @@ namespace NotchWin.ViewModels
 
 
             ThemeManager.IsAccentColorEnabled = settings.IsAccentColorEnabled;
+            ThemeManager.CustomAccentColorHex = string.IsNullOrWhiteSpace(settings.CustomAccentColorHex)
+                ? "#3B82F6"
+                : settings.CustomAccentColorHex;
             ThemeManager.ApplyMaterial(settings.NotchMaterial ?? "OLED");
 
             ThemeManager.ApplyAccentColor(settings.AccentColor, force: false);
@@ -2957,6 +3069,8 @@ namespace NotchWin.ViewModels
 
 
 
+            _waterService.UpdateInterval(settings.WaterReminderIntervalMinutes);
+
             if (settings.IsWaterReminderEnabled)
 
             {
@@ -3019,9 +3133,9 @@ namespace NotchWin.ViewModels
 
 
 
-            // Peek dari slim bar hanya valid saat fullscreen + mode slim aktif.
+            // Peek dari slim bar valid saat manual slim-hide aktif ATAU saat fullscreen + mode slim aktif.
 
-            if (!settings.IsFullscreenAutoHideEnabled || !settings.IsFullscreenSlimBarEnabled)
+            if (!IsManualSlimHidden && (!settings.IsFullscreenAutoHideEnabled || !settings.IsFullscreenSlimBarEnabled))
 
             {
 
@@ -3038,16 +3152,24 @@ namespace NotchWin.ViewModels
             // minta view melakukan transisi ulang tanpa menunggu event detektor.
 
             if (IsFullscreenActive)
-
             {
-
                 VisibilityChanged?.Invoke(this, EventArgs.Empty);
-
             }
 
-
-
-
+            // Sanitasi monitor tujuan jika monitor tersimpan sedang dicabut/tidak aktif
+            var connectedMonitors = _displayService.GetMonitors();
+            if (!string.IsNullOrEmpty(settings.TargetMonitorDeviceName) &&
+                !connectedMonitors.Any(m => string.Equals(m.DeviceName, settings.TargetMonitorDeviceName, StringComparison.OrdinalIgnoreCase)))
+            {
+                var primaryMon = connectedMonitors.FirstOrDefault(m => m.IsPrimary) ?? connectedMonitors.FirstOrDefault();
+                if (primaryMon != null)
+                {
+                    Log.Information("[Display] Saved monitor '{Saved}' is disconnected. Defaulting to primary '{Primary}'",
+                        settings.TargetMonitorDeviceName, primaryMon.DeviceName);
+                    settings.TargetMonitorDeviceName = primaryMon.DeviceName;
+                    _ = _settingsService.SaveAsync(settings);
+                }
+            }
 
             PositionUpdateRequested?.Invoke(this, EventArgs.Empty);
 
@@ -3085,6 +3207,24 @@ namespace NotchWin.ViewModels
 
         {
 
+            if (IsManualSlimHidden && !IsManuallyHidden)
+
+            {
+
+                IsManualSlimHidden = false;
+
+                IsSlimBarPeekActive = false;
+
+                CancelPendingSlimBarPeekClose();
+
+                Log.Information("Manual slim hide cleared via Tray toggle.");
+
+                VisibilityChanged?.Invoke(this, EventArgs.Empty);
+
+                return;
+
+            }
+
             IsManuallyHidden = !IsManuallyHidden;
 
             if (IsManuallyHidden)
@@ -3109,7 +3249,7 @@ namespace NotchWin.ViewModels
 
         /// <summary>
 
-        /// Membuka notch sementara dari slim bar saat fullscreen (dipicu hover 3 detik).
+        /// Membuka notch sementara dari slim bar saat fullscreen atau manual slim-hide (dipicu hover 3 detik).
 
         /// Notch muncul dalam state collapsed; hover/klik berikutnya mengikuti perilaku normal.
 
@@ -3119,9 +3259,9 @@ namespace NotchWin.ViewModels
 
         {
 
-            if (!IsFullscreenActive || IsManuallyHidden) return;
+            bool hiddenAsSlim = IsManualSlimHidden || (IsFullscreenActive && _settingsService.CurrentSettings.IsFullscreenSlimBarEnabled);
 
-            if (!_settingsService.CurrentSettings.IsFullscreenSlimBarEnabled) return;
+            if (!hiddenAsSlim || IsManuallyHidden) return;
 
             if (IsSlimBarPeekActive) return;
 
@@ -3235,6 +3375,10 @@ namespace NotchWin.ViewModels
 
                 {
 
+                    if (token.IsCancellationRequested) return;
+
+                    CancelPendingSlimBarPeekClose();
+
                     if (!IsSlimBarPeekActive || IsLockedExpanded) return;
 
 
@@ -3295,10 +3439,11 @@ namespace NotchWin.ViewModels
 
 
 
-            // Alarm minum aktif: hover tidak boleh membuka notch.
+            // Alarm minum aktif atau sedang disembunyikan ke slim bar: hover tidak boleh membuka notch.
 
             if (Notification.IsWaterAlarm) return;
             if (IsNotificationDropdownActive) return;
+            if (IsSlimBarVisible || IsManuallyHidden) return;
 
 
 
@@ -3333,21 +3478,16 @@ namespace NotchWin.ViewModels
 
 
         [RelayCommand]
-
         public void OnMouseLeave()
-
         {
-
             CancelPendingExpand();
 
-
+            Log.Information("[ViewModel] OnMouseLeave: State={State}, IsLocked={Locked}, Picker={Picker}",
+                CurrentState, IsLockedExpanded, (Volume != null && Volume.IsDevicePickerOpen) || (Media != null && Media.IsLyricsVersionPickerOpen));
 
             if (IsLockedExpanded || (Volume != null && Volume.IsDevicePickerOpen) || (Media != null && Media.IsLyricsVersionPickerOpen))
-
             {
-
                 return;
-
             }
 
 
@@ -3405,6 +3545,14 @@ namespace NotchWin.ViewModels
         public void Expand(bool isLock = false)
 
         {
+
+            if (IsSlimBarVisible || IsManuallyHidden) return;
+
+            if (IsManualSlimHidden && !IsFullscreenActive && !IsSlimBarPeekActive && (IsNotificationDropdownActive || Notification?.IsWaterAlarm == true))
+            {
+                IsSlimBarPeekActive = true;
+                _peekOpenedTick = 0L;
+            }
 
             CancelPendingExpand();
 
@@ -3504,6 +3652,16 @@ namespace NotchWin.ViewModels
 
             }
 
+            if (ScreenTime != null)
+            {
+                bool isScreenTimeActive = CurrentState == NotchState.Expanded && IsScreenTimeActive;
+                ScreenTime.IsUiActive = isScreenTimeActive;
+                if (isScreenTimeActive)
+                {
+                    ScreenTime.Refresh();
+                }
+            }
+
         }
 
 
@@ -3525,6 +3683,10 @@ namespace NotchWin.ViewModels
             Prayer.StopLiveCountdown();
 
             Water.IsUiActive = false;
+            if (ScreenTime != null)
+            {
+                ScreenTime.IsUiActive = false;
+            }
 
             if (Volume != null)
 
@@ -3683,6 +3845,7 @@ namespace NotchWin.ViewModels
             _keyboardLockService?.Dispose();
             _brightnessService?.Dispose();
             ScreenTimeService?.Dispose();
+            (_waterService as IDisposable)?.Dispose();
             _updateService.UpdateAvailable -= OnUpdateServiceUpdateAvailable;
             _updateService?.Dispose();
 
@@ -3713,6 +3876,10 @@ namespace NotchWin.ViewModels
                     Application.Current?.Dispatcher.Invoke(() =>
 
                     {
+
+                        if (token.IsCancellationRequested) return;
+
+                        CancelPendingCollapse();
 
                         if (!IsLockedExpanded && !(Volume != null && Volume.IsDevicePickerOpen) && !(Media != null && Media.IsLyricsVersionPickerOpen))
 
@@ -3995,7 +4162,7 @@ namespace NotchWin.ViewModels
 
                 {
 
-                    TargetHeight = (PhoneShare?.IsPanelOpen == true) ? 286.0 : ExpandedShelfHeight;
+                    TargetHeight = (PhoneShare?.IsPanelOpen == true) ? 294.0 : ExpandedShelfHeight;
 
                 }
 
@@ -4628,6 +4795,11 @@ namespace NotchWin.ViewModels
 
                 StateAnimationRequested?.Invoke(this, EventArgs.Empty);
 
+                if (IsManualSlimHidden && !IsFullscreenActive && !IsSlimBarPeekActive)
+                {
+                    VisibilityChanged?.Invoke(this, EventArgs.Empty);
+                }
+
 
 
                 PetCompanionService.Instance.SetPersistentAlert(MascotState.Drink);
@@ -4745,6 +4917,11 @@ namespace NotchWin.ViewModels
             UpdateGeometryForState(CurrentState);
 
             StateAnimationRequested?.Invoke(this, EventArgs.Empty);
+
+            if (IsManualSlimHidden && !IsFullscreenActive && !IsSlimBarPeekActive)
+            {
+                VisibilityChanged?.Invoke(this, EventArgs.Empty);
+            }
 
         }
 

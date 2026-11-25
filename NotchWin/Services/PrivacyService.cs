@@ -20,7 +20,27 @@ namespace NotchWin.Services
     internal interface IMFSensorActivitiesReport
     {
         [PreserveSig] int GetCount(out uint count);
-        [PreserveSig] int GetActivityReport(uint index, [MarshalAs(UnmanagedType.IUnknown)] out object sensorActivityReport);
+        [PreserveSig] int GetActivityReport(uint index, out IMFSensorActivityReport sensorActivityReport);
+    }
+
+    [ComImport, Guid("3E8C4BE1-A8C2-4528-90DE-2851BDE5FEAD")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IMFSensorActivityReport
+    {
+        [PreserveSig] int GetFriendlyName([Out, MarshalAs(UnmanagedType.LPWStr)] System.Text.StringBuilder friendlyName, uint cchFriendlyName, out uint pcchWritten);
+        [PreserveSig] int GetSymbolicLink([Out, MarshalAs(UnmanagedType.LPWStr)] System.Text.StringBuilder symbolicLink, uint cchSymbolicLink, out uint pcchWritten);
+        [PreserveSig] int GetProcessCount(out uint pulCount);
+        [PreserveSig] int GetProcessActivity(uint index, out IMFSensorProcessActivity ppProcessActivity);
+    }
+
+    [ComImport, Guid("39DC7F4A-B141-4719-813C-A7F46162A2B8")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IMFSensorProcessActivity
+    {
+        [PreserveSig] int GetProcessId(out uint processId);
+        [PreserveSig] int GetStreamingState([MarshalAs(UnmanagedType.Bool)] out bool pfStreaming);
+        [PreserveSig] int GetStreamingMode(out uint mode);
+        [PreserveSig] int GetReportTime(out ulong ft);
     }
 
     [ComImport, Guid("D0CEF145-B3F4-4340-A2E5-7A5080CA05CB")]
@@ -94,12 +114,54 @@ namespace NotchWin.Services
         {
             try
             {
-                report.GetCount(out uint count);
-                bool active = count > 0;
-                if (_isCameraActiveFromSensor != active)
+                bool isAnyStreaming = false;
+                int hr = report.GetCount(out uint count);
+                if (hr == 0 && count > 0)
                 {
-                    _isCameraActiveFromSensor = active;
-                    Log.Information("MediaFoundation Camera Sensor Report: ActiveSensors={Count}", count);
+                    for (uint i = 0; i < count; i++)
+                    {
+                        if (report.GetActivityReport(i, out IMFSensorActivityReport actReport) == 0 && actReport != null)
+                        {
+                            try
+                            {
+                                if (actReport.GetProcessCount(out uint procCount) == 0 && procCount > 0)
+                                {
+                                    for (uint p = 0; p < procCount; p++)
+                                    {
+                                        if (actReport.GetProcessActivity(p, out IMFSensorProcessActivity procAct) == 0 && procAct != null)
+                                        {
+                                            try
+                                            {
+                                                if (procAct.GetStreamingState(out bool isStreaming) == 0 && isStreaming)
+                                                {
+                                                    procAct.GetProcessId(out uint pid);
+                                                    Log.Debug("Active camera stream detected: PID={Pid}", pid);
+                                                    isAnyStreaming = true;
+                                                    break;
+                                                }
+                                            }
+                                            finally
+                                            {
+                                                try { Marshal.ReleaseComObject(procAct); } catch { }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                try { Marshal.ReleaseComObject(actReport); } catch { }
+                            }
+                        }
+
+                        if (isAnyStreaming) break;
+                    }
+                }
+
+                if (_isCameraActiveFromSensor != isAnyStreaming)
+                {
+                    _isCameraActiveFromSensor = isAnyStreaming;
+                    Log.Information("MediaFoundation Camera Sensor Report: StreamingActive={Active}, SensorsCount={Count}", isAnyStreaming, count);
                     CheckPrivacyStatus();
                 }
             }
@@ -189,7 +251,6 @@ namespace NotchWin.Services
                     {
                         if (!isCapturing)
                         {
-                            // 1. Check for any active Audio Session (Discord, Zoom, Google Meet, OBS, Games, etc.)
                             var sessionManager = dev.AudioSessionManager;
                             if (sessionManager != null)
                             {
@@ -197,21 +258,35 @@ namespace NotchWin.Services
                                 for (int i = 0; i < sessions.Count; i++)
                                 {
                                     var s = sessions[i];
+                                    if (s == null) continue;
+
+                                    // Ignore system sounds session (ProcessID == 0)
+                                    if (s.IsSystemSoundsSession || s.GetProcessID <= 0) continue;
+
                                     if (s.State == AudioSessionState.AudioSessionStateActive)
                                     {
-                                        isCapturing = true;
-                                        break;
+                                        int pid = (int)s.GetProcessID;
+                                        try
+                                        {
+                                            using var p = System.Diagnostics.Process.GetProcessById(pid);
+                                            if (!p.HasExited)
+                                            {
+                                                Log.Debug("Active microphone capture session detected: Process={Name} (PID={Pid}) on {Device}", p.ProcessName, pid, dev.FriendlyName);
+                                                isCapturing = true;
+                                                break;
+                                            }
+                                        }
+                                        catch (ArgumentException)
+                                        {
+                                            // Process already exited, ignore stale session
+                                        }
+                                        catch
+                                        {
+                                            // Elevated or inaccessible process, but valid non-zero PID and active session
+                                            isCapturing = true;
+                                            break;
+                                        }
                                     }
-                                }
-                            }
-
-                            // 2. Check real-time Audio Meter peak if streaming audio
-                            if (!isCapturing)
-                            {
-                                var meter = dev.AudioMeterInformation;
-                                if (meter != null && meter.MasterPeakValue > 0.005f)
-                                {
-                                    isCapturing = true;
                                 }
                             }
                         }
@@ -329,8 +404,18 @@ namespace NotchWin.Services
                 }
 
                 // If stopVal exists and is explicitly 0, app is actively streaming
-                if (stopVal != null && stopTime == 0)
+                if (stopVal != null && stopTime == 0 && startTime > 0)
                 {
+                    try
+                    {
+                        var startDate = DateTime.FromFileTimeUtc(startTime);
+                        if (DateTime.UtcNow - startDate > TimeSpan.FromHours(12))
+                        {
+                            return false; // Stale crash entry
+                        }
+                    }
+                    catch { }
+
                     Log.Debug("Active {Capability} usage detected in {KeyName} (StopTime=0)", capability, key.Name);
                     return true;
                 }
@@ -338,6 +423,16 @@ namespace NotchWin.Services
                 // If start time is more recent than stop time, device is actively open
                 if (startTime > 0 && startTime > stopTime)
                 {
+                    try
+                    {
+                        var startDate = DateTime.FromFileTimeUtc(startTime);
+                        if (DateTime.UtcNow - startDate > TimeSpan.FromHours(12))
+                        {
+                            return false; // Stale crash entry
+                        }
+                    }
+                    catch { }
+
                     Log.Debug("Active {Capability} usage detected in {KeyName} (StartTime={StartTime} > StopTime={StopTime})", capability, key.Name, startTime, stopTime);
                     return true;
                 }

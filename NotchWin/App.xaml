@@ -31,7 +31,9 @@
         </LinearGradientBrush>
 
         <!-- Notch Card Background (frosted semi-transparent) -->
-        <SolidColorBrush x:Key="NotchCardBackgroundBrush" Color="#AF101216" />
+        <SolidColorBrush x:Key="NotchCardBackgroundBrush" Color="#12121C" />
+        <SolidColorBrush x:Key="NotchCardBorderBrush" Color="#222232" />
+        <sys:Double x:Key="NotchLiquidGlassSheenOpacity" xmlns:sys="clr-namespace:System;assembly=mscorlib">0.0</sys:Double>
 
         <!-- Play/Pause Button Accent Gradient -->
         <LinearGradientBrush x:Key="PlayPauseGradientBrush" StartPoint="0,0" EndPoint="1,1">

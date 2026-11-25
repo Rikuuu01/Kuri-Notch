@@ -83,8 +83,19 @@ Notch beroperasi dalam dua status utama di [NotchViewModel.cs](../NotchWin/ViewM
   - Radius sudut: `16px` (`CollapsedCornerRadius`).
 - **`NotchState.Expanded`**: Mode kartu lebar interaktif ketika notch di-hover atau diklik.
   - Lebar: `620px` (`MaxExpandedWidth`).
-  - Tinggi: `264px` (`ExpandedHeight`) hingga `326px` (Catatan/Cuaca memakai `ExpandedWeatherHeight = 326px`), ditambah baris navigasi hover; Todo memakai rumus dinamis hingga `634px`. Saat berada di tab Home dan ada notifikasi aktif (adzan/alarm), tinggi mengembang otomatis menjadi `324px` (`ExpandedHeight + 60px`).
-  - Home Card & Dock Clearance: Kartu Miniplayer & Kalender (tinggi 120px) dipadukan dengan App Shortcut Dock (tinggi 44px) dengan jarak 10px (total 174px), memberikan ruang lega vertikal tanpa terpotong (*clipped*) oleh lengkungan bawah notch.
+  - Tinggi: Disesuaikan per-slide agar seluruh konten modul dan dock pintasan memiliki *breathing room* vertikal yang cukup dan tidak terpotong oleh lengkungan sudut bawah notch (`ExpandedCornerRadius = 22px`) maupun dock navigasi permanen (`NavDockHost`, 36px total):
+    - **Home (Utama)**: `264px` (`ExpandedHomeHeight`). Mengakomodasi Miniplayer + Kalender (132px) dan Shortcut Dock (42px) dengan jarak aman dari sudut lengkung bawah. Saat ada notifikasi aktif (adzan/alarm/pengingat), tinggi bertambah menjadi `320px` (`ExpandedHomeHeight + 56px`).
+    - **Pusat Kontrol**: `318px` (`ExpandedControlCenterHeight`). Mengakomodasi 2 baris Quick Action buttons (138px) dan kotak slider Kecerahan/Volume (82px) + jarak aman; bertambah `32px` (`350px`) saat ada unduhan aktif (`DownloadStripExtraHeight`), dan membesar otomatis saat daftar Wi-Fi (+184px), Bluetooth (+184px), atau perangkat audio (+122px) dibuka.
+    - **Sedang Memutar**: `248px` (`ExpandedMediaHeight`). Mengakomodasi kartu pemutar musik (150px) + margin; menjadi `326px` (`ExpandedMediaPickerHeight`) saat panel pemilihan lirik alternatif dibuka.
+    - **Cuaca**: `300px` (`ExpandedWeatherHeight`). Mengakomodasi kartu cuaca detail BMKG (208px) tanpa terpotong kurva bawah.
+    - **Jadwal Sholat**: `234px` (`ExpandedPrayerHeight`). Mengakomodasi countdown sholat dan kartu 6 waktu sholat (136px) dengan margin bawah 20px.
+    - **Pengingat Minum**: `234px` (`ExpandedWaterHeight`). Mengakomodasi bento box target minum dan tombol aksi +150ml/+250ml/+500ml (136px).
+    - **Catatan**: `286px` (`ExpandedNoteHeight`). Mengakomodasi daftar catatan dan editor teks (194px).
+    - **Riwayat Clipboard**: `286px` (`ExpandedClipboardHeight`). Mengakomodasi daftar item clipboard tersalin.
+    - **Timer & Stopwatch**: `234px` (`ExpandedTimerHeight`). Mengakomodasi preset timer 5m/10m/15m/25m dan stopwatch lap.
+    - **Shelf & Phone Share**: `234px` (`ExpandedShelfHeight`). Mengakomodasi rak berkas serbaguna; membesar menjadi `294px` saat panel kode QR Phone Share dibuka.
+    - **Screen Time & Postur**: `356px` (`ExpandedScreenTimeHeight`). Mengakomodasi histogram 24 jam, 4 aplikasi terbanyak, dan monitor postur duduk.
+  - Home Card & Dock Clearance: Kartu Miniplayer & Kalender dipadukan dengan App Shortcut Dock dengan jarak vertikal rapi, memberikan ruang lega vertikal tanpa terpotong (*clipped*) oleh lengkungan bawah notch.
   - Radius sudut: `22px` (`ExpandedCornerRadius`).
   - Header: hari dan tanggal penuh rata kiri (`Clock.FullDate`, mis. "Friday, 30 October 2026"), sedangkan sisi kanan berisi jam, baterai HD vektor, tombol Settings, tombol pin, dan maskot.
 
@@ -102,6 +113,23 @@ Bentuk notch Windows dibuat dari kurva path kustom (`NotchBackgroundPath` dan `N
     double effectiveScale = scale * BaseScaleFactor;
     ```
   - Nilai preferensi pengguna `NotchScale` di `settings.json` tersimpan sebagai `1.0` (100% pada slider pengaturan), menghasilkan ukuran fisik yang ideal, proporsional, dan tajam secara default pada monitor modern.
+
+### 4. Pemosisi Monitor, Layered Bit Blitting & Ketahanan Multi-Monitor (Keputusan 102)
+Window overlay WPF menggunakan `AllowsTransparency="True"` dan `WindowStyle="None"`. Untuk menjamin transisi membuka (*expand*) dan menutup (*collapse*) berjalan 60fps tanpa robekan visual (*glitch/tearing*) pada sistem dengan 1 monitor maupun multi-monitor:
+1. **Pemberantasan Layered Window Bit Blitting Tear (`SWP_NOCOPYBITS`)**:
+   - Saat notch mengembang, tinggi window overlay WPF dinaikkan dari `180px` ke `880px` via Win32 `SetWindowPos`.
+   - Menggunakan flag `SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOCOPYBITS (0x0100)`. Flag `SWP_NOCOPYBITS` memerintahkan Desktop Window Manager (DWM) untuk membuang bit buffer lama alih-alih meregangkannya ke tinggi 880px, mencegah kedipan atau ghosting sebelum frame WPF baru digambar.
+2. **Pemberantasan Badai Pemosisi HWND Berulang & Re-entrancy Guard**:
+   - `PositionOnMonitor` dilindungi oleh re-entrancy guard `_isPositioning`.
+   - Sebelum mengeksekusi `SetWindowPos`, `NativeMethods.GetWindowRect` membaca koordinat dan ukuran window saat ini. Jika sudah berada pada target `(PhysX, PhysY, PhysW, PhysH)`, `SetWindowPos` dilewati dan hanya memastikan z-order topmost.
+   - Pesan `WM_DPICHANGED` (pesan 736) di `WndProc` memverifikasi apakah `DpiScale` monitor benar-benar berubah sebelum memicu pemosisi paksa.
+3. **Hit-Testing Geometri Target & Peredam MouseLeave Semu (`WM_NCHITTEST`)**:
+   - Pada pesan 132 (`WM_NCHITTEST`), lebar efektif dihitung dari `Math.Max(PillContainer.ActualWidth, targetW + 24.0)` dan memvalidasi batas fisik window `(windowCenterX - halfWidth s/d windowCenterX + halfWidth)`.
+   - Mencegah kursor terbaca "keluar dari notch" selama durasi animasi 340ms saat `ActualWidth` WPF masih dalam proses arrangement, melenyapkan bug notch yang tiba-tiba menutup sendiri saat di-hover.
+   - Mengabaikan event WPF `PillBorder_MouseLeave` saat status `NotchState.Expanded`, mempercayakan pelacakan batas seutuhnya pada Win32 `WM_NCHITTEST`.
+   - Menambahkan pengujian `CollapsedNotificationDropdownHost` agar kartu dropdown notifikasi dapat di-hover dan diklik tanpa tembus ke window di belakangnya.
+4. **Sanitasi Otomatis Target Monitor Terputus**:
+   - Ketika monitor sekunder (misal `\\.\DISPLAY2`) terputus dan pengguna hanya menggunakan 1 monitor (`\\.\DISPLAY1`), `NotchViewModel` otomatis mendeteksi ketiadaan monitor target, menyelaraskan target ke monitor utama, dan memperbarui `settings.json` secara non-blocking. Hal ini mencegah aplikasi terjebak dalam siklus fallback berkelanjutan.
 
 ---
 
@@ -124,22 +152,23 @@ Aplikasi mengimplementasikan layanan terpusat `MemoryManagementService.cs` yang 
 
 Ketika notch berada di mode `Expanded`, bar navigasi menempati baris khusus (`Grid.Row="1"`, tinggi 26 px + margin bawah 8 px) **di bawah header dan tepat di atas konten slide** (urutan `RowDefinitions` = `Auto, Auto, *`). Kapsul baris navigasi kini dibingkai dalam track kontainer yang rapi (`NavDockTrack`), dengan padding simetris dan hirarki visual teks yang jelas antara tab aktif dan inaktif. Navbar **selalu tampil penuh sebagai ikon + label selama notch expanded** — tidak lagi menciut menjadi titik saat idle maupun saat kursor keluar dari area navbar. Tombol Settings berada di header di antara maskot dan tombol pin, bukan di navbar.
 
-- Kontainer baris: `NavDockHost` (Grid tinggi 26) membungkus kapsul track `NavDockTrack` (`CornerRadius="13"`, background transparan halus `#3512121A`, border `#252535`, padding 2 px) yang menyatukan seluruh 10 tombol navigasi menjadi segmented dock yang elegan. Tombol memakai `NavTabUnifiedStyle` dengan padding simetris `Padding="6,0,7,0"`, margin label `4,0,0,0`. Seluruh 10 ikon menggunakan sistem ikon vektor modern terstandarisasi (Apple SF Symbols / Lucide style) dengan bobot visual seragam 11×11 DIPs, stroke 1.2 px, serta round caps/joins yang harmonis.
+- Kontainer baris: `NavDockHost` (Grid tinggi 26) membungkus kapsul track `NavDockTrack` (`CornerRadius="13"`, background transparan halus `#3512121A`, border `#252535`, padding 2 px) yang menyatukan seluruh 11 tombol navigasi menjadi segmented dock yang elegan. Tombol memakai `NavTabUnifiedStyle` dengan padding simetris `Padding="6,0,7,0"`, margin label `4,0,0,0`. Seluruh 11 ikon menggunakan sistem ikon vektor modern terstandarisasi (Apple SF Symbols / Lucide style) dengan bobot visual seragam 11×11 DIPs, stroke 1.2 px, serta round caps/joins yang harmonis.
 - Hirarki visual & skala: `ApplyNavTabVisualState` otomatis mewarnai tab aktif dengan teks putih `#FFFFFF` (SemiBold) dan stroke ikon warna aksen (warna fresh water `#38BDF8` untuk tab hidrasi aktif), serta tab inaktif dengan warna lembut `#9CA3AF` (Normal). Integrasi `InvalidateNavFullWidths()` memastikan navbar tetap proporsional saat ukuran font diubah di pengaturan.
 
-### Pemetaan Indeks Slide & Struktur XAML (10 Tab)
-| Tab | Fitur | Indeks Jika Sholat Aktif | Indeks Jika Sholat Nonaktif | Lokasi XAML |
+### Pemetaan Indeks Slide & Struktur XAML (11 Tab)
+| Tab | Fitur | Indeks Default | Modul ID | Lokasi XAML |
 |:---:|:---|:---:|:---:|:---|
-| `NavTab0` | **Home** (Miniplayer, Kalender Mingguan, App Dock, Notifikasi) | 0 | 0 | [SlideHomeCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab1` | Sedang Memutar (Media Player & Lirik Karaoke) | 1 | 1 | [SlideMediaCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab2` | Pusat Kontrol (Control Center) | 2 | 2 | [SlideControlCenterCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab3` | Cuaca (Weather) | 3 | 3 | [SlideWeatherCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab4` | Jadwal Sholat (Prayer) | 4 | *(Hidden)* | [SlidePrayerCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab5` | Pengingat Minum (Hydration) | 5 | 4 | [SlideWaterCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab6` | Catatan & Alarm (Notes) | 6 | 5 | [SlideNoteCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab7` | Riwayat Papan Klip (Clipboard) | 7 | 6 | [SlideClipboardCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab8` | Timer & Stopwatch | 8 | 7 | [SlideTimerCard](../NotchWin/Views/NotchWindow.xaml) |
-| `NavTab9` | Shelf File & Phone Share | 9 | 8 | [SlideShelfCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab0` | **Home** (Miniplayer, Kalender Mingguan, App Dock, Notifikasi) | 0 | `home` | [SlideHomeCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab1` | Pusat Kontrol (Control Center) | 1 | `control` | [SlideControlCenterCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab2` | Sedang Memutar (Media Player & Lirik Karaoke) | 2 | `media` | [SlideMediaCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab3` | Cuaca (Weather) | 3 | `weather` | [SlideWeatherCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab4` | Jadwal Sholat (Prayer) | 4 | `prayer` | [SlidePrayerCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab5` | Pengingat Minum (Hydration) | 5 | `water` | [SlideWaterCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab6` | Catatan & Alarm (Notes & Tasks) | 6 | `note` | [SlideNoteCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab7` | Riwayat Papan Klip (Clipboard) | 7 | `clipboard` | [SlideClipboardCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab8` | Timer & Stopwatch | 8 | `timer` | [SlideTimerCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab9` | Shelf File & Phone Share | 9 | `shelf` | [SlideShelfCard](../NotchWin/Views/NotchWindow.xaml) |
+| `NavTab10` | Screen Time (Waktu Layar) | 10 | `screentime` | [SlideScreenTimeCard](../NotchWin/Views/NotchWindow.xaml) |
 
 ---
 
@@ -243,6 +272,11 @@ Saat **FullscreenDetector** mendeteksi aplikasi layar penuh (borderless game, vi
    - Arahkan kursor ke area garis tipis selama 3 detik. `SlimBarHoverScale` membesar sebagai indikator, lalu memicu `AnimateSlimBarMorphToNotch()`.
    - Saat peek aktif, panel penuh **hanya dibuka via klik** (`OnPillClicked()` -> `Expand(isLock: false)`). Hover saja tidak membuka panel agar tidak mengganggu aktivitas fullscreen.
    - Pindahkan kursor keluar untuk memicu morph kembali ke garis kapsul tipis.
+3. **Tombol Hide Manual di Header (`ToggleManualSlimHideCommand`)**:
+   - Di sebelah kanan tombol **Pin** pada header expanded (`HideNotchButton`), tersedia tombol **Hide Notch** (ikon mata tercoret).
+   - Menekan tombol ini saat kursor masih di dalam notch akan menyalakan mode `IsManualSlimHidden = true` (ikon mata berubah menjadi warna aksen) namun **tetap membiarkan notch terbuka** selama kursor masih berada di dalam area notch; begitu kursor digerakkan keluar, barulah notch mengecil halus dan bermorph menjadi **Slim Bar** (`220×6 px` di tengah atas layar). Jika ditekan saat kursor tidak berada di dalam notch, notch langsung menyusut menjadi Slim Bar.
+   - Untuk mengembalikan notch sementara, arahkan kursor ke garis tipis (langsung terbuka secara **instan** tanpa jeda 3 detik bila bukan dalam mode fullscreen; saat fullscreen tetap menunggu 3 detik agar tidak mengganggu game/video). Klik tombol **Hide Notch** sekali lagi (yang berubah warna aksen saat mode tersembunyi aktif) atau pilih tampilkan dari ikon tray untuk mengembalikan notch secara permanen.
+   - **Notifikasi saat Hide Manual Aktif**: Ketika notifikasi masuk (Windows toast, pengingat sholat, timer, alarm minum, clipboard/screenshot, dll.) saat `IsManualSlimHidden == true` dan tidak sedang *fullscreen* (`IsManualHideNotificationPeek`), notch otomatis bermorph keluar dari Slim Bar untuk menampilkan kartu notifikasi, lalu otomatis menyusut kembali ke Slim Bar setelah notifikasi berakhir/ditutup.
 
 ---
 
