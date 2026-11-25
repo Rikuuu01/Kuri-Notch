@@ -35,10 +35,10 @@
 
 | Package Type | Architecture | Download Link | Description |
 | :--- | :---: | :--- | :--- |
-| **Setup Installer** *(Recommended)* | **x64 (64-bit)** | [⬇️ **Kuri-v1.3-Setup-x64.exe**](release/Kuri-v1.3-win-x64.zip) | Full wizard installer with autostart and Start Menu shortcuts |
-| **Setup Installer** | **x86 (32-bit)** | [⬇️ **Kuri-v1.3-Setup-x86.exe**](release/Kuri-v1.3-win-x86.zip) | For 32-bit Windows devices and lightweight tablets |
-| **Portable ZIP** | **x64 (64-bit)** | [⬇️ **Kuri-v1.3-win-x64.zip**](release/Kuri-v1.3-win-x64.zip) | Standalone portable executable. Extract and run `NotchWin.exe` |
-| **Portable ZIP** | **x86 (32-bit)** | [⬇️ **Kuri-v1.3-win-x86.zip**](release/Kuri-v1.3-win-x86.zip) | Standalone portable 32-bit executable |
+| **Setup Installer** *(Recommended)* | **x64 (64-bit)** | [⬇️ **Kuri-Setup-v1.3-x64.exe**](https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.3.0/Kuri-Setup-v1.3-x64.exe) | Full wizard installer with autostart and Start Menu shortcuts |
+| **Setup Installer** | **x86 (32-bit)** | [⬇️ **Kuri-Setup-v1.3-x86.exe**](https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.3.0/Kuri-Setup-v1.3-x86.exe) | For 32-bit Windows devices and lightweight tablets |
+| **Portable ZIP** | **x64 (64-bit)** | [⬇️ **Kuri-v1.3-win-x64.zip**](https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.3.0/Kuri-v1.3-win-x64.zip) | Standalone portable executable. Extract and run `NotchWin.exe` |
+| **Portable ZIP** | **x86 (32-bit)** | [⬇️ **Kuri-v1.3-win-x86.zip**](https://github.com/Rikuuu01/Kuri-Notch/releases/download/v1.3.0/Kuri-v1.3-win-x86.zip) | Standalone portable 32-bit executable |
 
 ---
 
@@ -130,13 +130,13 @@ Access your PC essentials directly inside the Notch without opening the Windows 
 ## 📦 Installation Guide
 
 ### Option A: Setup Installer (Recommended)
-1. Download **`Kuri-v1.3-Setup-x64.exe`** from the [Releases](release/) directory.
+1. Download **`Kuri-Setup-v1.3-x64.exe`** from [GitHub Releases](https://github.com/Rikuuu01/Kuri-Notch/releases/latest).
 2. Run the installer wizard.
 3. Choose whether to launch Kuri on Windows startup.
 4. Enjoy! Kuri will appear gracefully at the top of your primary display.
 
 ### Option B: Portable Mode
-1. Download **`Kuri-v1.3-win-x64.zip`**.
+1. Download **`Kuri-v1.3-win-x64.zip`** from [GitHub Releases](https://github.com/Rikuuu01/Kuri-Notch/releases/latest).
 2. Extract the archive into any preferred folder (e.g. `C:\Program Files\Kuri` or `D:\Tools\Kuri`).
 3. Double click **`NotchWin.exe`** to run.
 
